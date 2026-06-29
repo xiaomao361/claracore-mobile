@@ -30,6 +30,7 @@ Implemented and verified:
 - Shared Line milestone text renders as structured steps in the list and recall package surfaces.
 - Inbox behavior: organizing a capture does not remove it from pending; only successful commit or discard removes it from the active inbox.
 - App icon asset catalog exists at `ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset`.
+- Manual first-build end-to-end checklist exists at `docs/MANUAL_E2E_CHECKLIST.md`.
 - DeepSeek real end-to-end pass has been verified on simulator with the test share URL:
   - Import -> Inbox -> organize -> review -> commit -> memory list -> Shared Line list -> recall package copy.
 - Reflection output has been tightened:
@@ -47,8 +48,7 @@ Latest verification:
 - XcodeBuildMCP `build_run_sim`: app installed and launched on iPhone 17 simulator
 
 Next technical work, independent from UI polish:
-1. Add a short manual end-to-end test checklist for the first testable build.
-2. Add an edit surface for the default Context Card after the data flow stabilizes.
+1. Add an edit surface for the default Context Card after the data flow stabilizes.
 
 UI session boundary:
 - The UI session may change layout, copy, visual hierarchy, empty states, and interaction affordances.
