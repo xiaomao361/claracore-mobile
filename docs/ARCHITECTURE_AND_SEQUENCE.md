@@ -28,6 +28,7 @@ Implemented and verified:
 - Recall packaging from the default Context Card plus one Shared Line and selected factual memories into a copyable DeepSeek context package.
 - Committed memories can now bind to the Shared Line created from the same digest through `lineId`; recall prefers line-bound memories before falling back to FTS.
 - Shared Line milestone text renders as structured steps in the list and recall package surfaces.
+- Settings exposes the default Context Card editor for Agent / User profiles.
 - Inbox behavior: organizing a capture does not remove it from pending; only successful commit or discard removes it from the active inbox.
 - App icon asset catalog exists at `ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset`.
 - Manual first-build end-to-end checklist exists at `docs/MANUAL_E2E_CHECKLIST.md`.
@@ -48,7 +49,8 @@ Latest verification:
 - XcodeBuildMCP `build_run_sim`: app installed and launched on iPhone 17 simulator
 
 Next technical work, independent from UI polish:
-1. Add an edit surface for the default Context Card after the data flow stabilizes.
+1. Run the manual first-build checklist on simulator and record any product/data-flow gaps.
+2. Keep UI polish in the separate UI session unless a visual issue blocks the checklist.
 
 UI session boundary:
 - The UI session may change layout, copy, visual hierarchy, empty states, and interaction affordances.

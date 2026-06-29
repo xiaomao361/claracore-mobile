@@ -72,6 +72,7 @@ struct AppRootView: View {
 
             NavigationStack {
                 SettingsFeatureView(
+                    contextCardStore: dependencies.contextCardStore,
                     apiKeyStore: dependencies.apiKeyStore,
                     reflectionConfiguration: dependencies.reflectionConfiguration,
                     onConfigurationChanged: bootstrap
