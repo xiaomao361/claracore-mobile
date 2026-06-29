@@ -164,6 +164,15 @@ struct AppDatabase {
             """)
         }
 
+        migrator.registerMigration("addMemoryLineId") { db in
+            try db.execute(sql: """
+            ALTER TABLE memories ADD COLUMN line_id TEXT;
+
+            CREATE INDEX IF NOT EXISTS idx_memories_line_id_updated_at
+            ON memories(line_id, updated_at DESC);
+            """)
+        }
+
         return migrator
     }
 }

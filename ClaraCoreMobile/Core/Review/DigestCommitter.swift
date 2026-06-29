@@ -19,20 +19,22 @@ final class DigestCommitter {
     }
 
     func commit(_ digest: DigestResult) throws -> DigestCommitResult {
-        let memories = try digest.candidateMemories.map { candidate in
-            try memoriaStore.store(
-                content: candidate.content,
-                tags: tags(for: candidate),
-                isPrivate: false,
-                sourceAgent: "mobile-reflection"
-            )
-        }
-
         let lines = try digest.candidateSharedLineUpdates.map { update in
             try continuityStore.create(
                 title: update.title,
                 lastPosition: update.lastPosition,
                 nextStep: update.nextStep
+            )
+        }
+        let defaultLineId = lines.first?.id
+
+        let memories = try digest.candidateMemories.map { candidate in
+            try memoriaStore.store(
+                content: candidate.content,
+                tags: tags(for: candidate),
+                isPrivate: false,
+                sourceAgent: "mobile-reflection",
+                lineId: defaultLineId
             )
         }
 

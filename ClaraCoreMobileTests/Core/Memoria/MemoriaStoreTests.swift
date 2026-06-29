@@ -36,6 +36,22 @@ final class MemoriaStoreTests: XCTestCase {
         XCTAssertEqual(Set(recent.map(\.id)), Set([first.id, second.id]))
     }
 
+    func testRelatedToLineReturnsOnlyBoundMemories() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+
+        let store = try MemoriaStore(database: AppDatabase(path: databaseURL.path))
+        let bound = try store.store(content: "绑定到共同线的事实", tags: ["line"], isPrivate: false, lineId: "line-1")
+        _ = try store.store(content: "另一条事实", tags: ["other"], isPrivate: false, lineId: "line-2")
+        _ = try store.store(content: "未绑定事实", tags: ["loose"], isPrivate: false)
+
+        let related = try store.related(toLineId: "line-1", limit: 10)
+
+        XCTAssertEqual(related.map(\.id), [bound.id])
+        XCTAssertEqual(related.first?.lineId, "line-1")
+    }
+
     func testUpdateRefreshesMemoryAndSearchIndex() throws {
         let databaseURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
@@ -50,6 +66,7 @@ final class MemoriaStoreTests: XCTestCase {
         XCTAssertEqual(updated.content, "新项目事实可以被检索")
         XCTAssertEqual(updated.tags, ["new", "project"])
         XCTAssertTrue(updated.isPrivate)
+        XCTAssertNil(updated.lineId)
         XCTAssertEqual(try store.recall(query: "检索", limit: 10).first?.id, memory.id)
     }
 

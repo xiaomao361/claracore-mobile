@@ -26,6 +26,7 @@ Implemented and verified:
 - Digest commit path from candidate memories / Shared Line updates into local stores.
 - Default Context Card persistence with Agent / User profiles.
 - Recall packaging from the default Context Card plus one Shared Line and selected factual memories into a copyable DeepSeek context package.
+- Committed memories can now bind to the Shared Line created from the same digest through `lineId`; recall prefers line-bound memories before falling back to FTS.
 - Inbox behavior: organizing a capture does not remove it from pending; only successful commit or discard removes it from the active inbox.
 - App icon asset catalog exists at `ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset`.
 - DeepSeek real end-to-end pass has been verified on simulator with the test share URL:
@@ -41,14 +42,13 @@ Latest verification:
 - `python3 -m json.tool ClaraCoreMobile/Assets.xcassets/Contents.json`
 - `python3 -m json.tool ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset/Contents.json`
 - XcodeBuildMCP `build_sim`
-- XcodeBuildMCP `test_sim`: 29 tests passed, 0 failed
+- XcodeBuildMCP `test_sim`: 30 tests passed, 0 failed
 - XcodeBuildMCP `build_run_sim`: app installed and launched on iPhone 17 simulator
 
 Next technical work, independent from UI polish:
-1. Bind committed memories to the created or selected Shared Line through `lineId`.
-2. Update Shared Line UI so milestone text renders as a true step list.
-3. Add a short manual end-to-end test checklist for the first testable build.
-4. Add an edit surface for the default Context Card after the data flow stabilizes.
+1. Update Shared Line UI so milestone text renders as a true step list.
+2. Add a short manual end-to-end test checklist for the first testable build.
+3. Add an edit surface for the default Context Card after the data flow stabilizes.
 
 UI session boundary:
 - The UI session may change layout, copy, visual hierarchy, empty states, and interaction affordances.

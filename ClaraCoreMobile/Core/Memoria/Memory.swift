@@ -7,7 +7,7 @@ struct Memory: Identifiable, Equatable {
     var isPrivate: Bool
     var isArchived: Bool
     var sourceAgent: String?
+    var lineId: String?
     var createdAt: Date
     var updatedAt: Date
 }
-

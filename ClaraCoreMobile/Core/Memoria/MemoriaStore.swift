@@ -12,7 +12,13 @@ final class MemoriaStore {
     }
 
     @discardableResult
-    func store(content: String, tags: [String], isPrivate: Bool, sourceAgent: String? = "mobile") throws -> Memory {
+    func store(
+        content: String,
+        tags: [String],
+        isPrivate: Bool,
+        sourceAgent: String? = "mobile",
+        lineId: String? = nil
+    ) throws -> Memory {
         let now = Date()
         let memory = Memory(
             id: UUID().uuidString,
@@ -21,6 +27,7 @@ final class MemoriaStore {
             isPrivate: isPrivate,
             isArchived: false,
             sourceAgent: sourceAgent,
+            lineId: lineId,
             createdAt: now,
             updatedAt: now
         )
@@ -32,8 +39,8 @@ final class MemoriaStore {
             try db.execute(
                 sql: """
                 INSERT INTO memories (
-                    id, content, tags, is_private, is_archived, source_agent, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    id, content, tags, is_private, is_archived, source_agent, line_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 arguments: [
                     memory.id,
@@ -42,6 +49,7 @@ final class MemoriaStore {
                     memory.isPrivate ? 1 : 0,
                     memory.isArchived ? 1 : 0,
                     memory.sourceAgent,
+                    memory.lineId,
                     createdAt,
                     createdAt
                 ]
@@ -118,6 +126,25 @@ final class MemoriaStore {
         }
     }
 
+    func related(toLineId lineId: String, limit: Int = 20) throws -> [Memory] {
+        try database.dbQueue.read { db in
+            let rows = try Row.fetchAll(
+                db,
+                sql: """
+                SELECT *
+                FROM memories
+                WHERE is_archived = 0
+                  AND line_id = ?
+                ORDER BY updated_at DESC
+                LIMIT ?
+                """,
+                arguments: [lineId, limit]
+            )
+
+            return try rows.map(memory(from:))
+        }
+    }
+
     func get(id: String) throws -> Memory? {
         try database.dbQueue.read { db in
             guard let row = try Row.fetchOne(db, sql: "SELECT * FROM memories WHERE id = ?", arguments: [id]) else {
@@ -187,6 +214,7 @@ final class MemoriaStore {
             isPrivate: isPrivate != 0,
             isArchived: isArchived != 0,
             sourceAgent: row["source_agent"],
+            lineId: row["line_id"],
             createdAt: createdAt,
             updatedAt: updatedAt
         )

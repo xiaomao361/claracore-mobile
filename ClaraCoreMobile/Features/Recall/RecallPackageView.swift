@@ -125,8 +125,13 @@ struct RecallPackageView: View {
 
     private func loadRelatedMemories() {
         do {
-            let query = builder.query(for: line)
-            candidateMemories = try memoriaStore.recall(query: query, limit: 12)
+            let lineMemories = try memoriaStore.related(toLineId: line.id, limit: 12)
+            if lineMemories.isEmpty {
+                let query = builder.query(for: line)
+                candidateMemories = try memoriaStore.recall(query: query, limit: 12)
+            } else {
+                candidateMemories = lineMemories
+            }
             selectedMemoryIDs = Set(candidateMemories.map(\.id))
             errorMessage = nil
         } catch {

@@ -19,6 +19,7 @@ final class RecallContextPackageTests: XCTestCase {
             isPrivate: false,
             isArchived: false,
             sourceAgent: "mobile-reflection",
+            lineId: "line-1",
             createdAt: Date(timeIntervalSince1970: 0),
             updatedAt: Date(timeIntervalSince1970: 0)
         )
