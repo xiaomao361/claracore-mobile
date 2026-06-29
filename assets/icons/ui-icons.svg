@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="icon-tray" viewBox="0 0 24 24">
+    <path d="M4 4h16l-2 9h-3a3 3 0 0 1-6 0H6L4 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 13v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-stack" viewBox="0 0 24 24">
+    <path d="M5 7 12 3l7 4-7 4-7-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="m5 12 7 4 7-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="m5 17 7 4 7-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-route" viewBox="0 0 24 24">
+    <path d="M6 19V5m0 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm12-8V5m0 6a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 13c0-4 12-1 12-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24">
+    <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-sliders" viewBox="0 0 24 24">
+    <path d="M4 7h8m4 0h4M4 17h4m4 0h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="14" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="10" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24">
+    <path d="m5 13 4 4L19 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icon-edit" viewBox="0 0 24 24">
+    <path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="m13 7 4 4" fill="none" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M12 8v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-warning" viewBox="0 0 24 24">
+    <path d="M12 4 3 20h18L12 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M12 9v5m0 3h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24">
+    <rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M8 10V8a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-source" viewBox="0 0 24 24">
+    <path d="M8 12h8M9 8h6M9 16h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+</svg>

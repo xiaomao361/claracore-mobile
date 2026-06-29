@@ -1,0 +1,8 @@
+<svg width="380" height="260" viewBox="0 0 380 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="378" height="258" rx="24" fill="#FFFFFF" stroke="#DDD8CC"/>
+  <rect x="130" y="74" width="96" height="72" rx="14" fill="#F8EEE4" stroke="#B46A2A" stroke-width="2"/>
+  <rect x="158" y="104" width="96" height="72" rx="14" fill="#FFFFFF" stroke="#B46A2A" stroke-width="2"/>
+  <rect x="158" y="104" width="8" height="72" rx="4" fill="#B46A2A"/>
+  <circle cx="206" cy="140" r="12" fill="#B46A2A"/>
+  <text x="190" y="214" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" fill="#6F6A60">Review Empty</text>
+</svg>

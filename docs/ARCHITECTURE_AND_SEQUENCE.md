@@ -1,0 +1,607 @@
+# ClaraCore Mobile Architecture And Build Sequence
+
+Date: 2026-06-29
+Status: Active development baseline
+
+## Development Checkpoint: 2026-06-29
+
+Current node:
+- The project has a bootable SwiftUI / GRDB iOS app under `ClaraCore/apps/claracore-mobile`.
+- The UI is intentionally functional and Chinese-first, but visual/product UI refinement is owned by a separate UI session from this point.
+- This development track should continue focusing on data flow, reflection reliability, persistence, tests, and end-to-end behavior.
+- The product model has been simplified around Context Card + Shared Line + Memory:
+  - Context Card defines who the agent is and who the user is.
+  - Shared Line tracks the process/state of one continuing topic.
+  - Memory stores a small number of durable facts or decisions.
+
+Implemented and verified:
+- App shell with tabs: 导入, 收件箱, 记忆, 共同线, 设置.
+- Local SQLite migrations for Memoria, Inbox, Import Sessions, Capture Segments, and Continuity Lines.
+- Manual text, clipboard text, and DeepSeek share URL import.
+- DeepSeek share URL decoding through `https://chat.deepseek.com/api/v0/share/content?share_id={shareId}`.
+- Capture segmentation and import session preparation.
+- Reflection abstraction with local placeholder and DeepSeek implementation.
+- DeepSeek API key storage through local Keychain settings; keys must not be written to source, fixtures, docs, or git.
+- Startup fallback: Keychain read failures must not block app launch; the app falls back to local placeholder mode.
+- Digest commit path from candidate memories / Shared Line updates into local stores.
+- Default Context Card persistence with Agent / User profiles.
+- Recall packaging from the default Context Card plus one Shared Line and selected factual memories into a copyable DeepSeek context package.
+- Inbox behavior: organizing a capture does not remove it from pending; only successful commit or discard removes it from the active inbox.
+- App icon asset catalog exists at `ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset`.
+- DeepSeek real end-to-end pass has been verified on simulator with the test share URL:
+  - Import -> Inbox -> organize -> review -> commit -> memory list -> Shared Line list -> recall package copy.
+- Reflection output has been tightened:
+  - default memory candidates are few and conservative;
+  - memories should be facts or decisions, not summaries;
+  - one import should default to one Shared Line;
+  - Shared Line `lastPosition` should read as milestone steps.
+
+Latest verification:
+- `plutil -lint ClaraCoreMobile.xcodeproj/project.pbxproj`
+- `python3 -m json.tool ClaraCoreMobile/Assets.xcassets/Contents.json`
+- `python3 -m json.tool ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset/Contents.json`
+- XcodeBuildMCP `build_sim`
+- XcodeBuildMCP `test_sim`: 29 tests passed, 0 failed
+- XcodeBuildMCP `build_run_sim`: app installed and launched on iPhone 17 simulator
+
+Next technical work, independent from UI polish:
+1. Bind committed memories to the created or selected Shared Line through `lineId`.
+2. Update Shared Line UI so milestone text renders as a true step list.
+3. Add a short manual end-to-end test checklist for the first testable build.
+4. Add an edit surface for the default Context Card after the data flow stabilizes.
+
+UI session boundary:
+- The UI session may change layout, copy, visual hierarchy, empty states, and interaction affordances.
+- It should not change Core schemas, reflection prompts, importer parsing, or commit semantics without updating this document.
+- Keep the first testable build standard unchanged: import DeepSeek share link -> organize -> review candidates -> commit -> see memory and Shared Line -> copy recall package for DeepSeek.
+
+## Product Boundary
+
+ClaraCore Mobile is the human capture surface for ClaraCore. It is not another AI chat app.
+
+The first version primarily targets domestic Chinese users. Importer priorities, product copy, provider order, and fixture coverage should therefore start with Chinese-language workflows and domestic AI products before expanding to global providers.
+
+The mobile app must do five things well:
+
+1. Capture useful material from mobile AI usage.
+2. Hold captures in an Inbox before they become durable memory.
+3. Let the user review and commit what matters.
+4. Store and recall committed memories locally.
+5. Preserve lightweight continuity through the Shared Line.
+
+InnerLife is not part of the v1 mobile core. It may become a post-v1 remote reflection enhancement, but it must not be a dependency for capture, review, commit, search, or Shared Line.
+
+## Current Product Model
+
+The app should not expose a complicated project/folder/source taxonomy in v1. The simplified mental model is:
+
+```text
+Context Card = identity context
+Shared Line = ongoing process
+Memory = durable facts
+Import Session = one external conversation snapshot
+```
+
+### Context Card
+
+Chinese UI name: `角色卡`.
+
+Purpose:
+- Provide the stable identity context used when copying a recall package into DeepSeek, Claude, Doubao, or another external AI app.
+- Answer two simple questions:
+  - Agent 是谁？
+  - 用户是谁？
+
+V1 fields should stay minimal:
+
+```text
+ContextCard
+- id
+- title
+- agentProfile
+- userProfile
+- createdAt
+- updatedAt
+```
+
+Do not add card types, folders, complex role systems, or provider-specific settings yet. The first build can ship with one default editable card.
+
+Default card intent:
+
+```text
+Agent:
+你是一个帮助用户延续跨应用对话上下文的助手。
+
+User:
+用户希望你基于共同线和事实记忆继续，不要假设未提供的信息；如果信息不足，先指出缺口。
+```
+
+### Shared Line
+
+Chinese UI name: `共同线`.
+
+Purpose:
+- Track one continuing topic, task, scene, project, or conversation arc.
+- Store where the conversation/process has arrived and what should happen next.
+
+V1 rule:
+- One import session defaults to one Shared Line.
+- The system may later let the user merge an import into an existing line, but a single import should not automatically fan out into multiple lines.
+- Shared Line text should be milestone-like, not a paragraph summary.
+
+Good `lastPosition` shape:
+
+```text
+1. 已完成 DeepSeek 分享链接导入
+2. 已完成真实整理入库
+3. 正在调整记忆和共同线模型
+```
+
+Good `nextStep` shape:
+
+```text
+实现角色卡式回召包结构。
+```
+
+### Memory
+
+Chinese UI name: `记忆`.
+
+Purpose:
+- Store a small number of durable facts, decisions, and stable user/project truths.
+- Support recall automatically when the user selects a Shared Line.
+
+V1 rule:
+- Memory should not be the user's main operation surface.
+- The user primarily manages Shared Lines and Context Cards.
+- Memory is a factual substrate: visible, editable, deletable, but low-presence.
+- Do not store general topic notes, product explanations, comparison points, or every technical detail as memory.
+
+Good memory examples:
+
+```text
+用户决定 ClaraCore Mobile v1 主要面向国内用户。
+我们完成了 DeepSeek 分享链接导入到回召包复制的端到端闭环。
+一次导入默认只应归入一条共同线。
+```
+
+Bad memory examples:
+
+```text
+DeepSeek 分享链接会生成只读快照。
+截图 OCR 也可以导出对话。
+分享链接比 OCR 解析成本低。
+```
+
+Those may be source details or line milestones, but they are usually not durable personal memory.
+
+### Import Session
+
+Purpose:
+- Represent one imported external conversation snapshot.
+- Preserve `source`, `sourceThreadId`, content hash, raw transcript, segment provenance, and resulting line/memory candidates.
+
+V1 rule:
+- A DeepSeek share link import is treated as one external conversation snapshot.
+- It should produce one digest, one default Shared Line, and a small number of memories bound to that line.
+- Later imports from the same topic can be merged into an existing Shared Line, but that merge UX is post-current-node.
+
+### Recall Package
+
+The recall package should be built from:
+
+```text
+selected Context Card
+  + selected Shared Line
+  + related Memories
+```
+
+Target structure:
+
+```text
+# Agent
+...
+
+# 用户
+...
+
+# 共同线
+标题：
+里程碑：
+1. ...
+2. ...
+下一步：
+...
+
+# 相关事实记忆
+1. ...
+2. ...
+
+# 请求
+请基于以上上下文继续。不要假设未提供的信息；如果信息不足，先指出缺口。
+```
+
+The current implementation builds this structure from the default Context Card, selected Shared Line, and selected related memories.
+
+## V1 Modules
+
+### 1. Memoria
+
+Responsibility:
+- Local SQLite persistence.
+- FTS5 recall with BM25 ranking.
+- Store, recall, get, archive, restore, tag.
+- Schema parity where practical with ClaraCore Memoria records and memory concepts.
+
+Does not own:
+- Capture source handling.
+- Review decisions.
+- UI navigation.
+- AI reflection.
+
+Primary code:
+- `ClaraCoreMobile/Core/Database/`
+- `ClaraCoreMobile/Core/Memoria/`
+- `ClaraCoreMobile/Features/Memoria/`
+
+### 2. Importer
+
+Responsibility:
+- Receive raw material from manual input, clipboard, Share Sheet, files, or URLs.
+- Normalize source metadata into `RawCapture`.
+- Preserve source tracking for future incremental merge: `sourceApp`, `sourceThreadId`, `contentHash`, and `capturedAt`.
+- Queue captures into Inbox.
+
+V1 supported inputs:
+- Manual text entry.
+- Clipboard text import.
+- URL import for DeepSeek shared conversations, using `https://chat.deepseek.com/share/{shareId}`.
+
+V1 importer support matrix:
+
+| Source | Status | Handling |
+| --- | --- | --- |
+| DeepSeek share URL | Must support in v1 | Extract `{shareId}` from `https://chat.deepseek.com/share/{shareId}`, fetch `https://chat.deepseek.com/api/v0/share/content?share_id={shareId}`, decode turns, and convert to one immutable `RawCapture`. |
+| Manual text | Must support in v1 | Store exactly what the user enters as a `RawCapture` with source metadata. |
+| Clipboard text | Must support in v1 | Store clipboard text as a `RawCapture`; use content hash for duplicate detection. |
+| Other domestic AI share URLs | Post-v1 priority | Inspect and fixture-test each provider format before enabling. Likely candidates should be chosen from real user workflows, not guessed upfront. |
+| Generic URL | Deferred | Do not ship fragile webpage scraping before the DeepSeek path is stable. |
+| ChatGPT / Claude share URL | Deferred | Add after domestic provider flows are stable and their share formats are inspected and covered by fixture tests. |
+| File export | Deferred | Add after import session and digest rollback are stable. |
+
+Deferred inputs:
+- Generic webpage extraction.
+- ChatGPT / Claude share links.
+- File export import.
+- Photos, audio, screenshots, and PDFs.
+
+Does not own:
+- Memory commit policy.
+- AI analysis.
+- Continuity updates.
+
+Primary code:
+- `ClaraCoreMobile/Core/Importer/`
+- `ClaraCoreMobile/Features/Importer/`
+- future `ShareExtension/`
+
+### 3. Import Session / Reflection / Digest
+
+Responsibility:
+- List pending captures.
+- Convert a raw capture into an import session.
+- Split large conversations into resumable capture segments.
+- Run reflection jobs segment by segment.
+- Reconcile segment drafts into one digest.
+- Auto-commit provisional results with provenance when LLM reflection is enabled.
+- Keep raw captures immutable; Reflection may create commit suggestions, but Importer does not overwrite existing memory or continuity.
+
+Does not own:
+- SQLite table migrations except through Core stores.
+- Provider-specific app import logic.
+- Long-running background execution guarantees on iOS.
+
+Primary code:
+- `ClaraCoreMobile/Core/Inbox/`
+- `ClaraCoreMobile/Core/Importer/`
+- `ClaraCoreMobile/Core/Reflection/`
+- `ClaraCoreMobile/Core/Settings/`
+- `ClaraCoreMobile/Features/Inbox/`
+- `ClaraCoreMobile/Features/Review/`
+
+Runtime provider rule:
+- API keys must be stored locally in Keychain, never in source files, fixtures, or docs.
+- If a DeepSeek key exists, `AppDependencies` uses `DeepSeekReflectionService`.
+- If no DeepSeek key exists, the app falls back to `RuleBasedReflectionService`, which is intentionally a local placeholder and does not create commit candidates.
+
+### 4. Continuity / Shared Line
+
+Responsibility:
+- Track lightweight continuation threads.
+- Store title, status, last position, and next step.
+- Let reviewed captures update or create Shared Line entries.
+- Support recall packaging: the user selects one Shared Line, attaches relevant factual memories, and copies the package into DeepSeek or another external AI app.
+
+Does not own:
+- Long-term fact memory.
+- Emotional or subjective reflection in v1.
+- Background agent state.
+
+Primary code:
+- `ClaraCoreMobile/Core/Continuity/`
+- `ClaraCoreMobile/Core/Recall/`
+- `ClaraCoreMobile/Features/Continuity/`
+- `ClaraCoreMobile/Features/Recall/`
+
+### Recall To External AI
+
+The mobile recall flow is not a chat surface. It prepares context for an external AI app.
+
+V1 recall flow:
+
+```text
+User selects a Shared Line
+  -> app recalls related factual memories from Memoria
+  -> user selects or removes memories
+  -> app builds a copyable context package
+  -> user pastes it into DeepSeek
+```
+
+The package should be structured as:
+
+```text
+# 共同线
+Title:
+Last position:
+Next step:
+
+# 相关事实记忆
+- ...
+
+# 给 DeepSeek 的请求
+请基于以上上下文继续，不要改写事实记忆。
+```
+
+Importer and Reflection must not own this flow. It belongs to Continuity + Memoria + a small recall packaging service.
+
+### 5. Gateway / Automation
+
+Responsibility:
+- Post-v1 or late-v1 local access for Shortcuts and future agents.
+- Foreground-only local HTTP or App Intent surfaces.
+- Read/write through existing Core stores.
+
+Does not own:
+- MCP daemon behavior.
+- Background execution.
+- Desktop service management.
+
+Primary code:
+- `ClaraCoreMobile/Core/Gateway/`
+- `ClaraCoreMobile/Features/Settings/`
+
+## Directory Standard
+
+All new code should follow this layout:
+
+```text
+ClaraCoreMobile/
+├── App/
+│   ├── ClaraCoreMobileApp.swift
+│   ├── AppRootView.swift
+│   ├── AppTab.swift
+│   └── AppDependencies.swift
+├── Core/
+│   ├── Database/
+│   ├── Memoria/
+│   ├── Importer/
+│   ├── Inbox/
+│   ├── Reflection/
+│   ├── Continuity/
+│   ├── Recall/
+│   ├── Settings/
+│   └── Gateway/
+├── Features/
+│   ├── Memoria/
+│   ├── Importer/
+│   ├── Inbox/
+│   ├── Review/
+│   ├── Continuity/
+│   ├── Recall/
+│   └── Settings/
+└── Shared/
+    ├── Components/
+    ├── Support/
+    └── Fixtures/
+
+ClaraCoreMobileTests/
+├── Core/
+│   ├── Memoria/
+│   ├── Importer/
+│   ├── Inbox/
+│   ├── Continuity/
+│   ├── Recall/
+│   └── Settings/
+└── Features/
+```
+
+## Dependency Rules
+
+Core modules may depend on:
+- Swift Foundation.
+- GRDB where persistence is required.
+- Other Core protocols only when the dependency is explicit and narrow.
+
+Feature modules may depend on:
+- SwiftUI.
+- Core module protocols or services.
+- Shared UI components.
+
+Feature modules must not:
+- Open SQLite directly.
+- Run migrations.
+- Know Share Extension storage details.
+- Call future InnerLife services directly.
+
+App shell may depend on:
+- SwiftUI.
+- Core store construction.
+- Feature root views.
+
+Tests should mirror the production directory. Each module needs at least one store or workflow test before UI work builds on it.
+
+## State And Navigation Rules
+
+Use SwiftUI-native state:
+- `@State` for local view state.
+- `@Observable` root services only when shared broadly.
+- Initializer injection for feature-local stores.
+- Environment injection only for app-level dependencies used across multiple feature roots.
+
+The app shell should become:
+
+```text
+TabView
+├── Inbox
+├── Memoria
+├── Shared Line
+└── Settings
+```
+
+Do not add global singleton state unless there is a concrete cross-feature lifecycle requirement.
+
+## Build Sequence
+
+### Phase 0: Memoria Foundation
+
+Goal:
+- Local SQLite opens.
+- Memoria schema migrates.
+- Store then recall works through FTS5.
+- Minimal app UI can manually store and search.
+
+Acceptance:
+- `MemoriaStoreTests.testStoreThenRecallReturnsStoredMemory` passes.
+- Manual app run can save text and find it by search.
+
+### Phase 1: App Shell
+
+Goal:
+- Replace the temporary single Form with a tabbed shell.
+- Add empty feature roots for Inbox, Memoria, Shared Line, and Settings.
+- Keep Memoria UI functional inside its feature directory.
+
+Acceptance:
+- App opens to stable tabs.
+- Memoria store/search still works.
+
+### Phase 2: Importer And Inbox
+
+Goal:
+- Add `RawCapture`.
+- Add Inbox table and store.
+- Add manual and clipboard import paths.
+- Pending captures render in Inbox.
+- Track `contentHash`, `sourceApp`, and `sourceThreadId` so later matching can detect duplicate or continued external conversations.
+
+Acceptance:
+- Paste or type content into Importer.
+- Capture appears in Inbox as pending.
+- A DeepSeek share URL such as `https://chat.deepseek.com/share/suy08uspxl9wzja7uc` decodes into ordered conversation turns and a `RawCapture`.
+
+### Phase 3: Review And Commit
+
+Goal:
+- Convert a pending Inbox item into an `ImportSession`.
+- Segment large captures into `CaptureSegment` rows.
+- Run `ReflectionService` per segment.
+- Reconcile segment drafts into a session-level `DigestResult`.
+- Commit digest candidates as provisional Memoria / Shared Line updates.
+
+Acceptance:
+- A large capture can be segmented and resumed.
+- Every candidate memory or Shared Line update has session and segment provenance.
+- User correction is post-commit: delete, edit, reject, or roll back digest output.
+
+### Phase 3.5: Source Matching
+
+Goal:
+- Match a new capture to an existing external import thread when `sourceApp`, `sourceThreadId`, or content similarity indicates continuation.
+- Produce merge suggestions only. Do not overwrite Memoria or Shared Line automatically.
+
+Acceptance:
+- Exact duplicate captures are detected through `contentHash`.
+- Same external conversation can be grouped without becoming a Shared Line automatically.
+
+### LLM Reflection Boundary
+
+LLM reflection is required for real large-conversation digestion, but it is not allowed inside Importer, Memoria, or Continuity.
+
+The interface is:
+
+```swift
+protocol ReflectionService {
+    func reflect(segment: CaptureSegment) async throws -> SegmentReflectionDraft
+    func reconcile(session: ImportSession, drafts: [SegmentReflectionDraft]) async throws -> DigestResult
+}
+```
+
+Implementations:
+- `RuleBasedReflectionService`: local placeholder for tests and offline mode. It does not create durable facts automatically.
+- `DeepSeekReflectionService`: remote LLM mode. Uses the API key stored through the app's Keychain settings. Keys must never be committed.
+
+Large conversations must be processed as:
+
+```text
+RawCapture
+  -> ImportSession
+  -> CaptureSegment[]
+  -> SegmentReflectionDraft[]
+  -> DigestResult
+  -> provisional commit
+  -> user correction
+```
+
+### Phase 4: Share Extension
+
+Goal:
+- Add Share Extension target.
+- Add App Group storage.
+- Shared text from another app lands in Inbox.
+
+Acceptance:
+- Share text from Safari or ChatGPT into ClaraCore.
+- Capture appears in Inbox on next app open.
+
+### Phase 5: Continuity / Shared Line
+
+Goal:
+- Add local continuity schema.
+- Add active thread list and detail.
+- Let Review create or update a Shared Line entry.
+
+Acceptance:
+- User can create/update a thread with last position and next step.
+- Shared Line survives app restart.
+
+### Phase 6: Gateway / Automation
+
+Goal:
+- Add foreground-only automation surface.
+- Prefer App Intents / Shortcuts first; local HTTP only if needed.
+
+Acceptance:
+- Shortcut can store or recall a memory through app-owned stores.
+
+## Explicitly Deferred
+
+- InnerLife daemon.
+- Background agent runtime.
+- MCP server.
+- Vector search.
+- iCloud sync.
+- Desktop/mobile merge.
+- Multi-provider remote LLM configuration UI.
+- Fully automatic background import/merge.
+
+These are not allowed to block v1.

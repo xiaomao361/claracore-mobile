@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "name": "ClaraCore Mobile",
+    "status": "initial",
+    "date": "2026-06-29"
+  },
+  "color": {
+    "bg": "#f7f7f4",
+    "sidebar": "#fbfbf8",
+    "surface": "#FFFFFF",
+    "surfaceSoft": "#f4f4f0",
+    "surfaceWarm": "#fbf8f1",
+    "border": "#d9dad2",
+    "borderStrong": "#c4c7bd",
+    "text": "#202421",
+    "muted": "#656d68",
+    "faint": "#8c928c",
+    "green": "#28745a",
+    "greenBg": "#e3f0e8",
+    "amber": "#91651f",
+    "amberBg": "#efe6d5",
+    "red": "#a64036",
+    "redBg": "#f3e3df",
+    "blue": "#365f84",
+    "blueBg": "#e3ebf2"
+  },
+  "radius": {
+    "card": 8,
+    "button": 8,
+    "sheet": 20
+  },
+  "typography": {
+    "screenTitle": {
+      "size": 28,
+      "weight": "semibold"
+    },
+    "sectionLabel": {
+      "size": 14,
+      "weight": "medium"
+    },
+    "body": {
+      "size": 17,
+      "weight": "regular"
+    },
+    "snippet": {
+      "size": 16,
+      "weight": "regular"
+    },
+    "metadata": {
+      "size": 13,
+      "weight": "regular"
+    }
+  },
+  "icon": {
+    "grid": 24,
+    "stroke": 2,
+    "style": "rounded-outline",
+    "brandSource": "assets/brand/claracore-mark.svg",
+    "recommendedLibraries": ["SF Symbols", "Lucide"]
+  },
+  "motion": {
+    "microInteractionMs": 180,
+    "sheetMs": 260,
+    "reduceMotionFallback": true
+  }
+}
