@@ -49,4 +49,29 @@ final class ContinuityStoreTests: XCTestCase {
         XCTAssertEqual(updated.lastPosition, "新位置")
         XCTAssertEqual(updated.nextStep, "下一步")
     }
+
+    func testMilestoneStepsParseNumberedAndBulletedLines() {
+        let line = ContinuityLine(
+            id: "line-1",
+            title: "ClaraCore Mobile",
+            lastPosition: """
+            1. 已完成 DeepSeek 分享链接导入
+            2、已完成真实整理入库
+            - 正在调整记忆和共同线模型
+            """,
+            nextStep: nil,
+            status: .active,
+            createdAt: Date(timeIntervalSince1970: 0),
+            updatedAt: Date(timeIntervalSince1970: 0)
+        )
+
+        XCTAssertEqual(
+            line.milestoneSteps,
+            [
+                "已完成 DeepSeek 分享链接导入",
+                "已完成真实整理入库",
+                "正在调整记忆和共同线模型"
+            ]
+        )
+    }
 }

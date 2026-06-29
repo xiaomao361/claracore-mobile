@@ -39,10 +39,7 @@ struct ContinuityFeatureView: View {
                                     Text(line.title)
                                         .font(.system(size: 17, weight: .semibold))
                                         .foregroundStyle(ClaraDesign.ink)
-                                    Text(line.lastPosition)
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(ClaraDesign.ink)
-                                        .lineLimit(3)
+                                    MilestoneStepsView(steps: line.milestoneSteps, limit: 3)
                                     if let nextStep = line.nextStep, !nextStep.isEmpty {
                                         Label(nextStep, systemImage: "arrow.turn.down.right")
                                             .font(.system(size: 13))
@@ -141,6 +138,36 @@ struct ContinuityFeatureView: View {
             reload()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private struct MilestoneStepsView: View {
+    var steps: [String]
+    var limit: Int?
+
+    var visibleSteps: [String] {
+        if let limit {
+            return Array(steps.prefix(limit))
+        }
+        return steps
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(visibleSteps.enumerated()), id: \.offset) { index, step in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(index + 1)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 20, height: 20)
+                        .background(Circle().fill(ClaraDesign.continuity))
+                    Text(step)
+                        .font(.system(size: 15))
+                        .foregroundStyle(ClaraDesign.ink)
+                        .lineLimit(2)
+                }
+            }
         }
     }
 }
