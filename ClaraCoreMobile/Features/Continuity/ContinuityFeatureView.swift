@@ -45,10 +45,18 @@ struct ContinuityFeatureView: View {
                                         color: ClaraDesign.continuity,
                                         systemImage: "person.text.rectangle"
                                     )
-                                    Text("当前位置")
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundStyle(ClaraDesign.inkMuted)
-                                    MilestoneStepsView(steps: line.milestoneSteps, limit: 3)
+                                    HStack {
+                                        Text(line.milestoneProgressTitle)
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundStyle(ClaraDesign.inkMuted)
+                                        Spacer()
+                                        ClaraStatusPill(
+                                            title: "第 \(line.milestoneSteps.count) 站",
+                                            color: ClaraDesign.continuity,
+                                            systemImage: "flag"
+                                        )
+                                    }
+                                    MilestoneStepsView(steps: line.milestoneSteps, limit: 4)
                                     if let nextStep = line.nextStep, !nextStep.isEmpty {
                                         VStack(alignment: .leading, spacing: 6) {
                                             Text("下一步")
@@ -180,20 +188,46 @@ private struct MilestoneStepsView: View {
         return steps
     }
 
+    var hiddenStepCount: Int {
+        max(steps.count - visibleSteps.count, 0)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(visibleSteps.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(index + 1)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 20, height: 20)
-                        .background(Circle().fill(ClaraDesign.continuity))
-                    Text(step)
-                        .font(.system(size: 15))
-                        .foregroundStyle(ClaraDesign.ink)
-                        .lineLimit(2)
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(spacing: 0) {
+                        Text("\(index + 1)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 22, height: 22)
+                            .background(Circle().fill(index == visibleSteps.count - 1 ? ClaraDesign.continuity : ClaraDesign.inkMuted))
+                        if index < visibleSteps.count - 1 {
+                            Rectangle()
+                                .fill(ClaraDesign.hairline)
+                                .frame(width: 2, height: 22)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(index == visibleSteps.count - 1 ? "现在到这里" : "已经过")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(index == visibleSteps.count - 1 ? ClaraDesign.continuity : ClaraDesign.inkMuted)
+                        Text(step)
+                            .font(.system(size: 15))
+                            .foregroundStyle(ClaraDesign.ink)
+                            .lineLimit(2)
+                    }
+                    .padding(.bottom, index < visibleSteps.count - 1 ? 8 : 0)
                 }
+            }
+
+            if hiddenStepCount > 0 {
+                Text("还有 \(hiddenStepCount) 个里程")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+                    .padding(.leading, 32)
+                    .padding(.top, 6)
             }
         }
     }

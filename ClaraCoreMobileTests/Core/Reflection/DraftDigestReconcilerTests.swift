@@ -128,6 +128,41 @@ final class DraftDigestReconcilerTests: XCTestCase {
         )
     }
 
+    func testDigestKeepsActiveBlockerDiagnosticMemory() {
+        let session = ImportSession(source: .share, title: "Shared Conversation")
+        let provenance = provenance(sessionId: session.id, segmentId: "segment-1")
+        let draft = SegmentReflectionDraft(
+            segmentId: "segment-1",
+            summary: "用户在排查 API Key 和 gateway.bind 配置校验问题。",
+            candidateMemories: [
+                CandidateMemory(
+                    kind: .fact,
+                    content: "用户当前卡在 API Key 不可用和 gateway.bind 配置校验失败的问题。",
+                    confidence: 0.78,
+                    tags: ["api-key", "gateway-bind"],
+                    provenance: provenance
+                )
+            ],
+            candidateSharedLineUpdates: [
+                CandidateSharedLineUpdate(
+                    title: "API Key 与网关配置排查",
+                    lastPosition: "1. 已确认 API Key 不可用\n2. 已定位 gateway.bind 校验失败",
+                    nextStep: "检查 gateway.bind 是否设置为 loopback 或 all",
+                    confidence: 0.86,
+                    provenance: provenance
+                )
+            ],
+            uncertainItems: []
+        )
+
+        let digest = DraftDigestReconciler().digest(session: session, drafts: [draft])
+
+        XCTAssertEqual(digest.candidateMemories.map(\.content), [
+            "用户当前卡在 API Key 不可用和 gateway.bind 配置校验失败的问题。"
+        ])
+        XCTAssertEqual(digest.candidateSharedLineUpdates.count, 1)
+    }
+
     func testDigestFormatsSharedLineMilestones() {
         let session = ImportSession(source: .manual, title: "长对话")
         let provenance = provenance(sessionId: session.id, segmentId: "segment-1")

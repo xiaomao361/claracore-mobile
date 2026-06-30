@@ -44,4 +44,12 @@ struct ContinuityLine: Identifiable, Equatable {
 
         return line
     }
+
+    var milestoneProgressTitle: String {
+        let count = milestoneSteps.count
+        guard count > 1 else {
+            return "当前里程"
+        }
+        return "当前里程 \(count)"
+    }
 }

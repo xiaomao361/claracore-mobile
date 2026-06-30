@@ -73,5 +73,6 @@ final class ContinuityStoreTests: XCTestCase {
                 "正在调整记忆和共同线模型"
             ]
         )
+        XCTAssertEqual(line.milestoneProgressTitle, "当前里程 3")
     }
 }

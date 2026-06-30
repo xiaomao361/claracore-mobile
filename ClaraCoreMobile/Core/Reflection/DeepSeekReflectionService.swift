@@ -71,9 +71,10 @@ final class DeepSeekReflectionService: ReflectionService {
         let prompt = """
         Return strict json for this capture segment.
         Extract only what should survive outside this chat.
-        Candidate memories are rare durable facts, preferences, or decisions, not notes, summaries, explanations, or generic knowledge.
+        Candidate memories are rare durable facts, preferences, decisions, active blockers, or diagnostic outcomes, not notes, summaries, explanations, or generic knowledge.
         Good memories: "我们完成了 ClaraCore Mobile 的 AI 对话导入闭环。", "用户决定 v1 先面向国内用户。", "用户偏好直接实现并验证。"
-        Bad memories: topic details, how a third-party feature works, every comparison point, temporary implementation chatter.
+        Good active-blocker memories: "用户当前卡在 API Key 不可用的问题。", "配置校验失败点是 gateway.bind 只能为 loopback 或 all。"
+        Bad memories: broad troubleshooting checklists, how a third-party feature works, every comparison point, temporary implementation chatter.
         Shared Line updates should preserve process progress as milestones. Use lastPosition as a compact numbered milestone trail.
         Keep this segment conservative: at most 2 memories and at most 3 shared line updates.
         Schema:
@@ -110,9 +111,9 @@ final class DeepSeekReflectionService: ReflectionService {
         You must transform noisy segment candidates into a small human-useful set.
 
         Rules:
-        - candidateMemories: 0 to 3 items. Store only durable facts, stable preferences, project decisions, or completed outcomes.
-        - Do not store general topic notes, product explanations, comparison details, or every technical point as memory.
-        - A good memory sounds like: "我们完成了 X", "用户决定 Y", "项目 v1 采用 Z", "用户偏好 W".
+        - candidateMemories: 0 to 3 items. Store only durable facts, stable preferences, project decisions, completed outcomes, active blockers, or diagnostic outcomes.
+        - Do not store broad troubleshooting checklists, product explanations, comparison details, or every technical point as memory.
+        - A good memory sounds like: "我们完成了 X", "用户决定 Y", "项目 v1 采用 Z", "用户偏好 W", "用户当前卡在 X", "X 的诊断结论是 Y".
         - candidateSharedLineUpdates: 1 to 5 items when the conversation has an ongoing process.
         - Shared lines are process tracks. lastPosition should look like milestones, for example "1. 已确认问题\n2. 已完成导入\n3. 正在验证回召".
         - nextStep should be the next concrete step, not a summary.

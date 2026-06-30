@@ -4,7 +4,7 @@ struct DraftDigestReconciler {
     var summaryLimit = 12
     var memoryLimit = 6
     var sharedLineLimit = 12
-    var minimumMemoryConfidence = 0.82
+    var minimumMemoryConfidence = 0.76
     var minimumSharedLineConfidence = 0.72
 
     func digest(
