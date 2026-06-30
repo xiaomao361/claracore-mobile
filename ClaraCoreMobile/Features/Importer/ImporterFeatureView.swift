@@ -29,9 +29,6 @@ struct ImporterFeatureView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("导入 AI 对话")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(ClaraDesign.ink)
                     Text("粘贴链接、文本或选择文件后，会自动整理并写入记忆和共同线。")
                         .font(.system(size: 15))
                         .foregroundStyle(ClaraDesign.inkMuted)
