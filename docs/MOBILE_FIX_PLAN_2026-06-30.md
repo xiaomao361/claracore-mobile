@@ -7,13 +7,19 @@ Status: Active repair plan
 
 This plan captures the real-device problems found after the first ClaraCore Mobile build and turns them into an implementation sequence.
 
-The current app proves the basic loop:
+The earlier app proved the basic loop:
 
 ```text
 import -> inbox -> organize -> review -> commit -> memory / shared line -> recall package
 ```
 
-But the product should now move from a DeepSeek-specific prototype toward a broader AI conversation import and memory triage app.
+The product should now move from a DeepSeek-specific prototype toward a broader AI conversation import and memory triage app, with a simpler daily path:
+
+```text
+import -> auto organize -> auto commit -> memory / shared line
+```
+
+Inbox can remain an internal recovery/history store, but it should not be a required user-facing step.
 
 ## Product Decisions
 
@@ -107,7 +113,7 @@ import_sessions.context_card_id
 Tab order should become:
 
 ```text
-导入 -> 收件箱 -> 记忆 -> 共同线 -> 设置
+导入 -> 记忆 -> 共同线 -> 设置
 ```
 
 Recall should live inside Shared Line detail unless it proves important enough to become a tab later.
@@ -197,25 +203,28 @@ Acceptance:
 - User can enter and save API key without leaving the app.
 - User can paste/import a long text and dismiss keyboard by scrolling or tapping done.
 
-### P0: Commit Flow Does Not Return Or Reset The Review UI
+### P0: Import Flow Has Too Many User Steps
 
 Symptoms:
 
-- After all extracted items are committed, the review screen remains on the old interface.
+- User has to import, open inbox, tap organize, review, then commit.
+- This is useful for debugging extraction but too heavy for normal use.
 
 Fix direction:
 
-- On successful commit:
-  - mark inbox item as committed;
-  - dismiss review sheet;
-  - refresh inbox;
-  - show confirmation;
-  - expose actions: `查看记忆`, `查看共同线`.
+- On import:
+  - enqueue internally for duplicate tracking;
+  - prepare session;
+  - organize with progress;
+  - commit accepted candidates directly;
+  - mark the internal inbox row committed;
+  - show a concise completion summary.
 
 Acceptance:
 
-- After committing, the user is not left on a stale review sheet.
-- The inbox no longer shows the committed item.
+- One tap on import completes the normal flow.
+- If the result is wrong, the user deletes the memory or shared line directly.
+- Inbox is not required as a main tab.
 
 ### P0: Saved Actions Lack Clear Feedback
 
@@ -398,6 +407,7 @@ Fix the problems that made the current app hard or impossible to use.
 Status:
 
 - 2026-06-30: Initial implementation completed for light-mode lock, keyboard dismissal, commit sheet dismissal, tab order, Memory manual-write removal, and basic visible feedback.
+- 2026-06-30: Import flow simplified after product review. Import now auto-organizes and commits; Inbox is removed from the main tab flow.
 
 Tasks:
 
@@ -405,7 +415,7 @@ Tasks:
 2. Add keyboard dismissal and keyboard-safe layout.
 3. Fix commit-success navigation and feedback.
 4. Add consistent save/import/commit status feedback.
-5. Reorder tabs to `导入 -> 收件箱 -> 记忆 -> 共同线 -> 设置`.
+5. Reorder tabs to `导入 -> 记忆 -> 共同线 -> 设置`.
 6. Remove manual memory creation from primary Memory UI.
 
 Validation:
@@ -452,6 +462,7 @@ Status:
 - 2026-06-30: Generic URL fallback now fetches public `text/html`, `application/xhtml+xml`, and `text/plain` links, extracts readable text, preserves URL/title metadata, and queues the result as a URL capture. Provider-specific parsers and LLM-assisted extraction remain future work.
 - 2026-06-30: Provider URL profiles added for common AI share domains. ChatGPT, Claude, Gemini, Kimi, Doubao, and Tongyi/Qwen links are now identified before generic fallback, preserve provider metadata, and use the generic public webpage/text extraction path until real provider fixtures are available.
 - 2026-06-30: `.txt` import is now first-class. Import view exposes a file picker, `.txt` files route through `FileConversationImporter`, and resulting captures preserve file source metadata before entering the same inbox path.
+- 2026-06-30: Importer now drives the whole happy path. A successful import automatically prepares, organizes, commits memories/shared lines, and marks the internal inbox item committed.
 
 Tasks:
 

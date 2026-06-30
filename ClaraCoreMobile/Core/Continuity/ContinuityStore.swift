@@ -102,6 +102,12 @@ final class ContinuityStore {
         }
     }
 
+    func delete(id: String) throws {
+        try database.dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM continuity_lines WHERE id = ?", arguments: [id])
+        }
+    }
+
     private func line(from row: Row) -> ContinuityLine {
         let statusValue: String = row["status"]
         let createdAtString: String = row["created_at"]

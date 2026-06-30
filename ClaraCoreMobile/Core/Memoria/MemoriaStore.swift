@@ -185,10 +185,7 @@ final class MemoriaStore {
 
     func delete(id: String) throws {
         try database.dbQueue.write { db in
-            try db.execute(sql: "UPDATE memories SET is_archived = 1, updated_at = ? WHERE id = ?", arguments: [
-                dateFormatter.string(from: Date()),
-                id
-            ])
+            try db.execute(sql: "DELETE FROM memories WHERE id = ?", arguments: [id])
         }
     }
 

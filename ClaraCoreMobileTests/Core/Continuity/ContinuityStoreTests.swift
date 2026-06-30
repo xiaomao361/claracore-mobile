@@ -34,6 +34,18 @@ final class ContinuityStoreTests: XCTestCase {
         XCTAssertTrue(try store.active().isEmpty)
     }
 
+    func testDeleteRemovesLineFromStore() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let store = try ContinuityStore(database: AppDatabase(path: databaseURL.path))
+        let line = try store.create(title: "要删除的线", lastPosition: "临时状态", nextStep: nil)
+
+        try store.delete(id: line.id)
+
+        XCTAssertTrue(try store.active().isEmpty)
+    }
+
     func testUpdateChangesActiveLineContent() throws {
         let databaseURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

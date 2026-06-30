@@ -2,7 +2,6 @@ import SwiftUI
 
 enum AppTab {
     case importer
-    case inbox
     case memoria
     case continuity
     case settings
@@ -11,8 +10,6 @@ enum AppTab {
         switch self {
         case .importer:
             "导入"
-        case .inbox:
-            "收件箱"
         case .memoria:
             "记忆"
         case .continuity:
@@ -27,8 +24,6 @@ enum AppTab {
         switch self {
         case .importer:
             Label(title, systemImage: "square.and.arrow.down")
-        case .inbox:
-            Label(title, systemImage: "tray")
         case .memoria:
             Label(title, systemImage: "square.stack")
         case .continuity:

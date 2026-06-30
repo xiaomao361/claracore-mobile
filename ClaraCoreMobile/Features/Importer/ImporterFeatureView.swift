@@ -4,6 +4,10 @@ import UniformTypeIdentifiers
 
 struct ImporterFeatureView: View {
     let inboxStore: InboxStore
+    let preparer: ImportSessionPreparer
+    let reflectionRunner: ReflectionRunner
+    let digestCommitter: DigestCommitter
+    let reflectionConfiguration: ReflectionConfiguration
     let contextCardStore: ContextCardStore
     let importerRegistry: ConversationImporterRegistry
     @Binding var selectedContextCardID: String?
@@ -13,6 +17,7 @@ struct ImporterFeatureView: View {
     @State private var statusMessage: String?
     @State private var isImporting = false
     @State private var isFileImporterPresented = false
+    @State private var progress: ReflectionProgress?
 
     var body: some View {
         ScrollView {
@@ -21,7 +26,7 @@ struct ImporterFeatureView: View {
                     Text("导入 AI 对话")
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(ClaraDesign.ink)
-                    Text("粘贴 AI 对话分享链接，或临时保存一段手动文本。")
+                    Text("粘贴链接、文本或选择文件后，会自动整理并写入记忆和共同线。")
                         .font(.system(size: 15))
                         .foregroundStyle(ClaraDesign.inkMuted)
                 }
@@ -52,7 +57,7 @@ struct ImporterFeatureView: View {
                             Button {
                                 importInput()
                             } label: {
-                                Label("导入", systemImage: "square.and.arrow.down")
+                                Label("导入并整理", systemImage: "sparkles")
                             }
                             .disabled(trimmedInput.isEmpty || isImporting)
                             .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.memory))
@@ -105,11 +110,18 @@ struct ImporterFeatureView: View {
                     }
                 }
 
+                if isImporting {
+                    ImportProgressView(
+                        title: progressTitle(for: progress),
+                        detail: progressDetail(for: progress)
+                    )
+                }
+
                 if let statusMessage {
-                    ClaraCard(accent: statusMessage.hasPrefix("已导入") || statusMessage.hasPrefix("已有") ? ClaraDesign.memory : ClaraDesign.danger) {
+                    ClaraCard(accent: isSuccessStatus(statusMessage) ? ClaraDesign.memory : ClaraDesign.danger) {
                         Text(statusMessage)
                             .font(.system(size: 15))
-                            .foregroundStyle(statusMessage.hasPrefix("已导入") || statusMessage.hasPrefix("已有") ? ClaraDesign.memory : ClaraDesign.danger)
+                            .foregroundStyle(isSuccessStatus(statusMessage) ? ClaraDesign.memory : ClaraDesign.danger)
                     }
                 }
             }
@@ -201,11 +213,17 @@ struct ImporterFeatureView: View {
 
     private func importCapture(from inputValue: ConversationImportInput) {
         let contextCardId = selectedContextCardID ?? contextCards.first?.id
+        guard reflectionConfiguration.mode == .deepSeek else {
+            statusMessage = "请先到设置里保存并测试默认整理模型 Key。"
+            return
+        }
 
         isImporting = true
+        progress = .preparing
         statusMessage = nil
 
         Task {
+            var enqueuedItem: InboxItem?
             do {
                 var capture = try await importerRegistry.importCapture(from: inputValue)
                 capture.contextCardId = contextCardId
@@ -215,22 +233,122 @@ struct ImporterFeatureView: View {
                     sourceThreadId: capture.sourceThreadId
                 ) {
                     await MainActor.run {
-                        statusMessage = "已有相同导入：\(existing.id.prefix(8))"
+                        statusMessage = "已有相同导入：\(existing.id.prefix(8))，没有重复写入。"
                         isImporting = false
+                        progress = nil
                     }
                     return
                 }
                 let item = try inboxStore.enqueue(capture)
+                enqueuedItem = item
+
+                await MainActor.run {
+                    progress = .preparing
+                    statusMessage = "正在准备整理..."
+                }
+                let prepared = try preparer.prepare(item: item)
+                await MainActor.run {
+                    progress = .segmenting(total: prepared.segments.count)
+                    statusMessage = "已切分为 \(prepared.segments.count) 段，开始整理..."
+                }
+                let result = try await reflectionRunner.run(prepared: prepared) { progress in
+                    Task { @MainActor in
+                        self.progress = progress
+                        self.statusMessage = statusTitle(for: progress)
+                    }
+                }
+                let committed = try digestCommitter.commit(result.digest, contextCardId: result.session.contextCardId)
+                try inboxStore.updateStatus(id: item.id, status: .committed)
 
                 await MainActor.run {
                     input = ""
-                    statusMessage = "已导入收件箱：\(item.id.prefix(8))"
+                    statusMessage = "已完成：写入 \(committed.memories.count) 条记忆，\(committed.continuityLines.count) 条共同线。"
                     isImporting = false
+                    progress = nil
                 }
             } catch {
+                if let enqueuedItem {
+                    try? inboxStore.updateStatus(id: enqueuedItem.id, status: .discarded)
+                }
                 await MainActor.run {
-                    statusMessage = error.localizedDescription
+                    statusMessage = "导入失败：\(ClaraErrorPresenter.message(for: error))"
                     isImporting = false
+                    progress = nil
+                }
+            }
+        }
+    }
+
+    private func statusTitle(for progress: ReflectionProgress) -> String {
+        switch progress {
+        case .preparing:
+            "正在准备整理..."
+        case let .segmenting(total):
+            "已切分为 \(total) 段。"
+        case let .reflectingSegment(current, total):
+            "正在整理第 \(current)/\(total) 段。"
+        case let .reconciling(total):
+            "正在合并 \(total) 段整理结果。"
+        case .ready:
+            "整理完成，正在入库。"
+        }
+    }
+
+    private func progressTitle(for progress: ReflectionProgress?) -> String {
+        switch progress {
+        case .preparing:
+            "准备整理"
+        case .segmenting:
+            "切分内容"
+        case .reflectingSegment:
+            "模型整理"
+        case .reconciling:
+            "合并结果"
+        case .ready:
+            "写入记忆"
+        case nil:
+            "处理中"
+        }
+    }
+
+    private func progressDetail(for progress: ReflectionProgress?) -> String {
+        switch progress {
+        case .preparing:
+            "正在创建整理任务"
+        case let .segmenting(total):
+            "已生成 \(total) 个内容片段"
+        case let .reflectingSegment(current, total):
+            "正在处理第 \(current) / \(total) 段"
+        case let .reconciling(total):
+            "正在把 \(total) 段结果合成最终记忆和共同线"
+        case .ready:
+            "正在写入本机数据库"
+        case nil:
+            "正在更新状态"
+        }
+    }
+
+    private func isSuccessStatus(_ value: String) -> Bool {
+        value.hasPrefix("已完成") || value.hasPrefix("已有")
+    }
+}
+
+private struct ImportProgressView: View {
+    var title: String
+    var detail: String
+
+    var body: some View {
+        ClaraCard(accent: ClaraDesign.reflection) {
+            HStack(spacing: 10) {
+                ProgressView()
+                    .tint(ClaraDesign.reflection)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(ClaraDesign.ink)
+                    Text(detail)
+                        .font(.system(size: 13))
+                        .foregroundStyle(ClaraDesign.inkMuted)
                 }
             }
         }
@@ -239,8 +357,24 @@ struct ImporterFeatureView: View {
 
 #Preview {
     let database = try! AppDatabase(path: ":memory:")
+    let inboxStore = InboxStore(database: database)
+    let sessionStore = ImportSessionStore(database: database)
     ImporterFeatureView(
-        inboxStore: InboxStore(database: database),
+        inboxStore: inboxStore,
+        preparer: ImportSessionPreparer(
+            inboxStore: inboxStore,
+            sessionStore: sessionStore,
+            segmenter: FixedSizeCaptureSegmenter()
+        ),
+        reflectionRunner: ReflectionRunner(
+            sessionStore: sessionStore,
+            reflectionService: RuleBasedReflectionService()
+        ),
+        digestCommitter: DigestCommitter(
+            memoriaStore: MemoriaStore(database: database),
+            continuityStore: ContinuityStore(database: database)
+        ),
+        reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder),
         contextCardStore: ContextCardStore(database: database),
         importerRegistry: ConversationImporterRegistry.live(),
         selectedContextCardID: .constant(ContextCardStore.defaultCardID)

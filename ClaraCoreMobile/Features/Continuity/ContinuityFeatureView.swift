@@ -89,9 +89,9 @@ struct ContinuityFeatureView: View {
                                         .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
 
                                         Button(role: .destructive) {
-                                            archive(line)
+                                            delete(line)
                                         } label: {
-                                            Label("归档", systemImage: "archivebox")
+                                            Label("删除", systemImage: "trash")
                                         }
                                     }
                                 }
@@ -157,9 +157,9 @@ struct ContinuityFeatureView: View {
         return contextCards[contextCardId]?.title ?? "未知角色"
     }
 
-    private func archive(_ line: ContinuityLine) {
+    private func delete(_ line: ContinuityLine) {
         do {
-            try store.archive(id: line.id)
+            try store.delete(id: line.id)
             reload()
         } catch {
             errorMessage = error.localizedDescription

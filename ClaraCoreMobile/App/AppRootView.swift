@@ -37,6 +37,10 @@ struct AppRootView: View {
             NavigationStack {
                 ImporterFeatureView(
                     inboxStore: dependencies.inboxStore,
+                    preparer: dependencies.importSessionPreparer,
+                    reflectionRunner: dependencies.reflectionRunner,
+                    digestCommitter: dependencies.digestCommitter,
+                    reflectionConfiguration: dependencies.reflectionConfiguration,
                     contextCardStore: dependencies.contextCardStore,
                     importerRegistry: dependencies.conversationImporterRegistry,
                     selectedContextCardID: $selectedContextCardID
@@ -44,18 +48,6 @@ struct AppRootView: View {
                 .navigationTitle(AppTab.importer.title)
             }
             .tabItem { AppTab.importer.label }
-
-            NavigationStack {
-                InboxFeatureView(
-                    store: dependencies.inboxStore,
-                    preparer: dependencies.importSessionPreparer,
-                    reflectionRunner: dependencies.reflectionRunner,
-                    digestCommitter: dependencies.digestCommitter,
-                    reflectionConfiguration: dependencies.reflectionConfiguration
-                )
-                    .navigationTitle(AppTab.inbox.title)
-            }
-            .tabItem { AppTab.inbox.label }
 
             NavigationStack {
                 MemoriaFeatureView(store: dependencies.memoriaStore)

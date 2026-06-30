@@ -87,7 +87,7 @@ final class MemoriaStoreTests: XCTestCase {
         XCTAssertEqual(results.first?.id, memory.id)
     }
 
-    func testDeleteArchivesMemoryFromRecentAndRecall() throws {
+    func testDeleteRemovesMemoryFromStoreRecentAndRecall() throws {
         let databaseURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("sqlite")
@@ -99,6 +99,7 @@ final class MemoriaStoreTests: XCTestCase {
 
         XCTAssertTrue(try store.recent(limit: 10).isEmpty)
         XCTAssertTrue(try store.recall(query: "隐藏", limit: 10).isEmpty)
+        XCTAssertNil(try store.get(id: memory.id))
     }
 
     func testRecallCanBeScopedByContextCard() throws {
