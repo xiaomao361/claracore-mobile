@@ -11,9 +11,12 @@ struct SettingsFeatureView: View {
     @State private var cardTitle = ""
     @State private var agentProfile = ""
     @State private var userProfile = ""
-    @State private var deepSeekAPIKey = ""
-    @State private var hasSavedDeepSeekKey = false
-    @State private var isTestingDeepSeek = false
+    @State private var modelProviderName = ""
+    @State private var modelBaseURL = ""
+    @State private var modelName = ""
+    @State private var modelAPIKey = ""
+    @State private var hasSavedModelKey = false
+    @State private var isTestingModel = false
     @State private var statusMessage: String?
     @State private var errorMessage: String?
 
@@ -98,16 +101,16 @@ struct SettingsFeatureView: View {
 
                 ClaraSectionLabel(title: "默认整理模型")
 
-                ClaraCard(accent: reflectionConfiguration.mode == .deepSeek ? ClaraDesign.memory : ClaraDesign.reflection) {
+                ClaraCard(accent: reflectionConfiguration.mode == .remoteModel ? ClaraDesign.memory : ClaraDesign.reflection) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("当前模式")
                                 .foregroundStyle(ClaraDesign.ink)
                             Spacer()
                             ClaraStatusPill(
-                                title: reflectionConfiguration.mode.title,
-                                color: reflectionConfiguration.mode == .deepSeek ? ClaraDesign.memory : ClaraDesign.reflection,
-                                systemImage: reflectionConfiguration.mode == .deepSeek ? "checkmark.seal" : "sparkles"
+                                title: currentModeTitle,
+                                color: reflectionConfiguration.mode == .remoteModel ? ClaraDesign.memory : ClaraDesign.reflection,
+                                systemImage: reflectionConfiguration.mode == .remoteModel ? "checkmark.seal" : "sparkles"
                             )
                         }
 
@@ -120,52 +123,68 @@ struct SettingsFeatureView: View {
                     }
                 }
 
-                ClaraSectionLabel(title: "模型 Provider")
+                ClaraSectionLabel(title: "模型配置")
 
                 ClaraCard {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Text("当前 Provider")
+                            Text("OpenAI-compatible")
                                 .foregroundStyle(ClaraDesign.ink)
                             Spacer()
-                            ClaraStatusPill(title: "DeepSeek", color: ClaraDesign.memory, systemImage: "server.rack")
+                            ClaraStatusPill(title: modelProviderName.isEmpty ? "未配置" : modelProviderName, color: ClaraDesign.memory, systemImage: "server.rack")
                         }
 
-                        SecureField("API Key", text: $deepSeekAPIKey)
+                        TextField("Provider 名称，例如 DeepSeek / OpenAI / 自部署", text: $modelProviderName)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .textFieldStyle(.roundedBorder)
+
+                        TextField("Base URL，例如 https://api.deepseek.com", text: $modelBaseURL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.URL)
+
+                        TextField("Model，例如 deepseek-v4-pro / gpt-4.1", text: $modelName)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .textFieldStyle(.roundedBorder)
+
+                        SecureField(hasSavedModelKey ? "API Key 已保存，留空则不修改" : "API Key", text: $modelAPIKey)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
 
                         HStack {
                             Button {
-                                saveDeepSeekKey()
+                                saveModelConfiguration()
                             } label: {
-                                Label("保存", systemImage: "key")
+                                Label("保存配置", systemImage: "key")
                             }
-                            .disabled(deepSeekAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .disabled(!canSaveModelConfiguration)
                             .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.memory))
 
                             Spacer()
 
                             Button(role: .destructive) {
-                                deleteDeepSeekKey()
+                                deleteModelKey()
                             } label: {
-                                Label("删除", systemImage: "trash")
+                                Label("删除 Key", systemImage: "trash")
                             }
-                            .disabled(!hasSavedDeepSeekKey)
+                            .disabled(!hasSavedModelKey)
                             .buttonStyle(ClaraSecondaryButtonStyle())
                         }
 
                         Button {
-                            testDeepSeekConnection()
+                            testModelConnection()
                         } label: {
-                            Label(isTestingDeepSeek ? "正在测试" : "测试连接", systemImage: "checkmark.seal")
+                            Label(isTestingModel ? "正在测试" : "测试连接", systemImage: "checkmark.seal")
                                 .frame(maxWidth: .infinity)
                         }
-                        .disabled(!hasSavedDeepSeekKey || isTestingDeepSeek)
+                        .disabled(!canTestModelConnection || isTestingModel)
                         .buttonStyle(ClaraSecondaryButtonStyle())
 
-                        if hasSavedDeepSeekKey {
+                        if hasSavedModelKey {
                             ClaraStatusPill(title: "已保存到本机 Keychain", color: ClaraDesign.memory, systemImage: "lock")
                         }
                     }
@@ -202,6 +221,34 @@ struct SettingsFeatureView: View {
             !userProfile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var currentModeTitle: String {
+        if reflectionConfiguration.mode == .remoteModel,
+           let provider = reflectionConfiguration.modelProvider {
+            return provider.trimmedProviderName
+        }
+        return reflectionConfiguration.mode.title
+    }
+
+    private var canSaveModelConfiguration: Bool {
+        currentModelDraft.baseURL != nil &&
+            !currentModelDraft.trimmedModel.isEmpty &&
+            (hasSavedModelKey || !modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+
+    private var canTestModelConnection: Bool {
+        currentModelDraft.baseURL != nil &&
+            !currentModelDraft.trimmedModel.isEmpty &&
+            (hasSavedModelKey || !modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+
+    private var currentModelDraft: ModelProviderConfiguration {
+        ModelProviderConfiguration(
+            providerName: modelProviderName,
+            baseURLString: modelBaseURL,
+            model: modelName
+        ).normalized
+    }
+
     private var currentContextCard: ContextCard? {
         guard let selectedContextCardID else { return contextCards.first }
         return contextCards.first { $0.id == selectedContextCardID } ?? contextCards.first
@@ -222,7 +269,8 @@ struct SettingsFeatureView: View {
                 selectedContextCardID = contextCards.first?.id
             }
             resetContextCardDraft()
-            hasSavedDeepSeekKey = try apiKeyStore.read(service: .deepSeek) != nil
+            resetModelConfigurationDraft()
+            hasSavedModelKey = try readSavedModelKey() != nil
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }
@@ -268,23 +316,39 @@ struct SettingsFeatureView: View {
         }
     }
 
-    private func saveDeepSeekKey() {
+    private func resetModelConfigurationDraft() {
+        let configuration = ModelProviderConfigurationStore.load()
+        modelProviderName = configuration.providerName
+        modelBaseURL = configuration.baseURLString
+        modelName = configuration.model
+        modelAPIKey = ""
+    }
+
+    private func saveModelConfiguration() {
         do {
-            let trimmed = deepSeekAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-            try apiKeyStore.save(trimmed, service: .deepSeek)
-            deepSeekAPIKey = ""
-            hasSavedDeepSeekKey = true
-            statusMessage = "默认整理模型已启用。之后导入会自动整理并写入记忆和共同线。"
+            let configuration = currentModelDraft
+            guard configuration.baseURL != nil, !configuration.trimmedModel.isEmpty else {
+                throw SettingsModelError.invalidConfiguration
+            }
+            try ModelProviderConfigurationStore.save(configuration)
+            let trimmedKey = modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedKey.isEmpty {
+                try apiKeyStore.save(trimmedKey, service: .modelProvider)
+                modelAPIKey = ""
+                hasSavedModelKey = true
+            }
+            statusMessage = "默认整理模型已保存。之后导入会使用 \(configuration.trimmedProviderName) 的 \(configuration.trimmedModel)。"
             onConfigurationChanged()
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 
-    private func deleteDeepSeekKey() {
+    private func deleteModelKey() {
         do {
+            try apiKeyStore.delete(service: .modelProvider)
             try apiKeyStore.delete(service: .deepSeek)
-            hasSavedDeepSeekKey = false
+            hasSavedModelKey = false
             statusMessage = "模型 Key 已删除，整理会回到本地占位模式。"
             onConfigurationChanged()
         } catch {
@@ -292,31 +356,49 @@ struct SettingsFeatureView: View {
         }
     }
 
-    private func testDeepSeekConnection() {
-        guard !isTestingDeepSeek else { return }
-        isTestingDeepSeek = true
+    private func testModelConnection() {
+        guard !isTestingModel else { return }
+        isTestingModel = true
         statusMessage = "正在测试默认整理模型连接..."
 
         Task {
             do {
-                guard let key = try apiKeyStore.read(service: .deepSeek), !key.isEmpty else {
-                    throw DeepSeekReflectionService.ServiceError.missingAPIKey
+                let configuration = currentModelDraft
+                guard let baseURL = configuration.baseURL, !configuration.trimmedModel.isEmpty else {
+                    throw SettingsModelError.invalidConfiguration
                 }
-                try await DeepSeekReflectionService(apiKey: key).validateConnection()
+                let enteredKey = modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                let savedKey = try readSavedModelKey()
+                let key = enteredKey.isEmpty ? savedKey : enteredKey
+                guard let key, !key.isEmpty else {
+                    throw OpenAICompatibleReflectionService.ServiceError.missingAPIKey
+                }
+                try await OpenAICompatibleReflectionService(
+                    apiKey: key,
+                    model: configuration.trimmedModel,
+                    baseURL: baseURL
+                ).validateConnection()
 
                 await MainActor.run {
-                    isTestingDeepSeek = false
-                    statusMessage = "默认整理模型连接正常。可以开始整理真实导入内容。"
+                    isTestingModel = false
+                    statusMessage = "\(configuration.trimmedProviderName) 连接正常。可以开始整理真实导入内容。"
                     errorMessage = nil
                 }
             } catch {
                 await MainActor.run {
-                    isTestingDeepSeek = false
+                    isTestingModel = false
                     statusMessage = nil
                     errorMessage = ClaraErrorPresenter.message(for: error)
                 }
             }
         }
+    }
+
+    private func readSavedModelKey() throws -> String? {
+        if let key = try apiKeyStore.read(service: .modelProvider), !key.isEmpty {
+            return key
+        }
+        return try apiKeyStore.read(service: .deepSeek)
     }
 }
 
@@ -325,8 +407,19 @@ struct SettingsFeatureView: View {
     SettingsFeatureView(
         contextCardStore: ContextCardStore(database: database),
         apiKeyStore: KeychainAPIKeyStore(serviceName: "preview"),
-        reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder),
+        reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder, modelProvider: .deepSeekDefault),
         selectedContextCardID: .constant(ContextCardStore.defaultCardID),
         onConfigurationChanged: {}
     )
+}
+
+private enum SettingsModelError: LocalizedError {
+    case invalidConfiguration
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidConfiguration:
+            return "模型配置不完整。请确认 Base URL 和 Model 都有效。"
+        }
+    }
 }

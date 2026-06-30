@@ -174,7 +174,7 @@ struct InboxFeatureView: View {
 
     private func organize(_ item: InboxItem) {
         guard !isOrganizing else { return }
-        guard reflectionConfiguration.mode == .deepSeek else {
+        guard reflectionConfiguration.mode == .remoteModel else {
             let message = "当前还没有启用默认整理模型。请先到设置里保存并测试模型 Key，然后再整理收件箱内容。"
             errorMessage = message
             statusMessage = "整理未开始：\(message)"
@@ -407,6 +407,6 @@ private struct InboxReviewResult: Identifiable {
             memoriaStore: MemoriaStore(database: database),
             continuityStore: ContinuityStore(database: database)
         ),
-        reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder)
+        reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder, modelProvider: .deepSeekDefault)
     )
 }

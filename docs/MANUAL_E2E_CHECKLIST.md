@@ -13,7 +13,7 @@ Scope: final manual validation after source repair completion
 ## Preconditions
 
 - Install and launch `ClaraCoreMobile` on the test iPhone.
-- If testing real reflection, save a DeepSeek API key in `设置`.
+- If testing real reflection, save a default model configuration in `设置`: Provider name, OpenAI-compatible Base URL, Model, and API Key.
 - If no API key is available, confirm the app stays in local placeholder mode and does not create durable candidates automatically.
 - Use this DeepSeek share URL unless a fresher fixture is intentionally selected:
 
@@ -74,7 +74,7 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 - Duplicate imports show a recovery card with view/retry/continue actions.
 - Current role selection persists across app launches.
 - Save/delete/import actions produce visible feedback.
-- No startup failure occurs if Keychain read fails or no DeepSeek key exists.
+- No startup failure occurs if Keychain read fails or no default model key exists.
 
 ## Stop Criteria
 

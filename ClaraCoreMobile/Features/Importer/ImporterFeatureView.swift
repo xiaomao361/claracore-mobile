@@ -286,7 +286,7 @@ struct ImporterFeatureView: View {
 
     private func importCapture(from inputValue: ConversationImportInput, allowDuplicate: Bool = false) {
         let contextCardId = selectedContextCardID ?? contextCards.first?.id
-        guard reflectionConfiguration.mode == .deepSeek else {
+        guard reflectionConfiguration.mode == .remoteModel else {
             statusMessage = "请先到设置里保存并测试默认整理模型 Key。"
             return
         }
@@ -680,7 +680,7 @@ private struct ImportProgressView: View {
             memoriaStore: MemoriaStore(database: database),
             continuityStore: ContinuityStore(database: database)
         ),
-        reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder),
+        reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder, modelProvider: .deepSeekDefault),
         contextCardStore: ContextCardStore(database: database),
         importerRegistry: ConversationImporterRegistry.live(),
         selectedContextCardID: .constant(ContextCardStore.defaultCardID),

@@ -26,15 +26,22 @@ struct AppDependencies {
         let inboxStore = InboxStore(database: database)
         let importSessionStore = ImportSessionStore(database: database)
         let segmenter = FixedSizeCaptureSegmenter()
-        let deepSeekAPIKey = try? apiKeyStore.read(service: .deepSeek)
+        let modelProviderConfiguration = ModelProviderConfigurationStore.load()
+        let modelProviderAPIKey = (try? apiKeyStore.read(service: .modelProvider)) ?? (try? apiKeyStore.read(service: .deepSeek))
         let reflectionService: ReflectionService
         let reflectionConfiguration: ReflectionConfiguration
-        if let deepSeekAPIKey, !deepSeekAPIKey.isEmpty {
-            reflectionService = DeepSeekReflectionService(apiKey: deepSeekAPIKey)
-            reflectionConfiguration = ReflectionConfiguration(mode: .deepSeek)
+        if let modelProviderAPIKey, !modelProviderAPIKey.isEmpty,
+           let baseURL = modelProviderConfiguration.baseURL,
+           !modelProviderConfiguration.trimmedModel.isEmpty {
+            reflectionService = OpenAICompatibleReflectionService(
+                apiKey: modelProviderAPIKey,
+                model: modelProviderConfiguration.trimmedModel,
+                baseURL: baseURL
+            )
+            reflectionConfiguration = ReflectionConfiguration(mode: .remoteModel, modelProvider: modelProviderConfiguration.normalized)
         } else {
             reflectionService = RuleBasedReflectionService()
-            reflectionConfiguration = ReflectionConfiguration(mode: .localPlaceholder)
+            reflectionConfiguration = ReflectionConfiguration(mode: .localPlaceholder, modelProvider: modelProviderConfiguration.normalized)
         }
         let deepSeekShareImporter = DeepSeekShareImporter()
         return AppDependencies(

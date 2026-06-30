@@ -20,8 +20,8 @@ Implemented and verified:
 - Manual text, clipboard text, and DeepSeek share URL import.
 - DeepSeek share URL decoding through `https://chat.deepseek.com/api/v0/share/content?share_id={shareId}`.
 - Capture segmentation and import session preparation.
-- Reflection abstraction with local placeholder and DeepSeek implementation.
-- DeepSeek API key storage through local Keychain settings; keys must not be written to source, fixtures, docs, or git.
+- Reflection abstraction with local placeholder and OpenAI-compatible remote model implementation.
+- Default model configuration for any OpenAI-compatible `/chat/completions` endpoint; API keys are stored through local Keychain settings and must not be written to source, fixtures, docs, or git.
 - Startup fallback: Keychain read failures must not block app launch; the app falls back to local placeholder mode.
 - Digest commit path from candidate memories / Shared Line updates into local stores.
 - Default Context Card persistence with Agent / User profiles.
@@ -329,8 +329,8 @@ Primary code:
 
 Runtime provider rule:
 - API keys must be stored locally in Keychain, never in source files, fixtures, or docs.
-- If a DeepSeek key exists, `AppDependencies` uses `DeepSeekReflectionService`.
-- If no DeepSeek key exists, the app falls back to `RuleBasedReflectionService`, which is intentionally a local placeholder and does not create commit candidates.
+- If a default model key and valid OpenAI-compatible configuration exist, `AppDependencies` uses `OpenAICompatibleReflectionService`.
+- If no model key exists, the app falls back to `RuleBasedReflectionService`, which is intentionally a local placeholder and does not create commit candidates.
 
 ### 4. Continuity / Shared Line
 
@@ -586,7 +586,7 @@ protocol ReflectionService {
 
 Implementations:
 - `RuleBasedReflectionService`: local placeholder for tests and offline mode. It does not create durable facts automatically.
-- `DeepSeekReflectionService`: remote LLM mode. Uses the API key stored through the app's Keychain settings. Keys must never be committed.
+- `OpenAICompatibleReflectionService`: remote LLM mode for OpenAI-compatible `/chat/completions` providers. Uses the API key stored through the app's Keychain settings. Keys must never be committed.
 
 Large conversations must be processed as:
 

@@ -9,9 +9,59 @@ protocol APIKeyStore {
 
 enum APIKeyService: String {
     case deepSeek = "deepseek"
+    case modelProvider = "model-provider"
 
     var account: String {
         rawValue
+    }
+}
+
+struct ModelProviderConfiguration: Codable, Equatable {
+    var providerName: String
+    var baseURLString: String
+    var model: String
+
+    static let userDefaultsKey = "modelProviderConfiguration"
+
+    static let deepSeekDefault = ModelProviderConfiguration(
+        providerName: "DeepSeek",
+        baseURLString: "https://api.deepseek.com",
+        model: "deepseek-v4-pro"
+    )
+
+    var baseURL: URL? {
+        URL(string: baseURLString.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    var trimmedProviderName: String {
+        providerName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedModel: String {
+        model.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var normalized: ModelProviderConfiguration {
+        ModelProviderConfiguration(
+            providerName: trimmedProviderName.isEmpty ? "OpenAI-compatible" : trimmedProviderName,
+            baseURLString: baseURLString.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/")),
+            model: trimmedModel
+        )
+    }
+}
+
+enum ModelProviderConfigurationStore {
+    static func load(userDefaults: UserDefaults = .standard) -> ModelProviderConfiguration {
+        guard let data = userDefaults.data(forKey: ModelProviderConfiguration.userDefaultsKey),
+              let configuration = try? JSONDecoder().decode(ModelProviderConfiguration.self, from: data) else {
+            return .deepSeekDefault
+        }
+        return configuration.normalized
+    }
+
+    static func save(_ configuration: ModelProviderConfiguration, userDefaults: UserDefaults = .standard) throws {
+        let data = try JSONEncoder().encode(configuration.normalized)
+        userDefaults.set(data, forKey: ModelProviderConfiguration.userDefaultsKey)
     }
 }
 
@@ -92,17 +142,18 @@ final class KeychainAPIKeyStore: APIKeyStore {
 struct ReflectionConfiguration: Equatable {
     enum Mode: String {
         case localPlaceholder
-        case deepSeek
+        case remoteModel
 
         var title: String {
             switch self {
             case .localPlaceholder:
                 "本地占位"
-            case .deepSeek:
-                "DeepSeek"
+            case .remoteModel:
+                "远程模型"
             }
         }
     }
 
     var mode: Mode
+    var modelProvider: ModelProviderConfiguration?
 }

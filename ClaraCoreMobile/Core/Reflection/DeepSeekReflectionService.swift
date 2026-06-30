@@ -1,6 +1,8 @@
 import Foundation
 
-final class DeepSeekReflectionService: ReflectionService {
+typealias DeepSeekReflectionService = OpenAICompatibleReflectionService
+
+final class OpenAICompatibleReflectionService: ReflectionService {
     enum ServiceError: LocalizedError, Equatable {
         case missingAPIKey
         case emptyResponse
@@ -52,15 +54,15 @@ final class DeepSeekReflectionService: ReflectionService {
         self.urlSession = urlSession
     }
 
-    static func fromEnvironment() throws -> DeepSeekReflectionService {
+    static func fromEnvironment() throws -> OpenAICompatibleReflectionService {
         guard let apiKey = ProcessInfo.processInfo.environment["DEEPSEEK_API_KEY"], !apiKey.isEmpty else {
             throw ServiceError.missingAPIKey
         }
-        return DeepSeekReflectionService(apiKey: apiKey)
+        return OpenAICompatibleReflectionService(apiKey: apiKey)
     }
 
     func validateConnection() async throws {
-        let _: DeepSeekConnectionResponse = try await completeJSON(
+        let _: OpenAICompatibleConnectionResponse = try await completeJSON(
             system: "Return valid json only.",
             user: "Return {\"ok\":true}.",
             maxTokens: 64
@@ -110,7 +112,7 @@ final class DeepSeekReflectionService: ReflectionService {
         \(segment.content)
         """
 
-        let response: DeepSeekSegmentResponse = try await completeJSON(
+        let response: OpenAICompatibleSegmentResponse = try await completeJSON(
             system: "You extract durable personal memory and Shared Line updates. Output valid json only.",
             user: prompt,
             maxTokens: 8_000
@@ -175,7 +177,7 @@ final class DeepSeekReflectionService: ReflectionService {
         \(payload)
         """
 
-        let response: DeepSeekDigestResponse = try await completeJSON(
+        let response: OpenAICompatibleDigestResponse = try await completeJSON(
             system: "You summarize extracted draft memory. Output valid json only and do not invent facts.",
             user: prompt,
             maxTokens: 4_000
@@ -185,18 +187,17 @@ final class DeepSeekReflectionService: ReflectionService {
     }
 
     private func completeJSON<T: Decodable>(system: String, user: String, maxTokens: Int) async throws -> T {
-        var request = URLRequest(url: baseURL.appendingPathComponent("/chat/completions"))
+        var request = URLRequest(url: baseURL.appendingPathComponent("chat/completions"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(
-            DeepSeekChatRequest(
+            OpenAICompatibleChatRequest(
                 model: model,
                 messages: [
                     .init(role: "system", content: system),
                     .init(role: "user", content: user)
                 ],
-                thinking: .init(type: "disabled"),
                 responseFormat: .init(type: "json_object"),
                 maxTokens: maxTokens
             )
@@ -211,9 +212,9 @@ final class DeepSeekReflectionService: ReflectionService {
             throw ServiceError.httpStatus(httpResponse.statusCode, body)
         }
 
-        let envelope: DeepSeekChatResponse
+        let envelope: OpenAICompatibleChatResponse
         do {
-            envelope = try decoder.decode(DeepSeekChatResponse.self, from: data)
+            envelope = try decoder.decode(OpenAICompatibleChatResponse.self, from: data)
         } catch {
             throw ServiceError.invalidJSON(error.localizedDescription)
         }
@@ -233,11 +234,11 @@ final class DeepSeekReflectionService: ReflectionService {
     }
 }
 
-private struct DeepSeekConnectionResponse: Decodable {
+private struct OpenAICompatibleConnectionResponse: Decodable {
     var ok: Bool?
 }
 
-private struct DeepSeekChatRequest: Encodable {
+private struct OpenAICompatibleChatRequest: Encodable {
     struct Message: Encodable {
         var role: String
         var content: String
@@ -247,26 +248,20 @@ private struct DeepSeekChatRequest: Encodable {
         var type: String
     }
 
-    struct Thinking: Encodable {
-        var type: String
-    }
-
     var model: String
     var messages: [Message]
-    var thinking: Thinking
     var responseFormat: ResponseFormat
     var maxTokens: Int
 
     enum CodingKeys: String, CodingKey {
         case model
         case messages
-        case thinking
         case responseFormat = "response_format"
         case maxTokens = "max_tokens"
     }
 }
 
-private struct DeepSeekChatResponse: Decodable {
+private struct OpenAICompatibleChatResponse: Decodable {
     struct Choice: Decodable {
         struct Message: Decodable {
             var content: String?
@@ -278,7 +273,7 @@ private struct DeepSeekChatResponse: Decodable {
     var choices: [Choice]
 }
 
-private struct DeepSeekSegmentResponse: Decodable {
+private struct OpenAICompatibleSegmentResponse: Decodable {
     struct Memory: Decodable {
         var kind: String
         var content: String
@@ -394,7 +389,7 @@ private struct DeepSeekSegmentResponse: Decodable {
     }
 }
 
-private struct DeepSeekDigestResponse: Decodable {
+private struct OpenAICompatibleDigestResponse: Decodable {
     struct Memory: Decodable {
         var kind: String
         var content: String
