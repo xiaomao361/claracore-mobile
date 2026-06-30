@@ -145,6 +145,28 @@ final class ConversationImporterRegistryTests: XCTestCase {
         XCTAssertEqual(match.sourceApp, "通义千问")
     }
 
+    func testKnownProviderPrivateShareShowsActionableError() async throws {
+        let registry = ConversationImporterRegistry.live(
+            urlLoader: StubURLLoader(
+                data: Data("private".utf8),
+                statusCode: 403,
+                contentType: "text/html"
+            )
+        )
+        let url = try XCTUnwrap(URL(string: "https://chatgpt.com/share/private"))
+
+        do {
+            _ = try await registry.importCapture(from: .url(url))
+            XCTFail("Expected private-link error")
+        } catch let error as GenericURLConversationImporter.ImportError {
+            XCTAssertEqual(error, .privateOrUnauthorized)
+            XCTAssertEqual(
+                error.errorDescription,
+                "这个分享链接需要登录或未公开。请确认它是公开分享链接，或改用复制文本导入。"
+            )
+        }
+    }
+
     func testGenericURLTextExtractorHandlesPlainText() {
         let extracted = GenericURLTextExtractor.extract(
             from: "  Line one\n\nLine two &amp; more  ",

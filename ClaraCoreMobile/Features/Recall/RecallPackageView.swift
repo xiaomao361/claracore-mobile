@@ -22,15 +22,26 @@ struct RecallPackageView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(line.title)
                         .font(.headline)
-                    ForEach(Array(line.milestoneSteps.enumerated()), id: \.offset) { index, step in
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text("\(index + 1).")
+                    if !line.completedMilestoneSteps.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(line.journeyProgressTitle)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Text(step)
+                            ForEach(Array(line.completedMilestoneSteps.enumerated()), id: \.offset) { index, step in
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text("\(index + 1).")
+                                        .foregroundStyle(.secondary)
+                                    Text(step)
+                                }
+                            }
                         }
                     }
+                    if let current = line.currentMilestone {
+                        Label(current, systemImage: "flag.fill")
+                            .font(.subheadline.weight(.medium))
+                    }
                     if let nextStep = line.nextStep, !nextStep.isEmpty {
-                        Text(nextStep)
+                        Label(nextStep, systemImage: "arrow.turn.down.right")
                             .foregroundStyle(.secondary)
                     }
                 }

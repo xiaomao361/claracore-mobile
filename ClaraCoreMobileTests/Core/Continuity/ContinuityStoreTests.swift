@@ -95,5 +95,11 @@ final class ContinuityStoreTests: XCTestCase {
             ]
         )
         XCTAssertEqual(line.milestoneProgressTitle, "当前里程 3")
+        XCTAssertEqual(line.completedMilestoneSteps, [
+            "已完成 DeepSeek 分享链接导入",
+            "已完成真实整理入库"
+        ])
+        XCTAssertEqual(line.currentMilestone, "正在调整记忆和共同线模型")
+        XCTAssertEqual(line.journeyProgressTitle, "已过 2 站")
     }
 }

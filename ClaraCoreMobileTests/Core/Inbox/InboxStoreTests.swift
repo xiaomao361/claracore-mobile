@@ -48,4 +48,30 @@ final class InboxStoreTests: XCTestCase {
 
         XCTAssertTrue(try store.pending().isEmpty)
     }
+
+    func testUpdateCommitResultPersistsResultIdsForDuplicateRecovery() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+
+        let store = try InboxStore(database: AppDatabase(path: databaseURL.path))
+        let item = try store.enqueue(
+            RawCapture(
+                source: .share,
+                rawContent: "Same imported conversation.",
+                sourceApp: "DeepSeek",
+                sourceThreadId: "share-1"
+            )
+        )
+
+        try store.updateCommitResult(id: item.id, memoryIds: ["memory-1", "memory-2"], lineIds: ["line-1"])
+
+        let existing = try XCTUnwrap(store.existing(
+            contentHash: item.contentHash,
+            sourceApp: item.sourceApp,
+            sourceThreadId: item.sourceThreadId
+        ))
+        XCTAssertEqual(existing.metadata["committed_memory_ids"], "memory-1,memory-2")
+        XCTAssertEqual(existing.metadata["committed_line_ids"], "line-1")
+    }
 }

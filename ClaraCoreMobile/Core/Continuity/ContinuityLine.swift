@@ -52,4 +52,19 @@ struct ContinuityLine: Identifiable, Equatable {
         }
         return "当前里程 \(count)"
     }
+
+    var completedMilestoneSteps: [String] {
+        guard milestoneSteps.count > 1 else { return [] }
+        return Array(milestoneSteps.dropLast())
+    }
+
+    var currentMilestone: String? {
+        milestoneSteps.last
+    }
+
+    var journeyProgressTitle: String {
+        let completedCount = completedMilestoneSteps.count
+        guard completedCount > 0 else { return "当前站" }
+        return "已过 \(completedCount) 站"
+    }
 }

@@ -9,6 +9,7 @@ struct ContinuityFeatureView: View {
     @State private var contextCards: [String: ContextCard] = [:]
     @State private var selectedLine: ContinuityLine?
     @State private var editingLine: ContinuityLine?
+    @State private var statusMessage: String?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -45,8 +46,8 @@ struct ContinuityFeatureView: View {
                                         color: ClaraDesign.continuity,
                                         systemImage: "person.text.rectangle"
                                     )
-                                    HStack {
-                                        Text(line.milestoneProgressTitle)
+                                    HStack(alignment: .firstTextBaseline) {
+                                        Text(line.journeyProgressTitle)
                                             .font(.system(size: 13, weight: .medium))
                                             .foregroundStyle(ClaraDesign.inkMuted)
                                         Spacer()
@@ -56,7 +57,8 @@ struct ContinuityFeatureView: View {
                                             systemImage: "flag"
                                         )
                                     }
-                                    MilestoneStepsView(steps: line.milestoneSteps, limit: 4)
+                                    CurrentStationCard(line: line)
+                                    MilestoneStepsView(steps: line.completedMilestoneSteps, limit: 3, mode: .completed)
                                     if let nextStep = line.nextStep, !nextStep.isEmpty {
                                         VStack(alignment: .leading, spacing: 6) {
                                             Text("下一步")
@@ -102,6 +104,10 @@ struct ContinuityFeatureView: View {
                             }
                         }
                     }
+                }
+
+                if let statusMessage {
+                    ClaraActionStatus(message: statusMessage, tone: .success)
                 }
             }
             .padding(20)
@@ -163,6 +169,7 @@ struct ContinuityFeatureView: View {
     private func delete(_ line: ContinuityLine) {
         do {
             try store.delete(id: line.id)
+            statusMessage = "共同线已删除。"
             reload()
         } catch {
             errorMessage = error.localizedDescription
@@ -173,6 +180,7 @@ struct ContinuityFeatureView: View {
         do {
             try store.update(id: line.id, title: title, lastPosition: lastPosition, nextStep: nextStep)
             editingLine = nil
+            statusMessage = "共同线已更新。"
             reload()
         } catch {
             errorMessage = error.localizedDescription
@@ -181,8 +189,14 @@ struct ContinuityFeatureView: View {
 }
 
 private struct MilestoneStepsView: View {
+    enum Mode {
+        case completed
+        case full
+    }
+
     var steps: [String]
     var limit: Int?
+    var mode: Mode = .full
 
     var visibleSteps: [String] {
         if let limit {
@@ -196,42 +210,89 @@ private struct MilestoneStepsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(visibleSteps.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(spacing: 0) {
-                        Text("\(index + 1)")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 22, height: 22)
-                            .background(Circle().fill(index == visibleSteps.count - 1 ? ClaraDesign.continuity : ClaraDesign.inkMuted))
-                        if index < visibleSteps.count - 1 {
-                            Rectangle()
-                                .fill(ClaraDesign.hairline)
-                                .frame(width: 2, height: 22)
+        if !visibleSteps.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(visibleSteps.enumerated()), id: \.offset) { index, step in
+                    HStack(alignment: .top, spacing: 10) {
+                        VStack(spacing: 0) {
+                            Text("\(index + 1)")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 22, height: 22)
+                                .background(Circle().fill(dotColor(index: index)))
+                            if index < visibleSteps.count - 1 {
+                                Rectangle()
+                                    .fill(ClaraDesign.hairline)
+                                    .frame(width: 2, height: 22)
+                            }
                         }
-                    }
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(index == visibleSteps.count - 1 ? "现在到这里" : "已经过")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(index == visibleSteps.count - 1 ? ClaraDesign.continuity : ClaraDesign.inkMuted)
-                        Text(step)
-                            .font(.system(size: 15))
-                            .foregroundStyle(ClaraDesign.ink)
-                            .lineLimit(2)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(stepLabel(index: index))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(labelColor(index: index))
+                            Text(step)
+                                .font(.system(size: 15))
+                                .foregroundStyle(ClaraDesign.ink)
+                                .lineLimit(mode == .full ? nil : 2)
+                        }
+                        .padding(.bottom, index < visibleSteps.count - 1 ? 8 : 0)
                     }
-                    .padding(.bottom, index < visibleSteps.count - 1 ? 8 : 0)
+                }
+
+                if hiddenStepCount > 0 {
+                    Text("还有 \(hiddenStepCount) 个里程")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                        .padding(.leading, 32)
+                        .padding(.top, 6)
                 }
             }
+        }
+    }
 
-            if hiddenStepCount > 0 {
-                Text("还有 \(hiddenStepCount) 个里程")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(ClaraDesign.inkMuted)
-                    .padding(.leading, 32)
-                    .padding(.top, 6)
+    private func dotColor(index: Int) -> Color {
+        if mode == .full && index == visibleSteps.count - 1 {
+            return ClaraDesign.continuity
+        }
+        return ClaraDesign.inkMuted
+    }
+
+    private func labelColor(index: Int) -> Color {
+        if mode == .full && index == visibleSteps.count - 1 {
+            return ClaraDesign.continuity
+        }
+        return ClaraDesign.inkMuted
+    }
+
+    private func stepLabel(index: Int) -> String {
+        switch mode {
+        case .completed:
+            return "已经过"
+        case .full:
+            return index == visibleSteps.count - 1 ? "当前站" : "已经过"
+        }
+    }
+}
+
+private struct CurrentStationCard: View {
+    var line: ContinuityLine
+
+    var body: some View {
+        if let current = line.currentMilestone {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("当前站")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(ClaraDesign.continuity)
+                Label(current, systemImage: "flag.fill")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(ClaraDesign.ink)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(ClaraDesign.continuity.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
         }
     }
 }

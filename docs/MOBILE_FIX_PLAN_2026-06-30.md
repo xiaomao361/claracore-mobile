@@ -579,6 +579,10 @@ Goal:
 
 Make Shared Line feel like a journey/progress trail, not just a text summary.
 
+Status:
+
+- 2026-06-30: Implemented current-station and completed-milestone model helpers. Shared Line cards now emphasize the current station, completed milestones, and next action. Recall package view shows the same journey structure.
+
 Tasks:
 
 1. Promote the parsed milestone model in UI:
@@ -598,12 +602,17 @@ Acceptance:
 - Shared Line cards have a visible "current station" feeling.
 - Detail view makes progress and next action obvious.
 - Long milestone text does not break layout on phone width.
+- 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
 
 ### Phase 8: Duplicate Import Recovery
 
 Goal:
 
 Make duplicate detection useful instead of a hard stop.
+
+Status:
+
+- 2026-06-30: Implemented duplicate result card with view, retry, and continue actions. New committed imports persist memory and Shared Line ids into internal inbox metadata for duplicate recovery.
 
 Tasks:
 
@@ -620,12 +629,17 @@ Acceptance:
 - Reusing the same test URL does not trap the user at "已有相同导入".
 - The user can understand where the previous import landed.
 - Duplicate bypass is explicit, not accidental.
+- 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
 
 ### Phase 9: Provider Fixtures And Parsers
 
 Goal:
 
 Move common AI share links from "recognized domain + generic webpage extraction" to provider-aware parsing when real examples exist.
+
+Status:
+
+- 2026-06-30: Added clearer private/inaccessible link errors for known provider URLs. Provider-specific deterministic parsers remain blocked on real fixtures and should not be guessed.
 
 Tasks:
 
@@ -647,12 +661,17 @@ Acceptance:
 - Provider-specific parser coverage is fixture-backed.
 - Private or inaccessible links fail with a clear message.
 - No provider parser is added from guesswork.
+- 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
 
 ### Phase 10: Role Card Flow Polish
 
 Goal:
 
 Make multiple role cards feel like a normal part of import and recall, not just a settings feature.
+
+Status:
+
+- 2026-06-30: Active role card now persists across app launches. Import shows the current target role before organizing.
 
 Tasks:
 
@@ -666,12 +685,17 @@ Acceptance:
 
 - User can tell which role an import will belong to before tapping import.
 - Switching roles does not leak memories or Shared Lines into the wrong recall by default.
+- 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
 
 ### Phase 11: Memory Library Polish
 
 Goal:
 
 Make Memory usable as a managed library.
+
+Status:
+
+- 2026-06-30: Added lightweight in-page filters for memory type, source, and Shared Line linkage. Memory cards keep content first and supporting signals secondary.
 
 Tasks:
 
@@ -693,12 +717,17 @@ Acceptance:
 
 - Memory list feels organized rather than visually noisy.
 - Tags and source signals are useful but do not dominate the card.
+- 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
 
 ### Phase 12: Unified Action Feedback
 
 Goal:
 
 Use one consistent feedback pattern for saves, deletes, imports, and updates.
+
+Status:
+
+- 2026-06-30: Added shared `ClaraActionStatus` component and replaced ad hoc status cards across Import, Memory, Settings, and Shared Line flows.
 
 Tasks:
 
@@ -716,12 +745,17 @@ Acceptance:
 
 - Saving or deleting never feels silent.
 - The same class of action produces the same class of feedback across tabs.
+- 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
 
 ### Phase 13: Documentation And Final Device Pass
 
 Goal:
 
 Bring docs/checklists back in sync, then do the final true-device verification pass.
+
+Status:
+
+- 2026-06-30: Updated manual E2E checklist to the one-step import flow and added checks for duplicate recovery, result cards, Shared Line milestones, memory filters, role persistence, and action feedback. True-device pass remains intentionally deferred until source changes are complete.
 
 Tasks:
 
@@ -746,6 +780,7 @@ Acceptance:
 
 - Manual checklist matches the app that ships.
 - True-device pass is done once, after development is complete.
+- 2026-06-30: Manual checklist updated. XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed. True-device pass remains deferred by request.
 
 ## Non-Goals For This Repair Batch
 

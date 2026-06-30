@@ -342,6 +342,8 @@ struct ProviderURLConversationImporter: ConversationImporter {
 struct GenericURLConversationImporter: ConversationImporter {
     enum ImportError: LocalizedError, Equatable {
         case invalidResponse
+        case privateOrUnauthorized
+        case notFound
         case unsupportedContent
         case emptyContent
 
@@ -349,6 +351,10 @@ struct GenericURLConversationImporter: ConversationImporter {
             switch self {
             case .invalidResponse:
                 "通用链接请求失败。请检查链接是否可公开访问。"
+            case .privateOrUnauthorized:
+                "这个分享链接需要登录或未公开。请确认它是公开分享链接，或改用复制文本导入。"
+            case .notFound:
+                "这个分享链接已经失效或不可访问。请重新生成分享链接后再导入。"
             case .unsupportedContent:
                 "这个链接暂时不是可直接整理的网页或文本。"
             case .emptyContent:
@@ -407,7 +413,16 @@ enum GenericURLCaptureBuilder {
         request.setValue("ClaraCoreMobile/1.0", forHTTPHeaderField: "User-Agent")
 
         let (data, response) = try await urlLoader.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GenericURLConversationImporter.ImportError.invalidResponse
+        }
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                throw GenericURLConversationImporter.ImportError.privateOrUnauthorized
+            }
+            if httpResponse.statusCode == 404 || httpResponse.statusCode == 410 {
+                throw GenericURLConversationImporter.ImportError.notFound
+            }
             throw GenericURLConversationImporter.ImportError.invalidResponse
         }
 

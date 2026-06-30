@@ -172,12 +172,7 @@ struct SettingsFeatureView: View {
                 }
 
                 if let statusMessage {
-                    ClaraCard(accent: ClaraDesign.memory) {
-                        Text(statusMessage)
-                            .font(.system(size: 15))
-                            .foregroundStyle(ClaraDesign.inkMuted)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    ClaraActionStatus(message: statusMessage, tone: .success)
                 }
             }
             .padding(20)

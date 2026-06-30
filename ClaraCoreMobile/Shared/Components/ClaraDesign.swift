@@ -119,6 +119,53 @@ struct ClaraEmptyState: View {
     }
 }
 
+enum ClaraActionStatusTone: Equatable {
+    case success
+    case info
+    case error
+
+    var color: Color {
+        switch self {
+        case .success:
+            return ClaraDesign.memory
+        case .info:
+            return ClaraDesign.continuity
+        case .error:
+            return ClaraDesign.danger
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .success:
+            return "checkmark.circle"
+        case .info:
+            return "info.circle"
+        case .error:
+            return "exclamationmark.triangle"
+        }
+    }
+}
+
+struct ClaraActionStatus: View {
+    var message: String
+    var tone: ClaraActionStatusTone = .info
+
+    var body: some View {
+        ClaraCard(accent: tone.color) {
+            Label {
+                Text(message)
+                    .font(.system(size: 15))
+                    .foregroundStyle(tone == .error ? tone.color : ClaraDesign.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: tone.systemImage)
+                    .foregroundStyle(tone.color)
+            }
+        }
+    }
+}
+
 struct ClaraPrimaryButtonStyle: ButtonStyle {
     var color: Color = ClaraDesign.memory
 

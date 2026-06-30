@@ -118,6 +118,25 @@ final class InboxStore {
         }
     }
 
+    func updateCommitResult(id: String, memoryIds: [String], lineIds: [String]) throws {
+        try database.dbQueue.write { db in
+            guard let row = try Row.fetchOne(db, sql: "SELECT metadata FROM inbox WHERE id = ?", arguments: [id]) else {
+                return
+            }
+            let metadataJSON: String = row["metadata"]
+            let metadataData = metadataJSON.data(using: .utf8) ?? Data()
+            var metadata = (try? decoder.decode([String: String].self, from: metadataData)) ?? [:]
+            metadata["committed_memory_ids"] = memoryIds.joined(separator: ",")
+            metadata["committed_line_ids"] = lineIds.joined(separator: ",")
+            let updatedMetadataJSON = try String(data: encoder.encode(metadata), encoding: .utf8) ?? "{}"
+
+            try db.execute(
+                sql: "UPDATE inbox SET metadata = ?, updated_at = ? WHERE id = ?",
+                arguments: [updatedMetadataJSON, dateFormatter.string(from: Date()), id]
+            )
+        }
+    }
+
     private func item(from row: Row) -> InboxItem {
         let sourceValue: String = row["source"]
         let metadataJSON: String = row["metadata"]

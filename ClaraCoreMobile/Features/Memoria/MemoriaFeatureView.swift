@@ -9,22 +9,32 @@ struct MemoriaFeatureView: View {
     @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var editingMemory: Memory?
+    @State private var kindFilter: MemoryKindFilter = .all
+    @State private var sourceFilter: String = MemorySourceFilter.all
+    @State private var onlyLinkedToLine = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 ClaraSectionLabel(title: "最近记忆")
 
-                if recent.isEmpty {
+                MemoryFilterBar(
+                    kindFilter: $kindFilter,
+                    sourceFilter: $sourceFilter,
+                    onlyLinkedToLine: $onlyLinkedToLine,
+                    availableSources: availableSources
+                )
+
+                if filteredRecent.isEmpty {
                     ClaraEmptyState(
-                        title: "暂无记忆",
-                        message: "提交整理结果后，稳定事实会出现在这里。",
+                        title: recent.isEmpty ? "暂无记忆" : "没有匹配记忆",
+                        message: recent.isEmpty ? "提交整理结果后，稳定事实会出现在这里。" : "调整筛选条件后再查看。",
                         systemImage: "square.stack",
                         accent: ClaraDesign.memory
                     )
                 } else {
                     VStack(spacing: 12) {
-                        ForEach(recent) { memory in
+                        ForEach(filteredRecent) { memory in
                             MemoryCard(
                                 memory: memory,
                                 onEdit: { editingMemory = memory },
@@ -53,29 +63,23 @@ struct MemoriaFeatureView: View {
                         .buttonStyle(ClaraSecondaryButtonStyle())
 
                         ForEach(results) { memory in
-                            MemoryCard(
-                                memory: memory,
-                                onEdit: { editingMemory = memory },
-                                onDelete: { deleteMemory(memory) }
-                            )
+                            if memory.matches(kindFilter: kindFilter, sourceFilter: sourceFilter, onlyLinkedToLine: onlyLinkedToLine) {
+                                MemoryCard(
+                                    memory: memory,
+                                    onEdit: { editingMemory = memory },
+                                    onDelete: { deleteMemory(memory) }
+                                )
+                            }
                         }
                     }
                 }
 
                 if let statusMessage {
-                    ClaraCard(accent: ClaraDesign.memory) {
-                        Text(statusMessage)
-                            .font(.system(size: 15))
-                            .foregroundStyle(ClaraDesign.inkMuted)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    ClaraActionStatus(message: statusMessage, tone: .success)
                 }
 
                 if let errorMessage {
-                    ClaraCard(accent: ClaraDesign.danger) {
-                        Text(errorMessage)
-                            .foregroundStyle(ClaraDesign.danger)
-                    }
+                    ClaraActionStatus(message: errorMessage, tone: .error)
                 }
             }
             .padding(20)
@@ -96,6 +100,14 @@ struct MemoriaFeatureView: View {
                 }
             }
         }
+    }
+
+    private var filteredRecent: [Memory] {
+        recent.filter { $0.matches(kindFilter: kindFilter, sourceFilter: sourceFilter, onlyLinkedToLine: onlyLinkedToLine) }
+    }
+
+    private var availableSources: [String] {
+        Array(Set((recent + results).compactMap(\.sourceAgent))).sorted()
     }
 
     private func recall() {
@@ -202,6 +214,70 @@ private struct MemoryCard: View {
     }
 }
 
+private enum MemoryKindFilter: String, CaseIterable, Identifiable {
+    case all
+    case fact
+    case preference
+    case decision
+    case task
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "全部"
+        case .fact:
+            return "事实"
+        case .preference:
+            return "偏好"
+        case .decision:
+            return "决定"
+        case .task:
+            return "任务"
+        }
+    }
+}
+
+private enum MemorySourceFilter {
+    static let all = "全部来源"
+}
+
+private struct MemoryFilterBar: View {
+    @Binding var kindFilter: MemoryKindFilter
+    @Binding var sourceFilter: String
+    @Binding var onlyLinkedToLine: Bool
+    var availableSources: [String]
+
+    var body: some View {
+        ClaraCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Picker("类型", selection: $kindFilter) {
+                    ForEach(MemoryKindFilter.allCases) { filter in
+                        Text(filter.title).tag(filter)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                HStack {
+                    Picker("来源", selection: $sourceFilter) {
+                        Text(MemorySourceFilter.all).tag(MemorySourceFilter.all)
+                        ForEach(availableSources, id: \.self) { source in
+                            Text(source).tag(source)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Spacer()
+
+                    Toggle("共同线", isOn: $onlyLinkedToLine)
+                        .toggleStyle(.button)
+                }
+            }
+        }
+    }
+}
+
 private extension Memory {
     var kindTitle: String {
         if tags.contains("preference") {
@@ -231,6 +307,19 @@ private extension Memory {
 
     var visibleTags: [String] {
         tags.filter { !["fact", "preference", "decision", "task", "mobile"].contains($0) }
+    }
+
+    func matches(kindFilter: MemoryKindFilter, sourceFilter: String, onlyLinkedToLine: Bool) -> Bool {
+        if kindFilter != .all, !tags.contains(kindFilter.rawValue) {
+            return false
+        }
+        if sourceFilter != MemorySourceFilter.all, sourceAgent != sourceFilter {
+            return false
+        }
+        if onlyLinkedToLine, lineId == nil {
+            return false
+        }
+        return true
     }
 }
 

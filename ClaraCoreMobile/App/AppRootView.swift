@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AppRootView: View {
+    @AppStorage("activeContextCardID") private var persistedContextCardID = ""
     @State private var dependencies: AppDependencies?
     @State private var selectedContextCardID: String?
     @State private var selectedTab: AppTab = .importer
@@ -17,6 +18,9 @@ struct AppRootView: View {
         .task {
             guard dependencies == nil else { return }
             bootstrap()
+        }
+        .onChange(of: selectedContextCardID) { _, newValue in
+            persistedContextCardID = newValue ?? ""
         }
     }
 
@@ -91,7 +95,12 @@ struct AppRootView: View {
         do {
             dependencies = try AppDependencies.live()
             if selectedContextCardID == nil {
-                selectedContextCardID = try dependencies?.contextCardStore.defaultCard().id
+                if !persistedContextCardID.isEmpty,
+                   try dependencies?.contextCardStore.get(id: persistedContextCardID) != nil {
+                    selectedContextCardID = persistedContextCardID
+                } else {
+                    selectedContextCardID = try dependencies?.contextCardStore.defaultCard().id
+                }
             }
             errorMessage = nil
         } catch {

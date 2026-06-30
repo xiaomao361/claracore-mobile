@@ -21,6 +21,8 @@ struct ImporterFeatureView: View {
     @State private var isFileImporterPresented = false
     @State private var progress: ReflectionProgress?
     @State private var lastCommitResult: DigestCommitResult?
+    @State private var duplicateResult: DuplicateImportResult?
+    @State private var duplicateImportInput: ConversationImportInput?
     @State private var isSourceExpanded = true
 
     var body: some View {
@@ -44,11 +46,33 @@ struct ImporterFeatureView: View {
                     )
                 }
 
-                if isSourceExpanded || lastCommitResult == nil || isImporting {
+                if let duplicateResult, !isImporting {
+                    DuplicateImportCard(
+                        result: duplicateResult,
+                        onShowMemories: onShowMemories,
+                        onShowContinuity: onShowContinuity,
+                        onRetry: retryDuplicateImport,
+                        onNewImport: beginNewImport
+                    )
+                }
+
+                if isSourceExpanded || (lastCommitResult == nil && duplicateResult == nil) || isImporting {
                     ClaraSectionLabel(title: "来源")
 
                     ClaraCard(accent: importerMatch != nil ? ClaraDesign.memory : nil) {
                         VStack(alignment: .leading, spacing: 14) {
+                            HStack {
+                                Text("导入到")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(ClaraDesign.inkMuted)
+                                Spacer()
+                                ClaraStatusPill(
+                                    title: currentContextCardTitle,
+                                    color: ClaraDesign.continuity,
+                                    systemImage: "person.text.rectangle"
+                                )
+                            }
+
                             Picker("角色卡", selection: selectedContextCardBinding) {
                                 ForEach(contextCards) { card in
                                     Text(card.title).tag(card.id)
@@ -140,11 +164,10 @@ struct ImporterFeatureView: View {
                 }
 
                 if let statusMessage {
-                    ClaraCard(accent: isSuccessStatus(statusMessage) ? ClaraDesign.memory : ClaraDesign.danger) {
-                        Text(statusMessage)
-                            .font(.system(size: 15))
-                            .foregroundStyle(isSuccessStatus(statusMessage) ? ClaraDesign.memory : ClaraDesign.danger)
-                    }
+                    ClaraActionStatus(
+                        message: statusMessage,
+                        tone: isSuccessStatus(statusMessage) ? .success : .error
+                    )
                 }
 
                 if let lastCommitResult, isSourceExpanded || isImporting {
@@ -198,6 +221,14 @@ struct ImporterFeatureView: View {
         )
     }
 
+    private var currentContextCardTitle: String {
+        let currentId = selectedContextCardID ?? contextCards.first?.id
+        guard let currentId, let card = contextCards.first(where: { $0.id == currentId }) else {
+            return "默认角色"
+        }
+        return card.title
+    }
+
     private var fallbackLabel: String {
         switch importInputValue {
         case .text:
@@ -213,6 +244,8 @@ struct ImporterFeatureView: View {
         input = UIPasteboard.general.string ?? ""
         isSourceExpanded = true
         lastCommitResult = nil
+        duplicateResult = nil
+        duplicateImportInput = nil
     }
 
     private func beginNewImport() {
@@ -220,6 +253,8 @@ struct ImporterFeatureView: View {
         statusMessage = nil
         progress = nil
         lastCommitResult = nil
+        duplicateResult = nil
+        duplicateImportInput = nil
         isSourceExpanded = true
     }
 
@@ -252,7 +287,7 @@ struct ImporterFeatureView: View {
         }
     }
 
-    private func importCapture(from inputValue: ConversationImportInput) {
+    private func importCapture(from inputValue: ConversationImportInput, allowDuplicate: Bool = false) {
         let contextCardId = selectedContextCardID ?? contextCards.first?.id
         guard reflectionConfiguration.mode == .deepSeek else {
             statusMessage = "请先到设置里保存并测试默认整理模型 Key。"
@@ -263,19 +298,23 @@ struct ImporterFeatureView: View {
         progress = .preparing
         statusMessage = nil
         lastCommitResult = nil
+        duplicateResult = nil
+        duplicateImportInput = nil
 
         Task {
             var enqueuedItem: InboxItem?
             do {
                 var capture = try await importerRegistry.importCapture(from: inputValue)
                 capture.contextCardId = contextCardId
-                if let existing = try inboxStore.existing(
+                if !allowDuplicate, let existing = try inboxStore.existing(
                     contentHash: capture.contentHash,
                     sourceApp: capture.sourceApp,
                     sourceThreadId: capture.sourceThreadId
                 ) {
                     await MainActor.run {
-                        statusMessage = "已有相同导入：\(existing.id.prefix(8))，没有重复写入。"
+                        duplicateResult = DuplicateImportResult(item: existing)
+                        duplicateImportInput = inputValue
+                        isSourceExpanded = false
                         isImporting = false
                         progress = nil
                     }
@@ -300,6 +339,11 @@ struct ImporterFeatureView: View {
                     }
                 }
                 let committed = try digestCommitter.commit(result.digest, contextCardId: result.session.contextCardId)
+                try inboxStore.updateCommitResult(
+                    id: item.id,
+                    memoryIds: committed.memories.map(\.id),
+                    lineIds: committed.continuityLines.map(\.id)
+                )
                 try inboxStore.updateStatus(id: item.id, status: .committed)
 
                 await MainActor.run {
@@ -321,6 +365,16 @@ struct ImporterFeatureView: View {
                 }
             }
         }
+    }
+
+    private func retryDuplicateImport() {
+        if let duplicateImportInput {
+            importCapture(from: duplicateImportInput, allowDuplicate: true)
+            return
+        }
+        let value = trimmedInput
+        guard !value.isEmpty else { return }
+        importCapture(from: ConversationImportInput(rawValue: value), allowDuplicate: true)
     }
 
     private func statusTitle(for progress: ReflectionProgress) -> String {
@@ -374,6 +428,107 @@ struct ImporterFeatureView: View {
 
     private func isSuccessStatus(_ value: String) -> Bool {
         value.hasPrefix("已完成") || value.hasPrefix("已有")
+    }
+}
+
+private struct DuplicateImportResult: Equatable {
+    var itemId: String
+    var sourceTitle: String
+    var memoryCount: Int
+    var lineCount: Int
+    var hasResolvableResult: Bool
+
+    init(item: InboxItem) {
+        itemId = item.id
+        sourceTitle = item.sourceApp ?? item.metadata["title"] ?? item.source.rawValue
+        let memoryIds = item.metadata["committed_memory_ids"]?
+            .split(separator: ",")
+            .map(String.init) ?? []
+        let lineIds = item.metadata["committed_line_ids"]?
+            .split(separator: ",")
+            .map(String.init) ?? []
+        memoryCount = memoryIds.count
+        lineCount = lineIds.count
+        hasResolvableResult = !memoryIds.isEmpty || !lineIds.isEmpty
+    }
+}
+
+private struct DuplicateImportCard: View {
+    var result: DuplicateImportResult
+    var onShowMemories: () -> Void
+    var onShowContinuity: () -> Void
+    var onRetry: () -> Void
+    var onNewImport: () -> Void
+
+    var body: some View {
+        ClaraCard(accent: ClaraDesign.continuity) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    Label("已经导入过", systemImage: "checkmark.seal")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(ClaraDesign.ink)
+                    Spacer()
+                    ClaraStatusPill(
+                        title: String(result.itemId.prefix(8)),
+                        color: ClaraDesign.continuity,
+                        systemImage: "tray.full"
+                    )
+                }
+
+                Text("\(result.sourceTitle) 已经整理过，没有重复写入。")
+                    .font(.system(size: 14))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+
+                if result.hasResolvableResult {
+                    HStack(spacing: 8) {
+                        ClaraStatusPill(title: "记忆 \(result.memoryCount)", color: ClaraDesign.memory, systemImage: "square.stack")
+                        ClaraStatusPill(title: "共同线 \(result.lineCount)", color: ClaraDesign.continuity, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                    }
+                } else {
+                    Text("这条旧记录没有保存结果索引，可以重新整理一次。")
+                        .font(.system(size: 13))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                }
+
+                VStack(spacing: 10) {
+                    if result.memoryCount > 0 {
+                        Button {
+                            onShowMemories()
+                        } label: {
+                            Label("查看记忆", systemImage: "square.stack")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(ClaraSecondaryButtonStyle())
+                    }
+
+                    if result.lineCount > 0 {
+                        Button {
+                            onShowContinuity()
+                        } label: {
+                            Label("查看共同线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(ClaraSecondaryButtonStyle())
+                    }
+
+                    Button {
+                        onRetry()
+                    } label: {
+                        Label("重新整理一次", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(ClaraSecondaryButtonStyle())
+
+                    Button {
+                        onNewImport()
+                    } label: {
+                        Label("继续导入", systemImage: "plus")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(ClaraSecondaryButtonStyle())
+                }
+            }
+        }
     }
 }
 
