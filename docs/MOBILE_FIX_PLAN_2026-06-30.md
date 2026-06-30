@@ -540,6 +540,208 @@ Validation:
 - Recall output produces more natural continuation in external AI.
 - 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 38 tests, 0 failed.
 
+### Phase 6: Result Quality Fallbacks
+
+Goal:
+
+Fix imports that produce a Shared Line but no Memory, especially real DeepSeek share links.
+
+Why:
+
+Real-device testing showed a DeepSeek share URL can finish with only a Shared Line. That makes the import feel incomplete and weakens later recall.
+
+Tasks:
+
+1. Add a post-reconcile guard in the digest pipeline:
+   - if `continuityLines` is non-empty and `memories` is empty;
+   - derive 1-3 conservative memory candidates from durable decisions, preferences, blockers, or stable facts already present in the extraction summary.
+2. Tighten the DeepSeek digest prompt so it must return at least one memory when the conversation contains durable facts.
+3. Add tests for:
+   - line-only digest fallback;
+   - no fallback for empty or low-signal imports;
+   - fallback memories inherit source, role, tags, and line binding.
+4. Keep the fallback conservative. Do not manufacture personal facts from weak summaries.
+
+Acceptance:
+
+- The known DeepSeek share-link shape no longer creates only a Shared Line when durable content exists.
+- A low-signal import can still legitimately produce zero memories.
+- Simulator build and tests pass.
+
+### Phase 7: Shared Line Milestone Experience
+
+Goal:
+
+Make Shared Line feel like a journey/progress trail, not just a text summary.
+
+Tasks:
+
+1. Promote the parsed milestone model in UI:
+   - current station;
+   - completed milestones;
+   - next action.
+2. Refine Shared Line list cards so the first screen shows progress at a glance.
+3. Refine Shared Line detail:
+   - display milestone steps as a clear vertical timeline;
+   - show linked memories under the relevant line;
+   - keep edit/delete actions easy to reach.
+4. Update digest prompt and reconciler expectations so `lastPosition` remains structured and step-like.
+5. Add tests for milestone parsing edge cases.
+
+Acceptance:
+
+- Shared Line cards have a visible "current station" feeling.
+- Detail view makes progress and next action obvious.
+- Long milestone text does not break layout on phone width.
+
+### Phase 8: Duplicate Import Recovery
+
+Goal:
+
+Make duplicate detection useful instead of a hard stop.
+
+Tasks:
+
+1. Replace the duplicate-only status with a duplicate result card.
+2. Offer actions:
+   - view related Memory / Shared Line when resolvable;
+   - retry as a new import only when the user explicitly chooses it;
+   - clear source and continue importing.
+3. Store enough import result linkage to find the previously committed output from an inbox duplicate.
+4. Add tests for duplicate result lookup.
+
+Acceptance:
+
+- Reusing the same test URL does not trap the user at "已有相同导入".
+- The user can understand where the previous import landed.
+- Duplicate bypass is explicit, not accidental.
+
+### Phase 9: Provider Fixtures And Parsers
+
+Goal:
+
+Move common AI share links from "recognized domain + generic webpage extraction" to provider-aware parsing when real examples exist.
+
+Tasks:
+
+1. Collect fixtures for the first provider batch:
+   - DeepSeek;
+   - ChatGPT;
+   - Claude;
+   - Gemini;
+   - Kimi;
+   - Doubao;
+   - Tongyi/Qwen.
+2. For each provider, add a deterministic parser only after a real fixture proves the format.
+3. Keep generic URL extraction as fallback.
+4. Add snapshot-style tests for every fixture.
+5. Add user-readable unsupported/private-link errors.
+
+Acceptance:
+
+- Provider-specific parser coverage is fixture-backed.
+- Private or inaccessible links fail with a clear message.
+- No provider parser is added from guesswork.
+
+### Phase 10: Role Card Flow Polish
+
+Goal:
+
+Make multiple role cards feel like a normal part of import and recall, not just a settings feature.
+
+Tasks:
+
+1. Remember the active role card across app launches.
+2. Show the current role more clearly on Import, Memory, and Shared Line pages.
+3. Add a minimal create-role path near import when no useful role exists.
+4. Consider an organizer suggestion for role creation, but require confirmation before saving.
+5. Add tests for active-role persistence and role-scoped fetches.
+
+Acceptance:
+
+- User can tell which role an import will belong to before tapping import.
+- Switching roles does not leak memories or Shared Lines into the wrong recall by default.
+
+### Phase 11: Memory Library Polish
+
+Goal:
+
+Make Memory usable as a managed library.
+
+Tasks:
+
+1. Add lightweight filters:
+   - role;
+   - type;
+   - source;
+   - linked Shared Line;
+   - tag.
+2. Improve memory card hierarchy:
+   - content first;
+   - durable type/source/role indicators second;
+   - tags compact and readable.
+3. Add a memory detail view if inline editing keeps getting crowded.
+4. Preserve direct edit/delete behavior.
+5. Add tests for filter query behavior.
+
+Acceptance:
+
+- Memory list feels organized rather than visually noisy.
+- Tags and source signals are useful but do not dominate the card.
+
+### Phase 12: Unified Action Feedback
+
+Goal:
+
+Use one consistent feedback pattern for saves, deletes, imports, and updates.
+
+Tasks:
+
+1. Introduce a small shared status/toast component.
+2. Replace ad hoc status text in:
+   - Settings provider key save/test;
+   - role card save;
+   - Memory edit/delete;
+   - Shared Line update/delete;
+   - Import success/failure/duplicate.
+3. Keep important errors persistent until dismissed or replaced.
+4. Ensure feedback is readable in forced light mode and future dark mode.
+
+Acceptance:
+
+- Saving or deleting never feels silent.
+- The same class of action produces the same class of feedback across tabs.
+
+### Phase 13: Documentation And Final Device Pass
+
+Goal:
+
+Bring docs/checklists back in sync, then do the final true-device verification pass.
+
+Tasks:
+
+1. Update `docs/MANUAL_E2E_CHECKLIST.md`:
+   - remove old required Inbox steps;
+   - use one-step import flow;
+   - include duplicate import, result card, and Shared Line milestone checks.
+2. Update architecture docs where they still imply a DeepSeek-only or inbox-first flow.
+3. Run simulator build/tests after final source changes.
+4. Install on device only after the above phases are complete.
+5. On device, verify:
+   - dark-mode readability with forced light-mode behavior;
+   - API key entry and keyboard dismissal;
+   - DeepSeek share import;
+   - generic URL or text import;
+   - result card navigation;
+   - Memory and Shared Line deletion;
+   - duplicate import recovery;
+   - role-scoped recall copy.
+
+Acceptance:
+
+- Manual checklist matches the app that ships.
+- True-device pass is done once, after development is complete.
+
 ## Non-Goals For This Repair Batch
 
 - Building a full in-app chat surface.
