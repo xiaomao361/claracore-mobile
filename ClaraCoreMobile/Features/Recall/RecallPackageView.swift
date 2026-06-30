@@ -53,7 +53,7 @@ struct RecallPackageView: View {
 
             Section("相关事实记忆") {
                 if candidateMemories.isEmpty {
-                    Text("没有检索到相关事实记忆。仍可复制共同线给 DeepSeek。")
+                    Text("没有检索到相关事实记忆。仍可复制共同线给外部 AI。")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(candidateMemories) { memory in
@@ -87,7 +87,7 @@ struct RecallPackageView: View {
                 Button {
                     copyPackage()
                 } label: {
-                    Label("复制给 DeepSeek", systemImage: "doc.on.doc")
+                    Label("复制给外部 AI", systemImage: "doc.on.doc")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -134,7 +134,7 @@ struct RecallPackageView: View {
             let lineMemories = try memoriaStore.related(toLineId: line.id, limit: 12)
             if lineMemories.isEmpty {
                 let query = builder.query(for: line)
-                candidateMemories = try memoriaStore.recall(query: query, limit: 12)
+                candidateMemories = try memoriaStore.recall(query: query, limit: 12, contextCardId: line.contextCardId)
             } else {
                 candidateMemories = lineMemories
             }
@@ -149,7 +149,11 @@ struct RecallPackageView: View {
 
     private func loadContext() {
         do {
-            contextCard = try contextCardStore.defaultCard()
+            if let contextCardId = line.contextCardId, let scopedCard = try contextCardStore.get(id: contextCardId) {
+                contextCard = scopedCard
+            } else {
+                contextCard = try contextCardStore.defaultCard()
+            }
             loadRelatedMemories()
         } catch {
             contextCard = nil
@@ -176,7 +180,7 @@ struct RecallPackageView: View {
             request: request
         )
         UIPasteboard.general.string = package.formattedText
-        copiedMessage = "已复制。现在可以粘贴到 DeepSeek。"
+        copiedMessage = "已复制。现在可以粘贴到外部 AI。"
     }
 }
 
@@ -185,7 +189,7 @@ struct RecallPackageView: View {
     let line = try! ContinuityStore(database: database).create(
         title: "ClaraCore Mobile",
         lastPosition: "正在打通导入和整理。",
-        nextStep: "复制上下文给 DeepSeek。"
+        nextStep: "复制上下文给外部 AI。"
     )
     return NavigationStack {
         RecallPackageView(

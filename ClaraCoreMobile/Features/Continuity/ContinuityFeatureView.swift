@@ -6,6 +6,7 @@ struct ContinuityFeatureView: View {
     let contextCardStore: ContextCardStore
 
     @State private var lines: [ContinuityLine] = []
+    @State private var contextCards: [String: ContextCard] = [:]
     @State private var selectedLine: ContinuityLine?
     @State private var editingLine: ContinuityLine?
     @State private var errorMessage: String?
@@ -39,11 +40,29 @@ struct ContinuityFeatureView: View {
                                     Text(line.title)
                                         .font(.system(size: 17, weight: .semibold))
                                         .foregroundStyle(ClaraDesign.ink)
+                                    ClaraStatusPill(
+                                        title: roleTitle(for: line),
+                                        color: ClaraDesign.continuity,
+                                        systemImage: "person.text.rectangle"
+                                    )
+                                    Text("当前位置")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(ClaraDesign.inkMuted)
                                     MilestoneStepsView(steps: line.milestoneSteps, limit: 3)
                                     if let nextStep = line.nextStep, !nextStep.isEmpty {
-                                        Label(nextStep, systemImage: "arrow.turn.down.right")
-                                            .font(.system(size: 13))
-                                            .foregroundStyle(ClaraDesign.inkMuted)
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Text("下一步")
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(ClaraDesign.inkMuted)
+                                            Label(nextStep, systemImage: "arrow.turn.down.right")
+                                                .font(.system(size: 14))
+                                                .foregroundStyle(ClaraDesign.ink)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                        .padding(10)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                                        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
                                     }
 
                                     HStack {
@@ -116,10 +135,18 @@ struct ContinuityFeatureView: View {
     private func reload() {
         do {
             lines = try store.active()
+            contextCards = Dictionary(uniqueKeysWithValues: try contextCardStore.list().map { ($0.id, $0) })
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func roleTitle(for line: ContinuityLine) -> String {
+        guard let contextCardId = line.contextCardId else {
+            return "未绑定角色"
+        }
+        return contextCards[contextCardId]?.title ?? "未知角色"
     }
 
     private func archive(_ line: ContinuityLine) {

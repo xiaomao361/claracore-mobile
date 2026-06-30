@@ -11,6 +11,8 @@ struct InboxFeatureView: View {
     @State private var errorMessage: String?
     @State private var statusMessage: String?
     @State private var isOrganizing = false
+    @State private var organizingItemID: String?
+    @State private var organizingProgress: ReflectionProgress?
     @State private var selectedResult: InboxReviewResult?
 
     var body: some View {
@@ -20,7 +22,7 @@ struct InboxFeatureView: View {
                     ClaraStatusPill(title: "\(items.count) 条待处理", color: items.isEmpty ? ClaraDesign.inkMuted : ClaraDesign.review, systemImage: "tray")
                     Spacer()
                     if isOrganizing {
-                        ClaraStatusPill(title: "解析中", color: ClaraDesign.reflection, systemImage: "sparkles")
+                        ClaraStatusPill(title: "整理中", color: ClaraDesign.reflection, systemImage: "sparkles")
                     } else {
                         Button {
                             reload()
@@ -34,7 +36,7 @@ struct InboxFeatureView: View {
                 if items.isEmpty {
                     ClaraEmptyState(
                         title: "暂无待处理导入",
-                        message: "从 DeepSeek 分享链接或手动文本导入后，需要整理的内容会先停在这里。",
+                        message: "从 AI 对话分享链接或手动文本导入后，需要整理的内容会先停在这里。",
                         systemImage: "tray",
                         accent: ClaraDesign.memory
                     )
@@ -66,6 +68,13 @@ struct InboxFeatureView: View {
                                             ClaraStatusPill(title: sourceThreadId, color: ClaraDesign.inkMuted, systemImage: "link")
                                         }
                                         ClaraStatusPill(title: String(item.contentHash.prefix(10)), color: ClaraDesign.inkMuted)
+                                    }
+
+                                    if organizingItemID == item.id {
+                                        OrganizingProgressView(
+                                            title: progressTitle(for: organizingProgress),
+                                            detail: progressDetail(for: organizingProgress)
+                                        )
                                     }
 
                                     Button {
@@ -166,28 +175,41 @@ struct InboxFeatureView: View {
     private func organize(_ item: InboxItem) {
         guard !isOrganizing else { return }
         guard reflectionConfiguration.mode == .deepSeek else {
-            let message = "当前还没有启用 DeepSeek。请先到设置里保存并测试 DeepSeek Key，然后再整理收件箱内容。"
+            let message = "当前还没有启用默认整理模型。请先到设置里保存并测试模型 Key，然后再整理收件箱内容。"
             errorMessage = message
             statusMessage = "整理未开始：\(message)"
             return
         }
 
         isOrganizing = true
+        organizingItemID = item.id
+        organizingProgress = .preparing
         statusMessage = "正在整理「\(sourceTitle(for: item))」..."
 
         Task {
             do {
+                await MainActor.run {
+                    organizingProgress = .preparing
+                    statusMessage = statusTitle(for: .preparing, source: sourceTitle(for: item))
+                }
                 let prepared = try preparer.prepare(item: item)
+                await MainActor.run {
+                    organizingProgress = .segmenting(total: prepared.segments.count)
+                    statusMessage = statusTitle(for: .segmenting(total: prepared.segments.count), source: sourceTitle(for: item))
+                }
                 let result = try await reflectionRunner.run(prepared: prepared) { progress in
                     Task { @MainActor in
+                        organizingProgress = progress
                         statusMessage = statusTitle(for: progress, source: sourceTitle(for: item))
                     }
                 }
 
                 await MainActor.run {
+                    organizingProgress = .ready
                     selectedResult = InboxReviewResult(item: item, reflectionResult: result)
                     statusMessage = "已整理「\(result.session.title)」"
                     isOrganizing = false
+                    organizingItemID = nil
                     reload()
                 }
             } catch {
@@ -196,6 +218,8 @@ struct InboxFeatureView: View {
                     errorMessage = message
                     statusMessage = "整理失败：\(message)"
                     isOrganizing = false
+                    organizingItemID = nil
+                    organizingProgress = nil
                 }
             }
         }
@@ -205,6 +229,8 @@ struct InboxFeatureView: View {
         do {
             try store.updateStatus(id: item.id, status: .committed)
             statusMessage = "已提交 \(committed.committedCount) 项，并从收件箱移除"
+            selectedResult = nil
+            organizingProgress = nil
             reload()
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
@@ -258,10 +284,50 @@ struct InboxFeatureView: View {
 
     private func statusTitle(for progress: ReflectionProgress, source: String) -> String {
         switch progress {
+        case .preparing:
+            "正在准备「\(source)」"
+        case let .segmenting(total):
+            "已切分「\(source)」为 \(total) 段"
         case let .reflectingSegment(current, total):
             "正在整理「\(source)」第 \(current)/\(total) 段"
         case let .reconciling(total):
             "正在合并 \(total) 段整理结果"
+        case .ready:
+            "整理结果已生成"
+        }
+    }
+
+    private func progressTitle(for progress: ReflectionProgress?) -> String {
+        switch progress {
+        case .preparing:
+            "准备导入"
+        case .segmenting:
+            "切分内容"
+        case .reflectingSegment:
+            "模型整理"
+        case .reconciling:
+            "合并结果"
+        case .ready:
+            "等待确认"
+        case nil:
+            "整理中"
+        }
+    }
+
+    private func progressDetail(for progress: ReflectionProgress?) -> String {
+        switch progress {
+        case .preparing:
+            "正在创建整理任务"
+        case let .segmenting(total):
+            "已生成 \(total) 个内容片段"
+        case let .reflectingSegment(current, total):
+            "正在处理第 \(current) / \(total) 段"
+        case let .reconciling(total):
+            "正在把 \(total) 段结果合成一份摘要"
+        case .ready:
+            "可以查看候选记忆和共同线"
+        case nil:
+            "正在更新状态"
         }
     }
 
@@ -285,6 +351,31 @@ struct InboxFeatureView: View {
         case .url:
             "链接"
         }
+    }
+}
+
+private struct OrganizingProgressView: View {
+    var title: String
+    var detail: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .tint(ClaraDesign.reflection)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(ClaraDesign.ink)
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(ClaraDesign.surfaceMuted.opacity(0.55))
+        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
     }
 }
 

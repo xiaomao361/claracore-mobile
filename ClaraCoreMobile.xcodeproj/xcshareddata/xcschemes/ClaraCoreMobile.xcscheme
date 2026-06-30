@@ -43,6 +43,15 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
       shouldAutocreateTestPlan = "YES">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "A70000000000000000000001"
+            BuildableName = "ClaraCoreMobile.app"
+            BlueprintName = "ClaraCoreMobile"
+            ReferencedContainer = "container:ClaraCoreMobile.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <Testables>
          <TestableReference
             skipped = "NO"
@@ -56,15 +65,6 @@
             </BuildableReference>
          </TestableReference>
       </Testables>
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A70000000000000000000001"
-            BuildableName = "ClaraCoreMobile.app"
-            BlueprintName = "ClaraCoreMobile"
-            ReferencedContainer = "container:ClaraCoreMobile.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

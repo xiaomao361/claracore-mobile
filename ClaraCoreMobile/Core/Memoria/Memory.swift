@@ -8,6 +8,7 @@ struct Memory: Identifiable, Equatable {
     var isArchived: Bool
     var sourceAgent: String?
     var lineId: String?
+    var contextCardId: String? = nil
     var createdAt: Date
     var updatedAt: Date
 }

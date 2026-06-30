@@ -21,6 +21,7 @@ final class ImportSessionPreparerTests: XCTestCase {
                 rawContent: "First segment text. Second segment text.",
                 sourceApp: "DeepSeek",
                 sourceThreadId: "share-1",
+                contextCardId: "role-1",
                 metadata: ["title": "Shared Conversation"]
             )
         )
@@ -30,6 +31,7 @@ final class ImportSessionPreparerTests: XCTestCase {
 
         XCTAssertEqual(prepared.session.title, "Shared Conversation")
         XCTAssertEqual(prepared.session.sourceApp, "DeepSeek")
+        XCTAssertEqual(prepared.session.contextCardId, "role-1")
         XCTAssertGreaterThanOrEqual(prepared.segments.count, 2)
         XCTAssertEqual(storedSegments.map(\.id), prepared.segments.map(\.id))
         XCTAssertEqual(storedSegments.map(\.sequence), prepared.segments.map(\.sequence))

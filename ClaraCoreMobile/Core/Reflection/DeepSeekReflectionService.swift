@@ -11,25 +11,25 @@ final class DeepSeekReflectionService: ReflectionService {
         var errorDescription: String? {
             switch self {
             case .missingAPIKey:
-                return "DeepSeek API Key 未配置。请先在设置里保存 Key。"
+                return "默认整理模型 API Key 未配置。请先在设置里保存 Key。"
             case .emptyResponse:
-                return "DeepSeek 返回了空内容。请稍后重试。"
+                return "默认整理模型返回了空内容。请稍后重试。"
             case .invalidResponse:
-                return "DeepSeek 返回格式异常。请稍后重试。"
+                return "默认整理模型返回格式异常。请稍后重试。"
             case let .httpStatus(statusCode, body):
                 if statusCode == 401 || statusCode == 403 {
-                    return "DeepSeek Key 无效或没有权限。请检查 Key 后重试。"
+                    return "默认整理模型 Key 无效或没有权限。请检查 Key 后重试。"
                 }
                 if statusCode == 429 {
-                    return "DeepSeek 请求过于频繁或额度受限。请稍后重试。"
+                    return "默认整理模型请求过于频繁或额度受限。请稍后重试。"
                 }
                 if (500..<600).contains(statusCode) {
-                    return "DeepSeek 服务暂时不可用。请稍后重试。"
+                    return "默认整理模型服务暂时不可用。请稍后重试。"
                 }
                 let detail = body.trimmingCharacters(in: .whitespacesAndNewlines)
-                return detail.isEmpty ? "DeepSeek 请求失败：HTTP \(statusCode)。" : "DeepSeek 请求失败：HTTP \(statusCode)，\(detail)"
+                return detail.isEmpty ? "默认整理模型请求失败：HTTP \(statusCode)。" : "默认整理模型请求失败：HTTP \(statusCode)，\(detail)"
             case let .invalidJSON(detail):
-                return "DeepSeek 返回的 JSON 无法解析。\(detail)"
+                return "默认整理模型返回的 JSON 无法解析。\(detail)"
             }
         }
     }
@@ -71,8 +71,8 @@ final class DeepSeekReflectionService: ReflectionService {
         let prompt = """
         Return strict json for this capture segment.
         Extract only what should survive outside this chat.
-        Candidate memories are rare durable facts, not notes, summaries, explanations, or generic knowledge.
-        Good memories: "我们完成了 ClaraCore Mobile 的 DeepSeek 分享链接导入闭环。", "用户决定 v1 先面向国内用户。"
+        Candidate memories are rare durable facts, preferences, or decisions, not notes, summaries, explanations, or generic knowledge.
+        Good memories: "我们完成了 ClaraCore Mobile 的 AI 对话导入闭环。", "用户决定 v1 先面向国内用户。", "用户偏好直接实现并验证。"
         Bad memories: topic details, how a third-party feature works, every comparison point, temporary implementation chatter.
         Shared Line updates should preserve process progress as milestones. Use lastPosition as a compact numbered milestone trail.
         Keep this segment conservative: at most 2 memories and at most 3 shared line updates.
@@ -110,9 +110,9 @@ final class DeepSeekReflectionService: ReflectionService {
         You must transform noisy segment candidates into a small human-useful set.
 
         Rules:
-        - candidateMemories: 0 to 3 items. Store only durable facts about the user, our collaboration, project decisions, or completed outcomes.
+        - candidateMemories: 0 to 3 items. Store only durable facts, stable preferences, project decisions, or completed outcomes.
         - Do not store general topic notes, product explanations, comparison details, or every technical point as memory.
-        - A good memory sounds like: "我们完成了 X", "用户决定 Y", "项目 v1 采用 Z".
+        - A good memory sounds like: "我们完成了 X", "用户决定 Y", "项目 v1 采用 Z", "用户偏好 W".
         - candidateSharedLineUpdates: 1 to 5 items when the conversation has an ongoing process.
         - Shared lines are process tracks. lastPosition should look like milestones, for example "1. 已确认问题\n2. 已完成导入\n3. 正在验证回召".
         - nextStep should be the next concrete step, not a summary.
@@ -122,7 +122,7 @@ final class DeepSeekReflectionService: ReflectionService {
         {
           "summary": "session level summary",
           "candidateMemories": [
-            {"kind":"fact|decision","content":"...", "confidence":0.0, "tags":["..."]}
+            {"kind":"fact|preference|decision","content":"...", "confidence":0.0, "tags":["..."]}
           ],
           "candidateSharedLineUpdates": [
             {"title":"...", "lastPosition":"1. ...\\n2. ...", "nextStep":"...", "confidence":0.0}
@@ -268,7 +268,12 @@ private struct DeepSeekSegmentResponse: Decodable {
             segmentId: segment.id,
             summary: summary,
             candidateMemories: candidateMemories.map { memory in
-                CandidateMemory(
+                let range = Self.safeRange(
+                    start: memory.rangeStart,
+                    end: memory.rangeEnd,
+                    contentLength: segment.content.count
+                )
+                return CandidateMemory(
                     kind: CandidateMemory.Kind(rawValue: memory.kind) ?? .fact,
                     content: memory.content,
                     confidence: memory.confidence,
@@ -276,12 +281,17 @@ private struct DeepSeekSegmentResponse: Decodable {
                     provenance: .init(
                         sessionId: segment.sessionId,
                         segmentId: segment.id,
-                        characterRange: memory.rangeStart..<memory.rangeEnd
+                        characterRange: range
                     )
                 )
             },
             candidateSharedLineUpdates: candidateSharedLineUpdates.map { update in
-                CandidateSharedLineUpdate(
+                let range = Self.safeRange(
+                    start: update.rangeStart,
+                    end: update.rangeEnd,
+                    contentLength: segment.content.count
+                )
+                return CandidateSharedLineUpdate(
                     title: update.title,
                     lastPosition: update.lastPosition,
                     nextStep: update.nextStep,
@@ -289,12 +299,24 @@ private struct DeepSeekSegmentResponse: Decodable {
                     provenance: .init(
                         sessionId: segment.sessionId,
                         segmentId: segment.id,
-                        characterRange: update.rangeStart..<update.rangeEnd
+                        characterRange: range
                     )
                 )
             },
             uncertainItems: uncertainItems
         )
+    }
+
+    private static func safeRange(start: Int, end: Int, contentLength: Int) -> Range<Int> {
+        guard start >= 0, end >= start else {
+            return 0..<0
+        }
+        let boundedStart = min(start, contentLength)
+        let boundedEnd = min(end, contentLength)
+        guard boundedEnd >= boundedStart else {
+            return 0..<0
+        }
+        return boundedStart..<boundedEnd
     }
 }
 

@@ -43,14 +43,16 @@ final class DigestCommitterTests: XCTestCase {
             conflicts: []
         )
 
-        let result = try committer.commit(digest)
-        let memories = try memoriaStore.recall(query: "ClaraCore", limit: 10)
-        let lines = try continuityStore.active()
+        let result = try committer.commit(digest, contextCardId: "role-1")
+        let memories = try memoriaStore.recall(query: "ClaraCore", limit: 10, contextCardId: "role-1")
+        let lines = try continuityStore.active(contextCardId: "role-1")
 
         XCTAssertEqual(result.memories.count, 1)
         XCTAssertEqual(result.continuityLines.count, 1)
         XCTAssertEqual(memories.first?.content, "用户正在开发 ClaraCore Mobile。")
         XCTAssertEqual(memories.first?.lineId, result.continuityLines.first?.id)
+        XCTAssertEqual(memories.first?.contextCardId, "role-1")
         XCTAssertEqual(lines.first?.title, "ClaraCore Mobile")
+        XCTAssertEqual(lines.first?.contextCardId, "role-1")
     }
 }

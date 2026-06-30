@@ -37,6 +37,30 @@ final class ContextCardStore {
         }
     }
 
+    func list() throws -> [ContextCard] {
+        try database.dbQueue.read { db in
+            let rows = try Row.fetchAll(
+                db,
+                sql: """
+                SELECT *
+                FROM context_cards
+                ORDER BY updated_at DESC
+                """
+            )
+            return rows.map(card(from:))
+        }
+    }
+
+    @discardableResult
+    func create(title: String, agentProfile: String, userProfile: String) throws -> ContextCard {
+        try create(
+            id: UUID().uuidString,
+            title: title,
+            agentProfile: agentProfile,
+            userProfile: userProfile
+        )
+    }
+
     func update(id: String, title: String, agentProfile: String, userProfile: String) throws {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedAgentProfile = agentProfile.trimmingCharacters(in: .whitespacesAndNewlines)

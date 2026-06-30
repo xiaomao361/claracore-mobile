@@ -7,58 +7,43 @@ struct RecallContextPackage: Equatable {
     var request: String
 
     var formattedText: String {
-        var sections: [String] = []
-        sections.append(
-            """
-            # Agent
-            \(contextCard.agentProfile)
-
-            # 用户
-            \(contextCard.userProfile)
-            """
-        )
-
-        sections.append(
-            """
-            # 共同线
-            标题：\(line.title)
-            里程碑：
-            \(line.lastPosition)
-            下一步：\(line.nextStep?.isEmpty == false ? line.nextStep! : "暂无")
-            """
-        )
-
         let memoryText: String
         if memories.isEmpty {
-            memoryText = "暂无已选择事实记忆。"
+            memoryText = "暂无额外事实记忆。"
         } else {
             memoryText = memories.enumerated().map { index, memory in
-                let tags = memory.tags.isEmpty ? "" : " 标签：\(memory.tags.joined(separator: ", "))"
-                return "\(index + 1). \(memory.content)\(tags)"
+                let kind = memory.kindLabel.map { "【\($0)】" } ?? ""
+                return "\(index + 1). \(kind)\(memory.content)"
             }
             .joined(separator: "\n")
         }
 
-        sections.append(
-            """
-            # 相关事实记忆
-            \(memoryText)
-            """
-        )
+        return """
+        你现在继续使用下面这个角色和用户关系。
 
-        sections.append(
-            """
-            # 请求
-            \(request)
-            """
-        )
+        【角色】
+        \(contextCard.agentProfile)
 
-        return sections.joined(separator: "\n\n")
+        【用户】
+        \(contextCard.userProfile)
+
+        【我们正在延续的事】
+        标题：\(line.title)
+        已经走到：
+        \(line.lastPosition)
+        接下来先做：\(line.nextStep?.isEmpty == false ? line.nextStep! : "先确认当前最需要推进的一步。")
+
+        【需要记住的事实】
+        \(memoryText)
+
+        【这次请你这样继续】
+        \(request)
+        """
     }
 }
 
 struct RecallContextBuilder {
-    static let defaultRequest = "请基于以上上下文继续。不要假设未提供的信息；如果信息不足，先指出缺口。"
+    static let defaultRequest = "请自然接着这个状态继续。不要把这些内容改写成报告；如果信息不足，先问我。"
 
     func query(for line: ContinuityLine) -> String {
         [line.title, line.lastPosition, line.nextStep]
@@ -74,5 +59,23 @@ struct RecallContextBuilder {
         request: String = Self.defaultRequest
     ) -> RecallContextPackage {
         RecallContextPackage(contextCard: contextCard, line: line, memories: memories, request: request)
+    }
+}
+
+private extension Memory {
+    var kindLabel: String? {
+        if tags.contains("preference") {
+            return "偏好"
+        }
+        if tags.contains("decision") {
+            return "决定"
+        }
+        if tags.contains("task") {
+            return "任务"
+        }
+        if tags.contains("fact") {
+            return "事实"
+        }
+        return nil
     }
 }

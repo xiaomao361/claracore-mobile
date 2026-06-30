@@ -99,7 +99,7 @@ struct DraftDigestReconciler {
 
     private func shouldKeep(_ memory: CandidateMemory) -> Bool {
         guard memory.confidence >= minimumMemoryConfidence else { return false }
-        guard memory.kind == .fact || memory.kind == .decision else { return false }
+        guard memory.kind == .fact || memory.kind == .preference || memory.kind == .decision else { return false }
         let content = memory.content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard content.count >= 8 else { return false }
         return true

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum ClaraDesign {
     static let paper = Color(hex: 0xF7F5EF)
@@ -166,5 +167,22 @@ extension View {
     func claraNavigationStyle() -> some View {
         tint(ClaraDesign.memory)
             .foregroundStyle(ClaraDesign.ink)
+    }
+
+    func claraKeyboardDismissable() -> some View {
+        scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("完成") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil,
+                            from: nil,
+                            for: nil
+                        )
+                    }
+                }
+            }
     }
 }

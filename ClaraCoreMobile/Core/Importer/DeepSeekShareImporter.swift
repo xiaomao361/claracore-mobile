@@ -1,11 +1,28 @@
 import Foundation
 
 final class DeepSeekShareImporter {
-    enum ImportError: Error, Equatable {
+    enum ImportError: LocalizedError, Equatable {
         case invalidURL
         case unsupportedURL
         case invalidResponse
         case unavailable(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidURL:
+                "分享链接无效。请检查链接后重试。"
+            case .unsupportedURL:
+                "当前还不支持这个分享链接格式。"
+            case .invalidResponse:
+                "分享内容格式异常，暂时无法导入。"
+            case let .unavailable(message):
+                if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    "分享内容不可用，可能已失效或没有访问权限。"
+                } else {
+                    "分享内容不可用：\(message)"
+                }
+            }
+        }
     }
 
     private let urlSession: URLSession
@@ -41,12 +58,19 @@ final class DeepSeekShareImporter {
     }
 
     func decodeConversation(data: Data, sourceURL: URL?, shareId: String) throws -> ImportedConversation {
-        let envelope = try decoder.decode(DeepSeekShareEnvelope.self, from: data)
+        let envelope: DeepSeekShareEnvelope
+        do {
+            envelope = try decoder.decode(DeepSeekShareEnvelope.self, from: data)
+        } catch {
+            throw ImportError.invalidResponse
+        }
         guard envelope.code == 0, envelope.data.bizCode == 0 else {
             throw ImportError.unavailable(envelope.data.bizMessage)
         }
+        guard let payload = envelope.data.bizData else {
+            throw ImportError.unavailable(envelope.data.bizMessage)
+        }
 
-        let payload = envelope.data.bizData
         let turns = payload.messages.map { message in
             ConversationTurn(
                 id: String(message.messageId),
@@ -92,7 +116,7 @@ private struct DeepSeekShareEnvelope: Decodable {
     struct DataNode: Decodable {
         var bizCode: Int
         var bizMessage: String
-        var bizData: BizData
+        var bizData: BizData?
 
         enum CodingKeys: String, CodingKey {
             case bizCode = "biz_code"
@@ -135,4 +159,3 @@ private extension ConversationTurn.Role {
         }
     }
 }
-

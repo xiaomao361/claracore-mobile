@@ -31,6 +31,23 @@ final class DeepSeekShareImporterTests: XCTestCase {
         XCTAssertTrue(capture.rawContent.contains("上下文窗口是1M tokens"))
     }
 
+    func testDecodeConversationReportsUnavailableBusinessResponse() throws {
+        let data = try XCTUnwrap(Self.unavailableFixture.data(using: .utf8))
+
+        XCTAssertThrowsError(
+            try DeepSeekShareImporter().decodeConversation(
+                data: data,
+                sourceURL: nil,
+                shareId: "expired"
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? DeepSeekShareImporter.ImportError,
+                .unavailable("分享已失效")
+            )
+        }
+    }
+
     private static let fixture = """
     {
       "code": 0,
@@ -58,5 +75,15 @@ final class DeepSeekShareImporterTests: XCTestCase {
       }
     }
     """
-}
 
+    private static let unavailableFixture = """
+    {
+      "code": 0,
+      "msg": "",
+      "data": {
+        "biz_code": 40001,
+        "biz_msg": "分享已失效"
+      }
+    }
+    """
+}

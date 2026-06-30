@@ -17,7 +17,8 @@ final class MemoriaStore {
         tags: [String],
         isPrivate: Bool,
         sourceAgent: String? = "mobile",
-        lineId: String? = nil
+        lineId: String? = nil,
+        contextCardId: String? = nil
     ) throws -> Memory {
         let now = Date()
         let memory = Memory(
@@ -28,6 +29,7 @@ final class MemoriaStore {
             isArchived: false,
             sourceAgent: sourceAgent,
             lineId: lineId,
+            contextCardId: contextCardId,
             createdAt: now,
             updatedAt: now
         )
@@ -39,8 +41,8 @@ final class MemoriaStore {
             try db.execute(
                 sql: """
                 INSERT INTO memories (
-                    id, content, tags, is_private, is_archived, source_agent, line_id, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id, content, tags, is_private, is_archived, source_agent, line_id, context_card_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 arguments: [
                     memory.id,
@@ -50,6 +52,7 @@ final class MemoriaStore {
                     memory.isArchived ? 1 : 0,
                     memory.sourceAgent,
                     memory.lineId,
+                    memory.contextCardId,
                     createdAt,
                     createdAt
                 ]
@@ -59,7 +62,7 @@ final class MemoriaStore {
         return memory
     }
 
-    func recall(query: String, limit: Int) throws -> [Memory] {
+    func recall(query: String, limit: Int, contextCardId: String? = nil) throws -> [Memory] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         let matchExpression = ftsMatchExpression(for: trimmed)
@@ -73,10 +76,11 @@ final class MemoriaStore {
                 JOIN memories_fts ON memories.rowid = memories_fts.rowid
                 WHERE memories_fts MATCH ?
                   AND memories.is_archived = 0
+                  AND (? IS NULL OR memories.context_card_id = ?)
                 ORDER BY bm25(memories_fts)
                 LIMIT ?
                 """,
-                arguments: [matchExpression, limit]
+                arguments: [matchExpression, contextCardId, contextCardId, limit]
             )
 
             if !ftsRows.isEmpty {
@@ -97,18 +101,19 @@ final class MemoriaStore {
                 SELECT *
                 FROM memories
                 WHERE is_archived = 0
+                  AND (? IS NULL OR context_card_id = ?)
                   AND (\(fallbackConditions))
                 ORDER BY updated_at DESC
                 LIMIT ?
                 """,
-                arguments: StatementArguments(fallbackArguments + [limit])
+                arguments: StatementArguments([contextCardId, contextCardId] + fallbackArguments + [limit])
             )
 
             return try fallbackRows.map(memory(from:))
         }
     }
 
-    func recent(limit: Int = 20) throws -> [Memory] {
+    func recent(limit: Int = 20, contextCardId: String? = nil) throws -> [Memory] {
         try database.dbQueue.read { db in
             let rows = try Row.fetchAll(
                 db,
@@ -116,10 +121,11 @@ final class MemoriaStore {
                 SELECT *
                 FROM memories
                 WHERE is_archived = 0
+                  AND (? IS NULL OR context_card_id = ?)
                 ORDER BY updated_at DESC
                 LIMIT ?
                 """,
-                arguments: [limit]
+                arguments: [contextCardId, contextCardId, limit]
             )
 
             return try rows.map(memory(from:))
@@ -215,6 +221,7 @@ final class MemoriaStore {
             isArchived: isArchived != 0,
             sourceAgent: row["source_agent"],
             lineId: row["line_id"],
+            contextCardId: row["context_card_id"],
             createdAt: createdAt,
             updatedAt: updatedAt
         )

@@ -5,6 +5,7 @@ struct ReviewDigestView: View {
     let committer: DigestCommitter
     var onCommit: ((DigestCommitResult) -> Void)? = nil
 
+    @Environment(\.dismiss) private var dismiss
     @State private var commitMessage: String?
     @State private var errorMessage: String?
     @State private var didCommit = false
@@ -64,7 +65,7 @@ struct ReviewDigestView: View {
                         .font(.caption)
                         .foregroundStyle(ClaraDesign.inkMuted)
                 } else if hasNoCandidates {
-                    Text("没有可提交的候选项。通常是当前仍处于本地占位整理模式；请到设置里配置 DeepSeek 后重新整理。")
+                    Text("没有可提交的候选项。通常是当前仍处于本地占位整理模式；请到设置里配置默认整理模型后重新整理。")
                         .font(.caption)
                         .foregroundStyle(ClaraDesign.inkMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -110,15 +111,23 @@ struct ReviewDigestView: View {
                 ClaraEmptyState(title: "暂无候选记忆", message: "当前整理没有可提交的事实记忆。", systemImage: "square.stack", accent: ClaraDesign.memory)
             } else {
                 VStack(spacing: 12) {
-                    ForEach(result.digest.candidateMemories.prefix(8)) { memory in
-                        ClaraCard(accent: ClaraDesign.memory) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(memory.content)
-                                    .foregroundStyle(ClaraDesign.ink)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                HStack {
-                                    ClaraStatusPill(title: memory.kind.rawValue, color: ClaraDesign.memory)
-                                    ClaraStatusPill(title: confidence(memory.confidence), color: ClaraDesign.inkMuted)
+                    ForEach(memoryGroups, id: \.kind) { group in
+                        VStack(alignment: .leading, spacing: 8) {
+                            ClaraSectionLabel(title: group.title)
+                            ForEach(group.memories.prefix(6)) { memory in
+                                ClaraCard(accent: memoryAccent(for: memory.kind)) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(memory.content)
+                                            .foregroundStyle(ClaraDesign.ink)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                        HStack {
+                                            ClaraStatusPill(title: memoryKindTitle(memory.kind), color: memoryAccent(for: memory.kind))
+                                            ClaraStatusPill(title: confidence(memory.confidence), color: ClaraDesign.inkMuted)
+                                            ForEach(memory.tags.prefix(2), id: \.self) { tag in
+                                                ClaraStatusPill(title: tag, color: ClaraDesign.inkMuted)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -192,16 +201,51 @@ struct ReviewDigestView: View {
         result.digest.candidateMemories.isEmpty && result.digest.candidateSharedLineUpdates.isEmpty
     }
 
+    private var memoryGroups: [(kind: CandidateMemory.Kind, title: String, memories: [CandidateMemory])] {
+        CandidateMemory.Kind.reviewOrder.compactMap { kind in
+            let memories = result.digest.candidateMemories.filter { $0.kind == kind }
+            guard !memories.isEmpty else { return nil }
+            return (kind, memoryKindTitle(kind), memories)
+        }
+    }
+
     private func confidence(_ value: Double) -> String {
         "\(Int(value * 100))%"
     }
 
+    private func memoryKindTitle(_ kind: CandidateMemory.Kind) -> String {
+        switch kind {
+        case .fact:
+            "事实"
+        case .preference:
+            "偏好"
+        case .decision:
+            "决定"
+        case .task:
+            "任务"
+        }
+    }
+
+    private func memoryAccent(for kind: CandidateMemory.Kind) -> Color {
+        switch kind {
+        case .fact:
+            ClaraDesign.memory
+        case .preference:
+            ClaraDesign.continuity
+        case .decision:
+            ClaraDesign.review
+        case .task:
+            ClaraDesign.reflection
+        }
+    }
+
     private func commit() {
         do {
-            let committed = try committer.commit(result.digest)
+            let committed = try committer.commit(result.digest, contextCardId: result.session.contextCardId)
             didCommit = true
             commitMessage = "已提交 \(committed.memories.count) 条记忆，\(committed.continuityLines.count) 条共同线"
             onCommit?(committed)
+            dismiss()
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }

@@ -100,4 +100,29 @@ final class MemoriaStoreTests: XCTestCase {
         XCTAssertTrue(try store.recent(limit: 10).isEmpty)
         XCTAssertTrue(try store.recall(query: "隐藏", limit: 10).isEmpty)
     }
+
+    func testRecallCanBeScopedByContextCard() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+
+        let store = try MemoriaStore(database: AppDatabase(path: databaseURL.path))
+        _ = try store.store(
+            content: "用户决定 ClaraCore Mobile 用工作角色继续。",
+            tags: ["role"],
+            isPrivate: false,
+            contextCardId: "work-role"
+        )
+        _ = try store.store(
+            content: "用户决定 ClaraCore Mobile 用生活角色继续。",
+            tags: ["role"],
+            isPrivate: false,
+            contextCardId: "life-role"
+        )
+
+        let workResults = try store.recall(query: "ClaraCore Mobile 继续", limit: 10, contextCardId: "work-role")
+
+        XCTAssertEqual(workResults.map(\.contextCardId), ["work-role"])
+        XCTAssertEqual(workResults.first?.content, "用户决定 ClaraCore Mobile 用工作角色继续。")
+    }
 }

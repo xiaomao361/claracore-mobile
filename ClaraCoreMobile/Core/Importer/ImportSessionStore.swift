@@ -16,6 +16,7 @@ final class ImportSessionStore {
             source: capture.source,
             sourceApp: capture.sourceApp,
             sourceThreadId: capture.sourceThreadId,
+            contextCardId: capture.contextCardId,
             title: title,
             createdAt: now,
             updatedAt: now
@@ -25,14 +26,15 @@ final class ImportSessionStore {
             try db.execute(
                 sql: """
                 INSERT INTO import_sessions (
-                    id, source, source_app, source_thread_id, title, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    id, source, source_app, source_thread_id, context_card_id, title, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 arguments: [
                     session.id,
                     session.source.rawValue,
                     session.sourceApp,
                     session.sourceThreadId,
+                    session.contextCardId,
                     session.title,
                     session.status.rawValue,
                     dateFormatter.string(from: session.createdAt),
@@ -114,4 +116,3 @@ final class ImportSessionStore {
         )
     }
 }
-

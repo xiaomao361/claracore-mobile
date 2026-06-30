@@ -13,6 +13,7 @@ final class InboxStoreTests: XCTestCase {
             rawContent: "A useful mobile capture waiting for review.",
             sourceApp: "ChatGPT",
             sourceThreadId: "chatgpt-thread-1",
+            contextCardId: "role-1",
             metadata: ["app": "ChatGPT"]
         )
 
@@ -23,6 +24,7 @@ final class InboxStoreTests: XCTestCase {
         XCTAssertEqual(pending.first?.source, .clipboard)
         XCTAssertEqual(pending.first?.sourceApp, "ChatGPT")
         XCTAssertEqual(pending.first?.sourceThreadId, "chatgpt-thread-1")
+        XCTAssertEqual(pending.first?.contextCardId, "role-1")
         XCTAssertEqual(pending.first?.contentHash, RawCapture.hash("A useful mobile capture waiting for review."))
         XCTAssertEqual(pending.first?.metadata["app"], "ChatGPT")
     }

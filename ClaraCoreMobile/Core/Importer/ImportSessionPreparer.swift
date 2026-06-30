@@ -54,6 +54,7 @@ extension InboxItem {
             rawContent: rawContent,
             sourceApp: sourceApp,
             sourceThreadId: sourceThreadId,
+            contextCardId: contextCardId,
             contentHash: contentHash,
             metadata: metadata,
             createdAt: createdAt

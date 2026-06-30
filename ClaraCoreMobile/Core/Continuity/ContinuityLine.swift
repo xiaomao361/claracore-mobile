@@ -10,6 +10,7 @@ struct ContinuityLine: Identifiable, Equatable {
     var title: String
     var lastPosition: String
     var nextStep: String?
+    var contextCardId: String? = nil
     var status: Status
     var createdAt: Date
     var updatedAt: Date

@@ -12,7 +12,7 @@
 		A10000000000000000000003 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* AppDatabase.swift */; };
 		A10000000000000000000004 /* Memory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Memory.swift */; };
 		A10000000000000000000005 /* MemoriaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* MemoriaStore.swift */; };
-		A10000000000000000000006 /* MemoriaStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* MemoriaStoreTests.swift */; };
+		A10000000000000000000006 /* Core/Memoria/MemoriaStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* Core/Memoria/MemoriaStoreTests.swift */; };
 		A10000000000000000000007 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* GRDB */; };
 		A10000000000000000000008 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* GRDB */; };
 		A10000000000000000000009 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* AppDependencies.swift */; };
@@ -21,7 +21,7 @@
 		A1000000000000000000000C /* RawCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* RawCapture.swift */; };
 		A1000000000000000000000D /* InboxItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* InboxItem.swift */; };
 		A1000000000000000000000E /* InboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* InboxStore.swift */; };
-		A1000000000000000000000F /* InboxStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* InboxStoreTests.swift */; };
+		A1000000000000000000000F /* Core/Inbox/InboxStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* Core/Inbox/InboxStoreTests.swift */; };
 		A10000000000000000000010 /* ImportSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* ImportSession.swift */; };
 		A10000000000000000000011 /* CaptureSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* CaptureSegment.swift */; };
 		A10000000000000000000012 /* TokenEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* TokenEstimator.swift */; };
@@ -31,39 +31,41 @@
 		A10000000000000000000016 /* ReflectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* ReflectionService.swift */; };
 		A10000000000000000000017 /* RuleBasedReflectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* RuleBasedReflectionService.swift */; };
 		A10000000000000000000018 /* DeepSeekReflectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* DeepSeekReflectionService.swift */; };
-		A10000000000000000000019 /* CaptureSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* CaptureSegmenterTests.swift */; };
-		A1000000000000000000001A /* ImportSessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* ImportSessionStoreTests.swift */; };
-		A1000000000000000000001B /* RuleBasedReflectionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* RuleBasedReflectionServiceTests.swift */; };
+		A10000000000000000000019 /* Core/Importer/CaptureSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* Core/Importer/CaptureSegmenterTests.swift */; };
+		A1000000000000000000001A /* Core/Importer/ImportSessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* Core/Importer/ImportSessionStoreTests.swift */; };
+		A1000000000000000000001B /* Core/Reflection/RuleBasedReflectionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* Core/Reflection/RuleBasedReflectionServiceTests.swift */; };
 		A1000000000000000000001C /* ConversationTurn.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* ConversationTurn.swift */; };
 		A1000000000000000000001D /* DeepSeekShareImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* DeepSeekShareImporter.swift */; };
-		A1000000000000000000001E /* DeepSeekShareImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* DeepSeekShareImporterTests.swift */; };
+		A1000000000000000000001E /* Core/Importer/DeepSeekShareImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* Core/Importer/DeepSeekShareImporterTests.swift */; };
 		A1000000000000000000001F /* ImporterFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* ImporterFeatureView.swift */; };
 		A10000000000000000000020 /* InboxFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* InboxFeatureView.swift */; };
 		A10000000000000000000021 /* ImportSessionPreparer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* ImportSessionPreparer.swift */; };
-		A10000000000000000000022 /* ImportSessionPreparerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* ImportSessionPreparerTests.swift */; };
+		A10000000000000000000022 /* Core/Importer/ImportSessionPreparerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* Core/Importer/ImportSessionPreparerTests.swift */; };
 		A10000000000000000000023 /* ReflectionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* ReflectionRunner.swift */; };
-		A10000000000000000000024 /* ReflectionRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* ReflectionRunnerTests.swift */; };
+		A10000000000000000000024 /* Core/Reflection/ReflectionRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* Core/Reflection/ReflectionRunnerTests.swift */; };
 		A10000000000000000000025 /* ReviewDigestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* ReviewDigestView.swift */; };
 		A10000000000000000000026 /* ContinuityLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* ContinuityLine.swift */; };
 		A10000000000000000000027 /* ContinuityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* ContinuityStore.swift */; };
 		A10000000000000000000028 /* DigestCommitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* DigestCommitter.swift */; };
 		A10000000000000000000029 /* ContinuityFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000029 /* ContinuityFeatureView.swift */; };
-		A1000000000000000000002A /* ContinuityStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002A /* ContinuityStoreTests.swift */; };
-		A1000000000000000000002B /* DigestCommitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002B /* DigestCommitterTests.swift */; };
+		A1000000000000000000002A /* Core/Continuity/ContinuityStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002A /* Core/Continuity/ContinuityStoreTests.swift */; };
+		A1000000000000000000002B /* Core/Review/DigestCommitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002B /* Core/Review/DigestCommitterTests.swift */; };
 		A1000000000000000000002C /* APIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002C /* APIKeyStore.swift */; };
 		A1000000000000000000002D /* SettingsFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002D /* SettingsFeatureView.swift */; };
 		A1000000000000000000002E /* RecallContextPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002E /* RecallContextPackage.swift */; };
 		A1000000000000000000002F /* RecallPackageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002F /* RecallPackageView.swift */; };
-		A10000000000000000000030 /* RecallContextPackageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* RecallContextPackageTests.swift */; };
+		A10000000000000000000030 /* Core/Recall/RecallContextPackageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* Core/Recall/RecallContextPackageTests.swift */; };
 		A10000000000000000000031 /* ClaraDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* ClaraDesign.swift */; };
 		A10000000000000000000032 /* DraftDigestReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000032 /* DraftDigestReconciler.swift */; };
-		A10000000000000000000033 /* DraftDigestReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* DraftDigestReconcilerTests.swift */; };
+		A10000000000000000000033 /* Core/Reflection/DraftDigestReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* Core/Reflection/DraftDigestReconcilerTests.swift */; };
 		A10000000000000000000034 /* ClaraErrorPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* ClaraErrorPresenter.swift */; };
-		A10000000000000000000035 /* ClaraErrorPresenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* ClaraErrorPresenterTests.swift */; };
+		A10000000000000000000035 /* Shared/ClaraErrorPresenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* Shared/ClaraErrorPresenterTests.swift */; };
 		A10000000000000000000036 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000036 /* Assets.xcassets */; };
 		A10000000000000000000037 /* ContextCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000037 /* ContextCard.swift */; };
 		A10000000000000000000038 /* ContextCardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000038 /* ContextCardStore.swift */; };
-		A10000000000000000000039 /* ContextCardStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000039 /* ContextCardStoreTests.swift */; };
+		A10000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift */; };
+		A1000000000000000000003A /* ConversationImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003A /* ConversationImporter.swift */; };
+		A1000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,7 +84,7 @@
 		A20000000000000000000003 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Memory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Memory.swift; sourceTree = "<group>"; };
 		A20000000000000000000005 /* MemoriaStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoriaStore.swift; sourceTree = "<group>"; };
-		A20000000000000000000006 /* MemoriaStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Memoria/MemoriaStoreTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000006 /* Core/Memoria/MemoriaStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Memoria/MemoriaStoreTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* ClaraCoreMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaraCoreMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000008 /* ClaraCoreMobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClaraCoreMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000009 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
@@ -91,7 +93,7 @@
 		A2000000000000000000000C /* RawCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RawCapture.swift; sourceTree = "<group>"; };
 		A2000000000000000000000D /* InboxItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxItem.swift; sourceTree = "<group>"; };
 		A2000000000000000000000E /* InboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxStore.swift; sourceTree = "<group>"; };
-		A2000000000000000000000F /* InboxStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Inbox/InboxStoreTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000000F /* Core/Inbox/InboxStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Inbox/InboxStoreTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* ImportSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportSession.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* CaptureSegment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSegment.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* TokenEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenEstimator.swift; sourceTree = "<group>"; };
@@ -101,39 +103,41 @@
 		A20000000000000000000016 /* ReflectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionService.swift; sourceTree = "<group>"; };
 		A20000000000000000000017 /* RuleBasedReflectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleBasedReflectionService.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* DeepSeekReflectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepSeekReflectionService.swift; sourceTree = "<group>"; };
-		A20000000000000000000019 /* CaptureSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/CaptureSegmenterTests.swift; sourceTree = "<group>"; };
-		A2000000000000000000001A /* ImportSessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ImportSessionStoreTests.swift; sourceTree = "<group>"; };
-		A2000000000000000000001B /* RuleBasedReflectionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Reflection/RuleBasedReflectionServiceTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000019 /* Core/Importer/CaptureSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/CaptureSegmenterTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000001A /* Core/Importer/ImportSessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ImportSessionStoreTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000001B /* Core/Reflection/RuleBasedReflectionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Reflection/RuleBasedReflectionServiceTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001C /* ConversationTurn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationTurn.swift; sourceTree = "<group>"; };
 		A2000000000000000000001D /* DeepSeekShareImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepSeekShareImporter.swift; sourceTree = "<group>"; };
-		A2000000000000000000001E /* DeepSeekShareImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/DeepSeekShareImporterTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000001E /* Core/Importer/DeepSeekShareImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/DeepSeekShareImporterTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001F /* ImporterFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImporterFeatureView.swift; sourceTree = "<group>"; };
 		A20000000000000000000020 /* InboxFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxFeatureView.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* ImportSessionPreparer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportSessionPreparer.swift; sourceTree = "<group>"; };
-		A20000000000000000000022 /* ImportSessionPreparerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ImportSessionPreparerTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000022 /* Core/Importer/ImportSessionPreparerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ImportSessionPreparerTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000023 /* ReflectionRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionRunner.swift; sourceTree = "<group>"; };
-		A20000000000000000000024 /* ReflectionRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Reflection/ReflectionRunnerTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000024 /* Core/Reflection/ReflectionRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Reflection/ReflectionRunnerTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* ReviewDigestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewDigestView.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* ContinuityLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuityLine.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* ContinuityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuityStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000028 /* DigestCommitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestCommitter.swift; sourceTree = "<group>"; };
 		A20000000000000000000029 /* ContinuityFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuityFeatureView.swift; sourceTree = "<group>"; };
-		A2000000000000000000002A /* ContinuityStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Continuity/ContinuityStoreTests.swift; sourceTree = "<group>"; };
-		A2000000000000000000002B /* DigestCommitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Review/DigestCommitterTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000002A /* Core/Continuity/ContinuityStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Continuity/ContinuityStoreTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000002B /* Core/Review/DigestCommitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Review/DigestCommitterTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000002C /* APIKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeyStore.swift; sourceTree = "<group>"; };
 		A2000000000000000000002D /* SettingsFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsFeatureView.swift; sourceTree = "<group>"; };
 		A2000000000000000000002E /* RecallContextPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecallContextPackage.swift; sourceTree = "<group>"; };
 		A2000000000000000000002F /* RecallPackageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecallPackageView.swift; sourceTree = "<group>"; };
-		A20000000000000000000030 /* RecallContextPackageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Recall/RecallContextPackageTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000030 /* Core/Recall/RecallContextPackageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Recall/RecallContextPackageTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000031 /* ClaraDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaraDesign.swift; sourceTree = "<group>"; };
 		A20000000000000000000032 /* DraftDigestReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftDigestReconciler.swift; sourceTree = "<group>"; };
-		A20000000000000000000033 /* DraftDigestReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Reflection/DraftDigestReconcilerTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000033 /* Core/Reflection/DraftDigestReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Reflection/DraftDigestReconcilerTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000034 /* ClaraErrorPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaraErrorPresenter.swift; sourceTree = "<group>"; };
-		A20000000000000000000035 /* ClaraErrorPresenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/ClaraErrorPresenterTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000035 /* Shared/ClaraErrorPresenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/ClaraErrorPresenterTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000036 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000037 /* ContextCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextCard.swift; sourceTree = "<group>"; };
 		A20000000000000000000038 /* ContextCardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextCardStore.swift; sourceTree = "<group>"; };
-		A20000000000000000000039 /* ContextCardStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ContextCard/ContextCardStoreTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ContextCard/ContextCardStoreTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000003A /* ConversationImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationImporter.swift; sourceTree = "<group>"; };
+		A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ConversationImporterRegistryTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -177,104 +181,6 @@
 			path = ClaraCoreMobile;
 			sourceTree = "<group>";
 		};
-		A50000000000000000000008 /* App */ = {
-			isa = PBXGroup;
-			children = (
-				A20000000000000000000001 /* ClaraCoreMobileApp.swift */,
-				A20000000000000000000002 /* AppRootView.swift */,
-				A20000000000000000000009 /* AppDependencies.swift */,
-				A2000000000000000000000A /* AppTab.swift */,
-			);
-			path = App;
-			sourceTree = "<group>";
-		};
-		A50000000000000000000009 /* Features */ = {
-			isa = PBXGroup;
-			children = (
-				A5000000000000000000000F /* Importer */,
-				A50000000000000000000010 /* Inbox */,
-				A5000000000000000000000A /* Memoria */,
-				A50000000000000000000014 /* Continuity */,
-				A50000000000000000000011 /* Review */,
-				A50000000000000000000017 /* Settings */,
-				A50000000000000000000018 /* Recall */,
-			);
-			path = Features;
-			sourceTree = "<group>";
-		};
-		A5000000000000000000000F /* Importer */ = {
-			isa = PBXGroup;
-			children = (
-				A2000000000000000000001F /* ImporterFeatureView.swift */,
-			);
-			path = Importer;
-			sourceTree = "<group>";
-		};
-		A50000000000000000000010 /* Inbox */ = {
-			isa = PBXGroup;
-			children = (
-				A20000000000000000000020 /* InboxFeatureView.swift */,
-			);
-			path = Inbox;
-			sourceTree = "<group>";
-		};
-		A50000000000000000000011 /* Review */ = {
-			isa = PBXGroup;
-			children = (
-				A20000000000000000000025 /* ReviewDigestView.swift */,
-			);
-			path = Review;
-			sourceTree = "<group>";
-		};
-		A50000000000000000000014 /* Continuity */ = {
-			isa = PBXGroup;
-			children = (
-				A20000000000000000000029 /* ContinuityFeatureView.swift */,
-			);
-			path = Continuity;
-			sourceTree = "<group>";
-		};
-		A50000000000000000000017 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				A2000000000000000000002D /* SettingsFeatureView.swift */,
-			);
-			path = Settings;
-			sourceTree = "<group>";
-		};
-		A50000000000000000000018 /* Recall */ = {
-			isa = PBXGroup;
-			children = (
-				A2000000000000000000002F /* RecallPackageView.swift */,
-			);
-			path = Recall;
-			sourceTree = "<group>";
-		};
-		A5000000000000000000000A /* Memoria */ = {
-			isa = PBXGroup;
-			children = (
-				A2000000000000000000000B /* MemoriaFeatureView.swift */,
-			);
-			path = Memoria;
-			sourceTree = "<group>";
-		};
-		A5000000000000000000000B /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				A20000000000000000000034 /* ClaraErrorPresenter.swift */,
-				A50000000000000000000019 /* Components */,
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
-		A50000000000000000000019 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A20000000000000000000031 /* ClaraDesign.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
 		A50000000000000000000003 /* Core */ = {
 			isa = PBXGroup;
 			children = (
@@ -300,15 +206,6 @@
 			path = Database;
 			sourceTree = "<group>";
 		};
-		A5000000000000000000001A /* ContextCard */ = {
-			isa = PBXGroup;
-			children = (
-				A20000000000000000000037 /* ContextCard.swift */,
-				A20000000000000000000038 /* ContextCardStore.swift */,
-			);
-			path = ContextCard;
-			sourceTree = "<group>";
-		};
 		A50000000000000000000005 /* Memoria */ = {
 			isa = PBXGroup;
 			children = (
@@ -316,6 +213,79 @@
 				A20000000000000000000005 /* MemoriaStore.swift */,
 			);
 			path = Memoria;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000006 /* ClaraCoreMobileTests */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000006 /* Core/Memoria/MemoriaStoreTests.swift */,
+				A2000000000000000000000F /* Core/Inbox/InboxStoreTests.swift */,
+				A20000000000000000000019 /* Core/Importer/CaptureSegmenterTests.swift */,
+				A2000000000000000000001A /* Core/Importer/ImportSessionStoreTests.swift */,
+				A20000000000000000000022 /* Core/Importer/ImportSessionPreparerTests.swift */,
+				A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */,
+				A2000000000000000000001B /* Core/Reflection/RuleBasedReflectionServiceTests.swift */,
+				A20000000000000000000024 /* Core/Reflection/ReflectionRunnerTests.swift */,
+				A20000000000000000000033 /* Core/Reflection/DraftDigestReconcilerTests.swift */,
+				A2000000000000000000001E /* Core/Importer/DeepSeekShareImporterTests.swift */,
+				A2000000000000000000002A /* Core/Continuity/ContinuityStoreTests.swift */,
+				A2000000000000000000002B /* Core/Review/DigestCommitterTests.swift */,
+				A20000000000000000000030 /* Core/Recall/RecallContextPackageTests.swift */,
+				A20000000000000000000035 /* Shared/ClaraErrorPresenterTests.swift */,
+				A20000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift */,
+			);
+			path = ClaraCoreMobileTests;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000007 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000007 /* ClaraCoreMobile.app */,
+				A20000000000000000000008 /* ClaraCoreMobileTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000008 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000001 /* ClaraCoreMobileApp.swift */,
+				A20000000000000000000002 /* AppRootView.swift */,
+				A20000000000000000000009 /* AppDependencies.swift */,
+				A2000000000000000000000A /* AppTab.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000009 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A5000000000000000000000F /* Importer */,
+				A50000000000000000000010 /* Inbox */,
+				A5000000000000000000000A /* Memoria */,
+				A50000000000000000000014 /* Continuity */,
+				A50000000000000000000011 /* Review */,
+				A50000000000000000000017 /* Settings */,
+				A50000000000000000000018 /* Recall */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A5000000000000000000000A /* Memoria */ = {
+			isa = PBXGroup;
+			children = (
+				A2000000000000000000000B /* MemoriaFeatureView.swift */,
+			);
+			path = Memoria;
+			sourceTree = "<group>";
+		};
+		A5000000000000000000000B /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000034 /* ClaraErrorPresenter.swift */,
+				A50000000000000000000019 /* Components */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		A5000000000000000000000C /* Importer */ = {
@@ -330,6 +300,7 @@
 				A20000000000000000000021 /* ImportSessionPreparer.swift */,
 				A2000000000000000000001C /* ConversationTurn.swift */,
 				A2000000000000000000001D /* DeepSeekShareImporter.swift */,
+				A2000000000000000000003A /* ConversationImporter.swift */,
 			);
 			path = Importer;
 			sourceTree = "<group>";
@@ -356,6 +327,30 @@
 			path = Reflection;
 			sourceTree = "<group>";
 		};
+		A5000000000000000000000F /* Importer */ = {
+			isa = PBXGroup;
+			children = (
+				A2000000000000000000001F /* ImporterFeatureView.swift */,
+			);
+			path = Importer;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000010 /* Inbox */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000020 /* InboxFeatureView.swift */,
+			);
+			path = Inbox;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000011 /* Review */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000025 /* ReviewDigestView.swift */,
+			);
+			path = Review;
+			sourceTree = "<group>";
+		};
 		A50000000000000000000012 /* Continuity */ = {
 			isa = PBXGroup;
 			children = (
@@ -371,6 +366,14 @@
 				A20000000000000000000028 /* DigestCommitter.swift */,
 			);
 			path = Review;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000014 /* Continuity */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000029 /* ContinuityFeatureView.swift */,
+			);
+			path = Continuity;
 			sourceTree = "<group>";
 		};
 		A50000000000000000000015 /* Settings */ = {
@@ -389,34 +392,37 @@
 			path = Recall;
 			sourceTree = "<group>";
 		};
-		A50000000000000000000006 /* ClaraCoreMobileTests */ = {
+		A50000000000000000000017 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				A20000000000000000000006 /* MemoriaStoreTests.swift */,
-				A2000000000000000000000F /* InboxStoreTests.swift */,
-				A20000000000000000000019 /* CaptureSegmenterTests.swift */,
-				A2000000000000000000001A /* ImportSessionStoreTests.swift */,
-				A20000000000000000000022 /* ImportSessionPreparerTests.swift */,
-				A2000000000000000000001B /* RuleBasedReflectionServiceTests.swift */,
-				A20000000000000000000024 /* ReflectionRunnerTests.swift */,
-				A20000000000000000000033 /* DraftDigestReconcilerTests.swift */,
-				A2000000000000000000001E /* DeepSeekShareImporterTests.swift */,
-				A2000000000000000000002A /* ContinuityStoreTests.swift */,
-				A2000000000000000000002B /* DigestCommitterTests.swift */,
-				A20000000000000000000030 /* RecallContextPackageTests.swift */,
-				A20000000000000000000035 /* ClaraErrorPresenterTests.swift */,
-				A20000000000000000000039 /* ContextCardStoreTests.swift */,
+				A2000000000000000000002D /* SettingsFeatureView.swift */,
 			);
-			path = ClaraCoreMobileTests;
+			path = Settings;
 			sourceTree = "<group>";
 		};
-		A50000000000000000000007 /* Products */ = {
+		A50000000000000000000018 /* Recall */ = {
 			isa = PBXGroup;
 			children = (
-				A20000000000000000000007 /* ClaraCoreMobile.app */,
-				A20000000000000000000008 /* ClaraCoreMobileTests.xctest */,
+				A2000000000000000000002F /* RecallPackageView.swift */,
 			);
-			name = Products;
+			path = Recall;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000019 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000031 /* ClaraDesign.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		A5000000000000000000001A /* ContextCard */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000037 /* ContextCard.swift */,
+				A20000000000000000000038 /* ContextCardStore.swift */,
+			);
+			path = ContextCard;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -492,7 +498,7 @@
 			);
 			mainGroup = A50000000000000000000001;
 			packageReferences = (
-				A90000000000000000000001 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+				A90000000000000000000001 /* XCRemoteSwiftPackageReference "GRDB" */,
 			);
 			productRefGroup = A50000000000000000000007 /* Products */;
 			projectDirPath = "";
@@ -557,6 +563,7 @@
 				A1000000000000000000002E /* RecallContextPackage.swift in Sources */,
 				A1000000000000000000001C /* ConversationTurn.swift in Sources */,
 				A1000000000000000000001D /* DeepSeekShareImporter.swift in Sources */,
+				A1000000000000000000003A /* ConversationImporter.swift in Sources */,
 				A10000000000000000000021 /* ImportSessionPreparer.swift in Sources */,
 				A10000000000000000000023 /* ReflectionRunner.swift in Sources */,
 				A1000000000000000000001F /* ImporterFeatureView.swift in Sources */,
@@ -574,20 +581,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000006 /* MemoriaStoreTests.swift in Sources */,
-				A1000000000000000000000F /* InboxStoreTests.swift in Sources */,
-				A10000000000000000000019 /* CaptureSegmenterTests.swift in Sources */,
-				A1000000000000000000001A /* ImportSessionStoreTests.swift in Sources */,
-				A10000000000000000000022 /* ImportSessionPreparerTests.swift in Sources */,
-				A1000000000000000000001B /* RuleBasedReflectionServiceTests.swift in Sources */,
-				A10000000000000000000024 /* ReflectionRunnerTests.swift in Sources */,
-				A10000000000000000000033 /* DraftDigestReconcilerTests.swift in Sources */,
-				A1000000000000000000001E /* DeepSeekShareImporterTests.swift in Sources */,
-				A1000000000000000000002A /* ContinuityStoreTests.swift in Sources */,
-				A1000000000000000000002B /* DigestCommitterTests.swift in Sources */,
-				A10000000000000000000030 /* RecallContextPackageTests.swift in Sources */,
-				A10000000000000000000035 /* ClaraErrorPresenterTests.swift in Sources */,
-				A10000000000000000000039 /* ContextCardStoreTests.swift in Sources */,
+				A10000000000000000000006 /* Core/Memoria/MemoriaStoreTests.swift in Sources */,
+				A1000000000000000000000F /* Core/Inbox/InboxStoreTests.swift in Sources */,
+				A10000000000000000000019 /* Core/Importer/CaptureSegmenterTests.swift in Sources */,
+				A1000000000000000000001A /* Core/Importer/ImportSessionStoreTests.swift in Sources */,
+				A10000000000000000000022 /* Core/Importer/ImportSessionPreparerTests.swift in Sources */,
+				A1000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift in Sources */,
+				A1000000000000000000001B /* Core/Reflection/RuleBasedReflectionServiceTests.swift in Sources */,
+				A10000000000000000000024 /* Core/Reflection/ReflectionRunnerTests.swift in Sources */,
+				A10000000000000000000033 /* Core/Reflection/DraftDigestReconcilerTests.swift in Sources */,
+				A1000000000000000000001E /* Core/Importer/DeepSeekShareImporterTests.swift in Sources */,
+				A1000000000000000000002A /* Core/Continuity/ContinuityStoreTests.swift in Sources */,
+				A1000000000000000000002B /* Core/Review/DigestCommitterTests.swift in Sources */,
+				A10000000000000000000030 /* Core/Recall/RecallContextPackageTests.swift in Sources */,
+				A10000000000000000000035 /* Shared/ClaraErrorPresenterTests.swift in Sources */,
+				A10000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -724,7 +732,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A5L4GGX82X;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ClaraCore;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -752,7 +760,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A5L4GGX82X;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = ClaraCore;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -849,7 +857,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		A90000000000000000000001 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+		A90000000000000000000001 /* XCRemoteSwiftPackageReference "GRDB" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift";
 			requirement = {
@@ -862,7 +870,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		A90000000000000000000002 /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A90000000000000000000001 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			package = A90000000000000000000001 /* XCRemoteSwiftPackageReference "GRDB" */;
 			productName = GRDB;
 		};
 /* End XCSwiftPackageProductDependency section */

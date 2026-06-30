@@ -10,6 +10,7 @@ struct AppDependencies {
     let segmenter: CaptureSegmenting
     let importSessionPreparer: ImportSessionPreparer
     let deepSeekShareImporter: DeepSeekShareImporter
+    let conversationImporterRegistry: ConversationImporterRegistry
     let reflectionService: ReflectionService
     let reflectionRunner: ReflectionRunner
     let digestCommitter: DigestCommitter
@@ -35,6 +36,7 @@ struct AppDependencies {
             reflectionService = RuleBasedReflectionService()
             reflectionConfiguration = ReflectionConfiguration(mode: .localPlaceholder)
         }
+        let deepSeekShareImporter = DeepSeekShareImporter()
         return AppDependencies(
             database: database,
             contextCardStore: contextCardStore,
@@ -48,7 +50,8 @@ struct AppDependencies {
                 sessionStore: importSessionStore,
                 segmenter: segmenter
             ),
-            deepSeekShareImporter: DeepSeekShareImporter(),
+            deepSeekShareImporter: deepSeekShareImporter,
+            conversationImporterRegistry: ConversationImporterRegistry.live(deepSeekImporter: deepSeekShareImporter),
             reflectionService: reflectionService,
             reflectionRunner: ReflectionRunner(
                 sessionStore: importSessionStore,

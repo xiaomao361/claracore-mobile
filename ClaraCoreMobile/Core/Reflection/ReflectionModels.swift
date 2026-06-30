@@ -7,11 +7,13 @@ struct ReflectionProvenance: Codable, Equatable {
 }
 
 struct CandidateMemory: Identifiable, Codable, Equatable {
-    enum Kind: String, Codable {
+    enum Kind: String, Codable, Hashable {
         case fact
         case preference
         case decision
         case task
+
+        static let reviewOrder: [Kind] = [.fact, .preference, .decision, .task]
     }
 
     var id: String
@@ -78,4 +80,3 @@ struct DigestResult: Codable, Equatable {
     var candidateSharedLineUpdates: [CandidateSharedLineUpdate]
     var conflicts: [String]
 }
-

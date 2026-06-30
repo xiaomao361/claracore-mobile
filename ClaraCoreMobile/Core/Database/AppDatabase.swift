@@ -173,6 +173,27 @@ struct AppDatabase {
             """)
         }
 
+        migrator.registerMigration("addContextCardBindings") { db in
+            try db.execute(sql: """
+            ALTER TABLE memories ADD COLUMN context_card_id TEXT;
+            ALTER TABLE continuity_lines ADD COLUMN context_card_id TEXT;
+            ALTER TABLE inbox ADD COLUMN context_card_id TEXT;
+            ALTER TABLE import_sessions ADD COLUMN context_card_id TEXT;
+
+            CREATE INDEX IF NOT EXISTS idx_memories_context_card_updated_at
+            ON memories(context_card_id, updated_at DESC);
+
+            CREATE INDEX IF NOT EXISTS idx_continuity_context_card_updated_at
+            ON continuity_lines(context_card_id, updated_at DESC);
+
+            CREATE INDEX IF NOT EXISTS idx_inbox_context_card_status_created_at
+            ON inbox(context_card_id, status, created_at DESC);
+
+            CREATE INDEX IF NOT EXISTS idx_import_sessions_context_card_updated_at
+            ON import_sessions(context_card_id, updated_at DESC);
+            """)
+        }
+
         return migrator
     }
 }

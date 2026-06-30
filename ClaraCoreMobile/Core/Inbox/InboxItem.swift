@@ -12,6 +12,7 @@ struct InboxItem: Identifiable, Equatable {
     var source: RawCapture.Source
     var sourceApp: String?
     var sourceThreadId: String?
+    var contextCardId: String? = nil
     var contentHash: String
     var rawContent: String
     var metadata: [String: String]

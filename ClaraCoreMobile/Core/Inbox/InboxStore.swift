@@ -19,6 +19,7 @@ final class InboxStore {
             source: capture.source,
             sourceApp: capture.sourceApp,
             sourceThreadId: capture.sourceThreadId,
+            contextCardId: capture.contextCardId,
             contentHash: capture.contentHash,
             rawContent: capture.rawContent,
             metadata: capture.metadata,
@@ -33,15 +34,16 @@ final class InboxStore {
             try db.execute(
                 sql: """
                 INSERT INTO inbox (
-                    id, source, source_app, source_thread_id, content_hash,
+                    id, source, source_app, source_thread_id, context_card_id, content_hash,
                     raw_content, metadata, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 arguments: [
                     item.id,
                     item.source.rawValue,
                     item.sourceApp,
                     item.sourceThreadId,
+                    item.contextCardId,
                     item.contentHash,
                     item.rawContent,
                     metadataJSON,
@@ -73,6 +75,40 @@ final class InboxStore {
         }
     }
 
+    func existing(contentHash: String, sourceApp: String?, sourceThreadId: String?) throws -> InboxItem? {
+        try database.dbQueue.read { db in
+            let row: Row?
+            if let sourceApp, let sourceThreadId {
+                row = try Row.fetchOne(
+                    db,
+                    sql: """
+                    SELECT *
+                    FROM inbox
+                    WHERE content_hash = ?
+                       OR (source_app = ? AND source_thread_id = ?)
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """,
+                    arguments: [contentHash, sourceApp, sourceThreadId]
+                )
+            } else {
+                row = try Row.fetchOne(
+                    db,
+                    sql: """
+                    SELECT *
+                    FROM inbox
+                    WHERE content_hash = ?
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """,
+                    arguments: [contentHash]
+                )
+            }
+
+            return row.map(item(from:))
+        }
+    }
+
     func updateStatus(id: String, status: InboxItem.Status) throws {
         try database.dbQueue.write { db in
             try db.execute(
@@ -97,6 +133,7 @@ final class InboxStore {
             source: RawCapture.Source(rawValue: sourceValue) ?? .manual,
             sourceApp: row["source_app"],
             sourceThreadId: row["source_thread_id"],
+            contextCardId: row["context_card_id"],
             contentHash: row["content_hash"],
             rawContent: row["raw_content"],
             metadata: metadata,

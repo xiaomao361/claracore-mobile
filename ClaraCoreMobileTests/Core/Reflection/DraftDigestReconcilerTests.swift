@@ -119,7 +119,13 @@ final class DraftDigestReconcilerTests: XCTestCase {
 
         let digest = DraftDigestReconciler().digest(session: session, drafts: [draft])
 
-        XCTAssertEqual(digest.candidateMemories.map(\.content), ["我们完成了 DeepSeek 分享链接导入到回召包复制的闭环。"])
+        XCTAssertEqual(
+            Set(digest.candidateMemories.map(\.content)),
+            Set([
+                "我们完成了 DeepSeek 分享链接导入到回召包复制的闭环。",
+                "分享链接方案比截图 OCR 好。"
+            ])
+        )
     }
 
     func testDigestFormatsSharedLineMilestones() {

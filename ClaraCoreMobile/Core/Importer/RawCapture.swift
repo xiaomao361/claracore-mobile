@@ -14,6 +14,7 @@ struct RawCapture: Identifiable, Equatable {
     var source: Source
     var sourceApp: String?
     var sourceThreadId: String?
+    var contextCardId: String?
     var contentHash: String
     var rawContent: String
     var metadata: [String: String]
@@ -25,6 +26,7 @@ struct RawCapture: Identifiable, Equatable {
         rawContent: String,
         sourceApp: String? = nil,
         sourceThreadId: String? = nil,
+        contextCardId: String? = nil,
         contentHash: String? = nil,
         metadata: [String: String] = [:],
         createdAt: Date = Date()
@@ -33,6 +35,7 @@ struct RawCapture: Identifiable, Equatable {
         self.source = source
         self.sourceApp = sourceApp
         self.sourceThreadId = sourceThreadId
+        self.contextCardId = contextCardId
         self.contentHash = contentHash ?? Self.hash(rawContent)
         self.rawContent = rawContent
         self.metadata = metadata

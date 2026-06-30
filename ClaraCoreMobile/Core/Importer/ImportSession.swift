@@ -14,6 +14,7 @@ struct ImportSession: Identifiable, Equatable {
     var source: RawCapture.Source
     var sourceApp: String?
     var sourceThreadId: String?
+    var contextCardId: String?
     var title: String
     var status: Status
     var createdAt: Date
@@ -24,6 +25,7 @@ struct ImportSession: Identifiable, Equatable {
         source: RawCapture.Source,
         sourceApp: String? = nil,
         sourceThreadId: String? = nil,
+        contextCardId: String? = nil,
         title: String,
         status: Status = .importing,
         createdAt: Date = Date(),
@@ -33,10 +35,10 @@ struct ImportSession: Identifiable, Equatable {
         self.source = source
         self.sourceApp = sourceApp
         self.sourceThreadId = sourceThreadId
+        self.contextCardId = contextCardId
         self.title = title
         self.status = status
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
 }
-

@@ -18,12 +18,13 @@ final class DigestCommitter {
         self.continuityStore = continuityStore
     }
 
-    func commit(_ digest: DigestResult) throws -> DigestCommitResult {
+    func commit(_ digest: DigestResult, contextCardId: String? = nil) throws -> DigestCommitResult {
         let lines = try digest.candidateSharedLineUpdates.map { update in
             try continuityStore.create(
                 title: update.title,
                 lastPosition: update.lastPosition,
-                nextStep: update.nextStep
+                nextStep: update.nextStep,
+                contextCardId: contextCardId
             )
         }
         let defaultLineId = lines.first?.id
@@ -34,7 +35,8 @@ final class DigestCommitter {
                 tags: tags(for: candidate),
                 isPrivate: false,
                 sourceAgent: "mobile-reflection",
-                lineId: defaultLineId
+                lineId: defaultLineId,
+                contextCardId: contextCardId
             )
         }
 

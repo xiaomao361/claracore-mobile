@@ -36,4 +36,22 @@ final class ContextCardStoreTests: XCTestCase {
         XCTAssertEqual(updated.agentProfile, "Agent profile")
         XCTAssertEqual(updated.userProfile, "User profile")
     }
+
+    func testCreateAndListMultipleCards() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let store = try ContextCardStore(database: AppDatabase(path: databaseURL.path))
+
+        let defaultCard = try store.defaultCard()
+        let second = try store.create(
+            title: "项目角色卡",
+            agentProfile: "Project agent",
+            userProfile: "Project user"
+        )
+        let cards = try store.list()
+
+        XCTAssertEqual(Set(cards.map(\.id)), Set([defaultCard.id, second.id]))
+        XCTAssertEqual(try store.get(id: second.id)?.title, "项目角色卡")
+    }
 }

@@ -11,8 +11,11 @@ struct ReflectionRunResult: Identifiable, Equatable {
 }
 
 enum ReflectionProgress: Equatable {
+    case preparing
+    case segmenting(total: Int)
     case reflectingSegment(current: Int, total: Int)
     case reconciling(total: Int)
+    case ready
 }
 
 final class ReflectionRunner {

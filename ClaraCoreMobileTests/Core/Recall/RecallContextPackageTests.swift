@@ -2,7 +2,7 @@ import XCTest
 @testable import ClaraCoreMobile
 
 final class RecallContextPackageTests: XCTestCase {
-    func testBuildsCopyableDeepSeekContext() {
+    func testBuildsRoleContinuationContext() {
         let line = ContinuityLine(
             id: "line-1",
             title: "ClaraCore Mobile",
@@ -15,7 +15,7 @@ final class RecallContextPackageTests: XCTestCase {
         let memory = Memory(
             id: "memory-1",
             content: "第一版主要针对国内用户。",
-            tags: ["product"],
+            tags: ["product", "fact"],
             isPrivate: false,
             isArchived: false,
             sourceAgent: "mobile-reflection",
@@ -34,12 +34,14 @@ final class RecallContextPackageTests: XCTestCase {
 
         let package = RecallContextBuilder().build(contextCard: card, line: line, memories: [memory])
 
-        XCTAssertTrue(package.formattedText.contains("# Agent"))
-        XCTAssertTrue(package.formattedText.contains("# 用户"))
-        XCTAssertTrue(package.formattedText.contains("# 共同线"))
+        XCTAssertTrue(package.formattedText.contains("你现在继续使用下面这个角色和用户关系。"))
+        XCTAssertTrue(package.formattedText.contains("【角色】"))
+        XCTAssertTrue(package.formattedText.contains("【用户】"))
+        XCTAssertTrue(package.formattedText.contains("【我们正在延续的事】"))
         XCTAssertTrue(package.formattedText.contains("标题：ClaraCore Mobile"))
-        XCTAssertTrue(package.formattedText.contains("# 相关事实记忆"))
+        XCTAssertTrue(package.formattedText.contains("【需要记住的事实】"))
+        XCTAssertTrue(package.formattedText.contains("【事实】第一版主要针对国内用户。"))
         XCTAssertTrue(package.formattedText.contains("第一版主要针对国内用户。"))
-        XCTAssertTrue(package.formattedText.contains("# 请求"))
+        XCTAssertTrue(package.formattedText.contains("不要把这些内容改写成报告"))
     }
 }

@@ -10,13 +10,14 @@ final class ContinuityStore {
     }
 
     @discardableResult
-    func create(title: String, lastPosition: String, nextStep: String?) throws -> ContinuityLine {
+    func create(title: String, lastPosition: String, nextStep: String?, contextCardId: String? = nil) throws -> ContinuityLine {
         let now = Date()
         let line = ContinuityLine(
             id: UUID().uuidString,
             title: title,
             lastPosition: lastPosition,
             nextStep: nextStep,
+            contextCardId: contextCardId,
             status: .active,
             createdAt: now,
             updatedAt: now
@@ -26,14 +27,15 @@ final class ContinuityStore {
             try db.execute(
                 sql: """
                 INSERT INTO continuity_lines (
-                    id, title, last_position, next_step, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    id, title, last_position, next_step, context_card_id, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 arguments: [
                     line.id,
                     line.title,
                     line.lastPosition,
                     line.nextStep,
+                    line.contextCardId,
                     line.status.rawValue,
                     dateFormatter.string(from: line.createdAt),
                     dateFormatter.string(from: line.updatedAt)
@@ -44,7 +46,7 @@ final class ContinuityStore {
         return line
     }
 
-    func active(limit: Int = 50) throws -> [ContinuityLine] {
+    func active(limit: Int = 50, contextCardId: String? = nil) throws -> [ContinuityLine] {
         try database.dbQueue.read { db in
             let rows = try Row.fetchAll(
                 db,
@@ -52,10 +54,11 @@ final class ContinuityStore {
                 SELECT *
                 FROM continuity_lines
                 WHERE status = ?
+                  AND (? IS NULL OR context_card_id = ?)
                 ORDER BY updated_at DESC
                 LIMIT ?
                 """,
-                arguments: [ContinuityLine.Status.active.rawValue, limit]
+                arguments: [ContinuityLine.Status.active.rawValue, contextCardId, contextCardId, limit]
             )
 
             return rows.map(line(from:))
@@ -109,6 +112,7 @@ final class ContinuityStore {
             title: row["title"],
             lastPosition: row["last_position"],
             nextStep: row["next_step"],
+            contextCardId: row["context_card_id"],
             status: ContinuityLine.Status(rawValue: statusValue) ?? .active,
             createdAt: dateFormatter.date(from: createdAtString) ?? Date(),
             updatedAt: dateFormatter.date(from: updatedAtString) ?? Date()

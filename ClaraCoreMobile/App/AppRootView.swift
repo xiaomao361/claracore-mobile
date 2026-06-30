@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AppRootView: View {
     @State private var dependencies: AppDependencies?
+    @State private var selectedContextCardID: String?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -34,6 +35,17 @@ struct AppRootView: View {
     private func tabShell(dependencies: AppDependencies) -> some View {
         TabView {
             NavigationStack {
+                ImporterFeatureView(
+                    inboxStore: dependencies.inboxStore,
+                    contextCardStore: dependencies.contextCardStore,
+                    importerRegistry: dependencies.conversationImporterRegistry,
+                    selectedContextCardID: $selectedContextCardID
+                )
+                .navigationTitle(AppTab.importer.title)
+            }
+            .tabItem { AppTab.importer.label }
+
+            NavigationStack {
                 InboxFeatureView(
                     store: dependencies.inboxStore,
                     preparer: dependencies.importSessionPreparer,
@@ -62,19 +74,11 @@ struct AppRootView: View {
             .tabItem { AppTab.continuity.label }
 
             NavigationStack {
-                ImporterFeatureView(
-                    inboxStore: dependencies.inboxStore,
-                    deepSeekImporter: dependencies.deepSeekShareImporter
-                )
-                .navigationTitle(AppTab.importer.title)
-            }
-            .tabItem { AppTab.importer.label }
-
-            NavigationStack {
                 SettingsFeatureView(
                     contextCardStore: dependencies.contextCardStore,
                     apiKeyStore: dependencies.apiKeyStore,
                     reflectionConfiguration: dependencies.reflectionConfiguration,
+                    selectedContextCardID: $selectedContextCardID,
                     onConfigurationChanged: bootstrap
                 )
                     .navigationTitle(AppTab.settings.title)
@@ -87,6 +91,9 @@ struct AppRootView: View {
     private func bootstrap() {
         do {
             dependencies = try AppDependencies.live()
+            if selectedContextCardID == nil {
+                selectedContextCardID = try dependencies?.contextCardStore.defaultCard().id
+            }
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription

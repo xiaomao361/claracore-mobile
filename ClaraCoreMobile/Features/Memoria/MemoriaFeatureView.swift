@@ -3,10 +3,10 @@ import SwiftUI
 struct MemoriaFeatureView: View {
     let store: MemoriaStore
 
-    @State private var content = ""
     @State private var query = ""
     @State private var results: [Memory] = []
     @State private var recent: [Memory] = []
+    @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var editingMemory: Memory?
 
@@ -18,7 +18,7 @@ struct MemoriaFeatureView: View {
                 if recent.isEmpty {
                     ClaraEmptyState(
                         title: "暂无记忆",
-                        message: "提交整理结果或手动保存后，稳定事实会出现在这里。",
+                        message: "提交整理结果后，稳定事实会出现在这里。",
                         systemImage: "square.stack",
                         accent: ClaraDesign.memory
                     )
@@ -34,52 +34,44 @@ struct MemoriaFeatureView: View {
                     }
                 }
 
-                ClaraSectionLabel(title: "写入")
-
-                ClaraCard(accent: ClaraDesign.memory) {
-                    VStack(alignment: .leading, spacing: 12) {
-                TextEditor(text: $content)
-                    .frame(minHeight: 120)
-                    .scrollContentBackground(.hidden)
-
-                Button {
-                    storeMemory()
-                } label: {
-                    Label("保存记忆", systemImage: "checkmark")
-                }
-                .disabled(content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-                }
-
                 ClaraSectionLabel(title: "检索")
 
                 ClaraCard {
                     VStack(alignment: .leading, spacing: 12) {
-                TextField("搜索记忆", text: $query)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .onSubmit { recall() }
-                    .textFieldStyle(.roundedBorder)
+                        TextField("搜索记忆", text: $query)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .onSubmit { recall() }
+                            .textFieldStyle(.roundedBorder)
 
-                Button {
-                    recall()
-                } label: {
-                    Label("搜索", systemImage: "magnifyingglass")
-                }
-                    .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .buttonStyle(ClaraSecondaryButtonStyle())
+                        Button {
+                            recall()
+                        } label: {
+                            Label("搜索", systemImage: "magnifyingglass")
+                        }
+                        .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .buttonStyle(ClaraSecondaryButtonStyle())
 
-                ForEach(results) { memory in
-                    MemoryCard(
-                        memory: memory,
-                        onEdit: { editingMemory = memory },
-                        onDelete: { deleteMemory(memory) }
-                    )
-                }
-            }
+                        ForEach(results) { memory in
+                            MemoryCard(
+                                memory: memory,
+                                onEdit: { editingMemory = memory },
+                                onDelete: { deleteMemory(memory) }
+                            )
+                        }
+                    }
                 }
 
-            if let errorMessage {
+                if let statusMessage {
+                    ClaraCard(accent: ClaraDesign.memory) {
+                        Text(statusMessage)
+                            .font(.system(size: 15))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                if let errorMessage {
                     ClaraCard(accent: ClaraDesign.danger) {
                         Text(errorMessage)
                             .foregroundStyle(ClaraDesign.danger)
@@ -89,6 +81,7 @@ struct MemoriaFeatureView: View {
             .padding(20)
         }
         .claraScreenBackground()
+        .claraKeyboardDismissable()
         .task { loadRecent() }
         .sheet(item: $editingMemory) { memory in
             NavigationStack {
@@ -99,23 +92,11 @@ struct MemoriaFeatureView: View {
         }
     }
 
-    private func storeMemory() {
-        do {
-            let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
-            _ = try store.store(content: trimmed, tags: ["mobile"], isPrivate: false)
-            content = ""
-            query = "mobile"
-            loadRecent()
-            recall()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
     private func recall() {
         do {
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
             results = try store.recall(query: trimmed, limit: 20)
+            statusMessage = results.isEmpty ? "没有找到匹配记忆。" : "找到 \(results.count) 条记忆。"
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -135,6 +116,7 @@ struct MemoriaFeatureView: View {
         do {
             try store.update(id: id, content: content, tags: tags, isPrivate: isPrivate)
             editingMemory = nil
+            statusMessage = "记忆已更新。"
             loadRecent()
             if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 recall()
@@ -149,6 +131,7 @@ struct MemoriaFeatureView: View {
             try store.delete(id: memory.id)
             recent.removeAll { $0.id == memory.id }
             results.removeAll { $0.id == memory.id }
+            statusMessage = "记忆已删除。"
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -170,12 +153,26 @@ private struct MemoryCard: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
+                    ClaraStatusPill(title: memory.kindTitle, color: memory.kindAccent)
+
                     if let sourceAgent = memory.sourceAgent {
                         ClaraStatusPill(title: sourceAgent, color: ClaraDesign.inkMuted, systemImage: "doc.text")
                     }
 
-                    ForEach(memory.tags.prefix(3), id: \.self) { tag in
-                        ClaraStatusPill(title: tag, color: ClaraDesign.memory)
+                    if memory.contextCardId != nil {
+                        ClaraStatusPill(title: "角色", color: ClaraDesign.continuity, systemImage: "person.text.rectangle")
+                    }
+
+                    if memory.lineId != nil {
+                        ClaraStatusPill(title: "共同线", color: ClaraDesign.continuity, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                    }
+                }
+
+                if !memory.visibleTags.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(memory.visibleTags.prefix(5), id: \.self) { tag in
+                            ClaraStatusPill(title: tag, color: ClaraDesign.memory)
+                        }
                     }
                 }
 
@@ -196,6 +193,38 @@ private struct MemoryCard: View {
                 }
             }
         }
+    }
+}
+
+private extension Memory {
+    var kindTitle: String {
+        if tags.contains("preference") {
+            return "偏好"
+        }
+        if tags.contains("decision") {
+            return "决定"
+        }
+        if tags.contains("task") {
+            return "任务"
+        }
+        return "事实"
+    }
+
+    var kindAccent: Color {
+        if tags.contains("preference") {
+            return ClaraDesign.continuity
+        }
+        if tags.contains("decision") {
+            return ClaraDesign.review
+        }
+        if tags.contains("task") {
+            return ClaraDesign.reflection
+        }
+        return ClaraDesign.memory
+    }
+
+    var visibleTags: [String] {
+        tags.filter { !["fact", "preference", "decision", "task", "mobile"].contains($0) }
     }
 }
 
@@ -224,6 +253,10 @@ private struct MemoryEditView: View {
                     TextEditor(text: $content)
                         .frame(minHeight: 180)
                         .scrollContentBackground(.hidden)
+                        .foregroundStyle(ClaraDesign.ink)
+                        .padding(8)
+                        .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
                 }
 
                 ClaraSectionLabel(title: "标签")
@@ -240,6 +273,7 @@ private struct MemoryEditView: View {
             .padding(20)
         }
         .claraScreenBackground()
+        .claraKeyboardDismissable()
         .navigationTitle("编辑记忆")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
