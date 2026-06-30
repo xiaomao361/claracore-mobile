@@ -23,3 +23,5 @@ V1 should keep memory low-presence. The user mainly chooses a Context Card and a
 This project starts with SwiftUI and GRDB.swift.
 
 Development follows [Architecture And Build Sequence](docs/ARCHITECTURE_AND_SEQUENCE.md).
+
+App Store preparation materials live in [docs/app-store](docs/app-store/index.md).
