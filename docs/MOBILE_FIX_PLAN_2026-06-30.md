@@ -1,7 +1,7 @@
 # ClaraCore Mobile Fix Plan
 
 Date: 2026-06-30
-Status: Source repair complete; continuity richness pass in progress
+Status: Source repair complete; continuity richness pass implemented
 
 ## Current Completion State
 
@@ -12,10 +12,11 @@ Verified:
 - XcodeBuildMCP `build_sim` passed.
 - XcodeBuildMCP `test_sim` passed: 50 tests, 0 failed.
 - Manual E2E checklist has been updated to the one-step import flow.
+- Rich continuity source changes were built, tested, installed, and launched on the test iPhone.
 
 Pending:
 
-- Final iPhone installation and manual device pass after continuity richness changes.
+- Final manual true-device pass after continuity richness changes.
 - Provider-specific parsers for ChatGPT, Claude, Gemini, Kimi, Doubao, and Tongyi/Qwen remain fixture-gated. The app currently recognizes those domains and uses generic public webpage/text extraction with clear private-link errors.
 
 Latest continuity richness change:
@@ -23,6 +24,7 @@ Latest continuity richness change:
 - Shared Line now stores state summary, current interpretation, interpretation status, position/emotional arc, affective trace, confirmed ground, boundary notes, and misread risks.
 - Recall packages include the rich continuity state so copied context does not lose the position/emotional arc.
 - Mobile Memoria intentionally remains smaller than full Memoria; it now carries only confidence and importance in addition to existing tags/source/role/line linkage.
+- The UI should expose rich Shared Line state clearly, while Memory cards should stay compact and avoid full Memoria-style metadata overload.
 
 ## Why This Exists
 

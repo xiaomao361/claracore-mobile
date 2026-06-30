@@ -125,11 +125,22 @@ Chinese UI name: `共同线`.
 Purpose:
 - Track one continuing topic, task, scene, project, or conversation arc.
 - Store where the conversation/process has arrived and what should happen next.
+- Preserve enough continuity state for copy-to-external-AI use, including the visible position/emotional arc and the current interpretation.
 
 V1 rule:
 - One import session defaults to one Shared Line.
 - The system may later let the user merge an import into an existing line, but a single import should not automatically fan out into multiple lines.
 - Shared Line text should be milestone-like, not a paragraph summary.
+- Shared Line is richer than Memory on mobile. The phone flow is not an agent runtime, but copied context still needs the continuity state that helps an external AI continue in the right tone and position.
+- Required rich fields:
+  - `stateSummary`: short current-state summary.
+  - `currentInterpretation`: what the line currently means.
+  - `interpretationStatus`: confirmed / provisional / conflict / unknown.
+  - `emotionalArc`: compact visible position and emotional curve.
+  - `affectiveTrace`: tone, valence, intensity, stability, signals, and note.
+  - `realityLine`: confirmed ground facts.
+  - `boundaryNotes`: what should not be over-assumed.
+  - `misreadRisks`: likely wrong readings to avoid.
 
 Good `lastPosition` shape:
 
@@ -158,6 +169,7 @@ V1 rule:
 - The user primarily manages Shared Lines and Context Cards.
 - Memory is a factual substrate: visible, editable, deletable, but low-presence.
 - Do not store general topic notes, product explanations, comparison points, or every technical detail as memory.
+- Mobile Memory is intentionally smaller than full ClaraCore Memoria. It should keep content, tags, source, role/line linkage, confidence, and importance, but it does not need to mirror every Memoria-side parameter.
 
 Good memory examples:
 
@@ -323,15 +335,27 @@ Runtime provider rule:
 ### 4. Continuity / Shared Line
 
 Responsibility:
-- Track lightweight continuation threads.
-- Store title, status, last position, and next step.
+- Track continuation threads.
+- Store title, status, last position, next step, and rich continuity state.
 - Let reviewed captures update or create Shared Line entries.
 - Support recall packaging: the user selects one Shared Line, attaches relevant factual memories, and copies the package into DeepSeek or another external AI app.
 
 Does not own:
 - Long-term fact memory.
-- Emotional or subjective reflection in v1.
 - Background agent state.
+
+Rich state owned by Shared Line:
+
+- `stateSummary`
+- `currentInterpretation`
+- `interpretationStatus`
+- `emotionalArc`
+- `affectiveTrace`
+- `realityLine`
+- `boundaryNotes`
+- `misreadRisks`
+
+This state is not meant to make mobile an agent. It exists so a copied recall package can preserve position, tone, confirmed ground, and misread boundaries when pasted into an external AI.
 
 Primary code:
 - `ClaraCoreMobile/Core/Continuity/`
@@ -360,6 +384,14 @@ The package should be structured as:
 Title:
 Last position:
 Next step:
+
+【连续性状态】
+当前状态:
+当前解释:
+位置/情绪弧线:
+确认事实:
+边界:
+误读风险:
 
 # 相关事实记忆
 - ...

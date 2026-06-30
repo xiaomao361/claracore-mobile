@@ -7,6 +7,7 @@ Scope: final manual validation after source repair completion
 
 - Source repairs are complete.
 - Simulator verification passed: XcodeBuildMCP `build_sim` and `test_sim` with 50 tests, 0 failed.
+- Rich Shared Line state has been added and installed on the test iPhone.
 - This checklist is the remaining true-device pass before considering the repair batch done.
 
 ## Preconditions
@@ -37,15 +38,22 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 13. Tap `重新整理一次` only if intentionally testing duplicate bypass.
 14. Open `共同线`.
 15. Confirm one new Shared Line appears with a visible current station, completed milestones, and next action.
-16. Delete one test Shared Line and confirm visible feedback appears.
-17. Tap `复制回召包`.
-18. Confirm the recall package includes:
+16. Confirm the Shared Line card exposes rich continuity state when available:
+    - current state summary
+    - current interpretation and interpretation status
+    - position arc
+    - emotional arc / affective trace
+    - confirmed ground, boundary notes, and misread risks
+17. Delete one test Shared Line and confirm visible feedback appears.
+18. Tap `复制回召包`.
+19. Confirm the recall package includes:
     - `# Agent`
     - `# 用户`
     - `# 共同线`
+    - `【连续性状态】`
     - `# 相关事实记忆`
     - `# 请求`
-19. Paste the package into DeepSeek and confirm it can continue from the provided context.
+20. Paste the package into DeepSeek and confirm it can continue from the provided context without becoming overly academic.
 
 ## Secondary Import Paths
 
@@ -58,8 +66,10 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 
 - One import defaults to one Shared Line.
 - Memories are few, factual, and bound to that Shared Line through `lineId` when a line is created.
+- Memory cards show confidence/importance signals without compressing or overloading the card.
 - A line-only digest with durable facts produces conservative fallback memories.
 - Recall prefers memories related to the selected Shared Line.
+- Recall preserves Shared Line continuity state, including position/emotional arc and boundary notes.
 - The app can copy a complete recall package without exposing API keys.
 - Duplicate imports show a recovery card with view/retry/continue actions.
 - Current role selection persists across app launches.
@@ -74,3 +84,4 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 - API keys appear in logs, source files, fixtures, docs, or clipboard output.
 - Duplicate import leaves the user stuck with no action.
 - Shared Line cards do not show current station/progress.
+- Shared Line cards or recall packages lose rich continuity state after import.
