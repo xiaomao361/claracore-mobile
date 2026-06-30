@@ -27,10 +27,11 @@ final class ContinuityStore {
         misreadRisks: String = ""
     ) throws -> ContinuityLine {
         let now = Date()
+        let compactedLastPosition = compactedPosition(lastPosition)
         let line = ContinuityLine(
             id: UUID().uuidString,
             title: title,
-            lastPosition: lastPosition,
+            lastPosition: compactedLastPosition,
             nextStep: nextStep,
             contextCardId: contextCardId,
             stateSummary: stateSummary,
@@ -61,7 +62,7 @@ final class ContinuityStore {
                 arguments: [
                     line.id,
                     line.title,
-                    line.lastPosition,
+                    compactedLastPosition,
                     line.nextStep,
                     line.contextCardId,
                     line.stateSummary,
@@ -82,7 +83,7 @@ final class ContinuityStore {
         return line
     }
 
-    func active(limit: Int = 50, contextCardId: String? = nil) throws -> [ContinuityLine] {
+    func active(limit: Int = 50, offset: Int = 0, contextCardId: String? = nil) throws -> [ContinuityLine] {
         try database.dbQueue.read { db in
             let rows = try Row.fetchAll(
                 db,
@@ -91,13 +92,22 @@ final class ContinuityStore {
                 FROM continuity_lines
                 WHERE status = ?
                   AND (? IS NULL OR context_card_id = ?)
-                ORDER BY updated_at DESC
-                LIMIT ?
+                ORDER BY updated_at DESC, created_at DESC, id DESC
+                LIMIT ? OFFSET ?
                 """,
-                arguments: [ContinuityLine.Status.active.rawValue, contextCardId, contextCardId, limit]
+                arguments: [ContinuityLine.Status.active.rawValue, contextCardId, contextCardId, limit, offset]
             )
 
             return rows.map(line(from:))
+        }
+    }
+
+    func get(id: String) throws -> ContinuityLine? {
+        try database.dbQueue.read { db in
+            guard let row = try Row.fetchOne(db, sql: "SELECT * FROM continuity_lines WHERE id = ?", arguments: [id]) else {
+                return nil
+            }
+            return line(from: row)
         }
     }
 
@@ -111,22 +121,74 @@ final class ContinuityStore {
     }
 
     func update(id: String, title: String, lastPosition: String, nextStep: String?) throws {
+        try update(
+            id: id,
+            title: title,
+            lastPosition: lastPosition,
+            nextStep: nextStep,
+            stateSummary: nil,
+            currentInterpretation: nil,
+            interpretationStatus: nil,
+            emotionalArc: nil,
+            affectiveTrace: nil,
+            realityLine: nil,
+            boundaryNotes: nil,
+            misreadRisks: nil
+        )
+    }
+
+    func update(
+        id: String,
+        title: String,
+        lastPosition: String,
+        nextStep: String?,
+        stateSummary: String?,
+        currentInterpretation: String?,
+        interpretationStatus: String?,
+        emotionalArc: [String]?,
+        affectiveTrace: [AffectiveTraceNode]?,
+        realityLine: String?,
+        boundaryNotes: String?,
+        misreadRisks: String?
+    ) throws {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedPosition = lastPosition.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPosition = compactedPosition(lastPosition)
         let trimmedNextStep = nextStep?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty, !trimmedPosition.isEmpty else { return }
+
+        let emotionalArcJSON = try emotionalArc.map(jsonString)
+        let affectiveTraceJSON = try affectiveTrace.map(jsonString)
 
         try database.dbQueue.write { db in
             try db.execute(
                 sql: """
                 UPDATE continuity_lines
-                SET title = ?, last_position = ?, next_step = ?, updated_at = ?
+                SET title = ?,
+                    last_position = ?,
+                    next_step = ?,
+                    state_summary = COALESCE(?, state_summary),
+                    current_interpretation = COALESCE(?, current_interpretation),
+                    interpretation_status = COALESCE(?, interpretation_status),
+                    emotional_arc = COALESCE(?, emotional_arc),
+                    affective_trace = COALESCE(?, affective_trace),
+                    reality_line = COALESCE(?, reality_line),
+                    boundary_notes = COALESCE(?, boundary_notes),
+                    misread_risks = COALESCE(?, misread_risks),
+                    updated_at = ?
                 WHERE id = ?
                 """,
                 arguments: [
                     trimmedTitle,
                     trimmedPosition,
                     trimmedNextStep?.isEmpty == true ? nil : trimmedNextStep,
+                    stateSummary,
+                    currentInterpretation,
+                    interpretationStatus,
+                    emotionalArcJSON,
+                    affectiveTraceJSON,
+                    realityLine,
+                    boundaryNotes,
+                    misreadRisks,
                     dateFormatter.string(from: Date()),
                     id
                 ]
@@ -180,5 +242,27 @@ final class ContinuityStore {
             createdAt: dateFormatter.date(from: createdAtString) ?? Date(),
             updatedAt: dateFormatter.date(from: updatedAtString) ?? Date()
         )
+    }
+
+    private func compactedPosition(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return trimmed }
+
+        let lines = trimmed
+            .split(whereSeparator: \.isNewline)
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        if lines.count > 8 {
+            let kept = lines.suffix(8)
+            return (["较早 \(lines.count - kept.count) 个节点已压缩。"] + kept).joined(separator: "\n")
+        }
+
+        if trimmed.count > 1_600 {
+            let suffix = String(trimmed.suffix(1_400)).trimmingCharacters(in: .whitespacesAndNewlines)
+            return "较早内容已压缩。\n\(suffix)"
+        }
+
+        return trimmed
     }
 }

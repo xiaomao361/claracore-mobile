@@ -9,6 +9,7 @@ struct ImporterFeatureView: View {
     let digestCommitter: DigestCommitter
     let reflectionConfiguration: ReflectionConfiguration
     let contextCardStore: ContextCardStore
+    let continuityStore: ContinuityStore
     let importerRegistry: ConversationImporterRegistry
     @Binding var selectedContextCardID: String?
     let onShowMemories: () -> Void
@@ -16,6 +17,8 @@ struct ImporterFeatureView: View {
 
     @State private var input = ""
     @State private var contextCards: [ContextCard] = []
+    @State private var activeLines: [ContinuityLine] = []
+    @State private var selectedTargetLineID = ImportTargetLine.newLineID
     @State private var statusMessage: String?
     @State private var isImporting = false
     @State private var isFileImporterPresented = false
@@ -77,6 +80,15 @@ struct ImporterFeatureView: View {
                             }
                             .pickerStyle(.menu)
                             .disabled(contextCards.isEmpty || isImporting)
+
+                            Picker("写入共同线", selection: $selectedTargetLineID) {
+                                Text("新建共同线").tag(ImportTargetLine.newLineID)
+                                ForEach(activeLines) { line in
+                                    Text(line.title).tag(line.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .disabled(isImporting)
 
                             TextEditor(text: $input)
                                 .frame(minHeight: 128)
@@ -182,6 +194,10 @@ struct ImporterFeatureView: View {
         .claraKeyboardDismissable()
         .task {
             loadContextCards()
+            loadActiveLines()
+        }
+        .onChange(of: selectedContextCardID) { _, _ in
+            loadActiveLines()
         }
         .overlay {
             if isImporting {
@@ -262,7 +278,20 @@ struct ImporterFeatureView: View {
             if selectedContextCardID == nil {
                 selectedContextCardID = contextCards.first?.id
             }
+            loadActiveLines()
             statusMessage = nil
+        } catch {
+            statusMessage = ClaraErrorPresenter.message(for: error)
+        }
+    }
+
+    private func loadActiveLines() {
+        do {
+            activeLines = try continuityStore.active(limit: 50, contextCardId: selectedContextCardID ?? contextCards.first?.id)
+            if selectedTargetLineID != ImportTargetLine.newLineID,
+               !activeLines.contains(where: { $0.id == selectedTargetLineID }) {
+                selectedTargetLineID = ImportTargetLine.newLineID
+            }
         } catch {
             statusMessage = ClaraErrorPresenter.message(for: error)
         }
@@ -286,6 +315,7 @@ struct ImporterFeatureView: View {
 
     private func importCapture(from inputValue: ConversationImportInput, allowDuplicate: Bool = false) {
         let contextCardId = selectedContextCardID ?? contextCards.first?.id
+        let targetLineId = selectedTargetLineID == ImportTargetLine.newLineID ? nil : selectedTargetLineID
         guard reflectionConfiguration.mode == .remoteModel else {
             statusMessage = "请先到设置里保存并测试默认整理模型 Key。"
             return
@@ -335,7 +365,11 @@ struct ImporterFeatureView: View {
                         self.statusMessage = statusTitle(for: progress)
                     }
                 }
-                let committed = try digestCommitter.commit(result.digest, contextCardId: result.session.contextCardId)
+                let committed = try digestCommitter.commit(
+                    result.digest,
+                    contextCardId: result.session.contextCardId,
+                    targetLineId: targetLineId
+                )
                 try inboxStore.updateCommitResult(
                     id: item.id,
                     memoryIds: committed.memories.map(\.id),
@@ -347,6 +381,7 @@ struct ImporterFeatureView: View {
                     input = ""
                     statusMessage = nil
                     lastCommitResult = committed
+                    loadActiveLines()
                     isSourceExpanded = false
                     isImporting = false
                     progress = nil
@@ -426,6 +461,10 @@ struct ImporterFeatureView: View {
     private func isSuccessStatus(_ value: String) -> Bool {
         value.hasPrefix("已完成") || value.hasPrefix("已有")
     }
+}
+
+private enum ImportTargetLine {
+    static let newLineID = "__new_line__"
 }
 
 private struct DuplicateImportResult: Equatable {
@@ -682,6 +721,7 @@ private struct ImportProgressView: View {
         ),
         reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder, modelProvider: .deepSeekDefault),
         contextCardStore: ContextCardStore(database: database),
+        continuityStore: ContinuityStore(database: database),
         importerRegistry: ConversationImporterRegistry.live(),
         selectedContextCardID: .constant(ContextCardStore.defaultCardID),
         onShowMemories: {},

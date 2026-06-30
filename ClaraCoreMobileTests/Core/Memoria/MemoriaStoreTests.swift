@@ -36,6 +36,28 @@ final class MemoriaStoreTests: XCTestCase {
         XCTAssertEqual(Set(recent.map(\.id)), Set([first.id, second.id]))
     }
 
+    func testRecentSupportsPagination() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+
+        let store = try MemoriaStore(database: AppDatabase(path: databaseURL.path))
+
+        for index in 0..<5 {
+            _ = try store.store(content: "第 \(index) 条分页记忆", tags: ["page"], isPrivate: false)
+        }
+
+        let firstPage = try store.recent(limit: 2, offset: 0)
+        let secondPage = try store.recent(limit: 2, offset: 2)
+        let thirdPage = try store.recent(limit: 2, offset: 4)
+
+        XCTAssertEqual(firstPage.count, 2)
+        XCTAssertEqual(secondPage.count, 2)
+        XCTAssertEqual(thirdPage.count, 1)
+        XCTAssertTrue(Set(firstPage.map(\.id)).isDisjoint(with: Set(secondPage.map(\.id))))
+        XCTAssertTrue(Set((firstPage + secondPage).map(\.id)).isDisjoint(with: Set(thirdPage.map(\.id))))
+    }
+
     func testRelatedToLineReturnsOnlyBoundMemories() throws {
         let databaseURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

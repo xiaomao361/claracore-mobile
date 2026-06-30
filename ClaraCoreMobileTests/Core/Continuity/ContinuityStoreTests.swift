@@ -22,6 +22,27 @@ final class ContinuityStoreTests: XCTestCase {
         XCTAssertEqual(active.first?.nextStep, "提交候选记忆和共同线。")
     }
 
+    func testActiveSupportsPagination() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let store = try ContinuityStore(database: AppDatabase(path: databaseURL.path))
+
+        for index in 0..<5 {
+            _ = try store.create(title: "线 \(index)", lastPosition: "位置 \(index)", nextStep: nil)
+        }
+
+        let firstPage = try store.active(limit: 2, offset: 0)
+        let secondPage = try store.active(limit: 2, offset: 2)
+        let thirdPage = try store.active(limit: 2, offset: 4)
+
+        XCTAssertEqual(firstPage.count, 2)
+        XCTAssertEqual(secondPage.count, 2)
+        XCTAssertEqual(thirdPage.count, 1)
+        XCTAssertTrue(Set(firstPage.map(\.id)).isDisjoint(with: Set(secondPage.map(\.id))))
+        XCTAssertTrue(Set((firstPage + secondPage).map(\.id)).isDisjoint(with: Set(thirdPage.map(\.id))))
+    }
+
     func testArchiveRemovesLineFromActiveList() throws {
         let databaseURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
@@ -69,6 +90,23 @@ final class ContinuityStoreTests: XCTestCase {
         XCTAssertEqual(updated.title, "新线")
         XCTAssertEqual(updated.lastPosition, "新位置")
         XCTAssertEqual(updated.nextStep, "下一步")
+    }
+
+    func testCreateCompactsLongMilestoneTrail() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let store = try ContinuityStore(database: AppDatabase(path: databaseURL.path))
+        let longPosition = (1...12)
+            .map { "\($0). 节点 \($0)" }
+            .joined(separator: "\n")
+
+        let line = try store.create(title: "长线", lastPosition: longPosition, nextStep: nil)
+        let stored = try XCTUnwrap(store.get(id: line.id))
+
+        XCTAssertTrue(stored.lastPosition.hasPrefix("较早 4 个节点已压缩。"))
+        XCTAssertFalse(stored.lastPosition.contains("1. 节点 1\n"))
+        XCTAssertTrue(stored.lastPosition.contains("节点 12"))
     }
 
     func testMilestoneStepsParseNumberedAndBulletedLines() {

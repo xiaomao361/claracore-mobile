@@ -47,6 +47,7 @@ struct AppRootView: View {
                     digestCommitter: dependencies.digestCommitter,
                     reflectionConfiguration: dependencies.reflectionConfiguration,
                     contextCardStore: dependencies.contextCardStore,
+                    continuityStore: dependencies.continuityStore,
                     importerRegistry: dependencies.conversationImporterRegistry,
                     selectedContextCardID: $selectedContextCardID,
                     onShowMemories: { selectedTab = .memoria },

@@ -166,6 +166,29 @@ struct ClaraActionStatus: View {
     }
 }
 
+struct LoadMoreRow: View {
+    var isLoading: Bool
+    var title: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if isLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(ClaraDesign.inkMuted)
+            } else {
+                Image(systemName: "arrow.down.circle")
+                    .foregroundStyle(ClaraDesign.inkMuted)
+            }
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(ClaraDesign.inkMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+    }
+}
+
 struct ClaraPrimaryButtonStyle: ButtonStyle {
     var color: Color = ClaraDesign.memory
 

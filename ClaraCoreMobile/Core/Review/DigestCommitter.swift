@@ -18,22 +18,47 @@ final class DigestCommitter {
         self.continuityStore = continuityStore
     }
 
-    func commit(_ digest: DigestResult, contextCardId: String? = nil) throws -> DigestCommitResult {
-        let lines = try digest.candidateSharedLineUpdates.map { update in
-            try continuityStore.create(
-                title: update.title,
-                lastPosition: update.lastPosition,
-                nextStep: update.nextStep,
-                contextCardId: contextCardId,
-                stateSummary: update.stateSummary,
-                currentInterpretation: update.currentInterpretation,
-                interpretationStatus: update.interpretationStatus,
-                emotionalArc: update.emotionalArc,
-                affectiveTrace: update.affectiveTrace,
-                realityLine: update.realityLine,
-                boundaryNotes: update.boundaryNotes,
-                misreadRisks: update.misreadRisks
-            )
+    func commit(
+        _ digest: DigestResult,
+        contextCardId: String? = nil,
+        targetLineId: String? = nil
+    ) throws -> DigestCommitResult {
+        let lines: [ContinuityLine]
+        if let targetLineId, !targetLineId.isEmpty {
+            if let update = digest.candidateSharedLineUpdates.first {
+                try continuityStore.update(
+                    id: targetLineId,
+                    title: update.title,
+                    lastPosition: update.lastPosition,
+                    nextStep: update.nextStep,
+                    stateSummary: update.stateSummary,
+                    currentInterpretation: update.currentInterpretation,
+                    interpretationStatus: update.interpretationStatus,
+                    emotionalArc: update.emotionalArc,
+                    affectiveTrace: update.affectiveTrace,
+                    realityLine: update.realityLine,
+                    boundaryNotes: update.boundaryNotes,
+                    misreadRisks: update.misreadRisks
+                )
+            }
+            lines = try continuityStore.get(id: targetLineId).map { [$0] } ?? []
+        } else {
+            lines = try digest.candidateSharedLineUpdates.map { update in
+                try continuityStore.create(
+                    title: update.title,
+                    lastPosition: update.lastPosition,
+                    nextStep: update.nextStep,
+                    contextCardId: contextCardId,
+                    stateSummary: update.stateSummary,
+                    currentInterpretation: update.currentInterpretation,
+                    interpretationStatus: update.interpretationStatus,
+                    emotionalArc: update.emotionalArc,
+                    affectiveTrace: update.affectiveTrace,
+                    realityLine: update.realityLine,
+                    boundaryNotes: update.boundaryNotes,
+                    misreadRisks: update.misreadRisks
+                )
+            }
         }
         let defaultLineId = lines.first?.id
 

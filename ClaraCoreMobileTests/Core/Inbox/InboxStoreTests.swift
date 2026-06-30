@@ -74,4 +74,28 @@ final class InboxStoreTests: XCTestCase {
         XCTAssertEqual(existing.metadata["committed_memory_ids"], "memory-1,memory-2")
         XCTAssertEqual(existing.metadata["committed_line_ids"], "line-1")
     }
+
+    func testExistingDoesNotTreatSameThreadDifferentContentAsDuplicate() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+
+        let store = try InboxStore(database: AppDatabase(path: databaseURL.path))
+        _ = try store.enqueue(
+            RawCapture(
+                source: .share,
+                rawContent: "First version of a long conversation.",
+                sourceApp: "DeepSeek",
+                sourceThreadId: "share-1"
+            )
+        )
+
+        let existing = try store.existing(
+            contentHash: RawCapture.hash("Second longer version of the same conversation."),
+            sourceApp: "DeepSeek",
+            sourceThreadId: "share-1"
+        )
+
+        XCTAssertNil(existing)
+    }
 }

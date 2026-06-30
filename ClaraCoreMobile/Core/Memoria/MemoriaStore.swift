@@ -120,7 +120,7 @@ final class MemoriaStore {
         }
     }
 
-    func recent(limit: Int = 20, contextCardId: String? = nil) throws -> [Memory] {
+    func recent(limit: Int = 20, offset: Int = 0, contextCardId: String? = nil) throws -> [Memory] {
         try database.dbQueue.read { db in
             let rows = try Row.fetchAll(
                 db,
@@ -129,10 +129,10 @@ final class MemoriaStore {
                 FROM memories
                 WHERE is_archived = 0
                   AND (? IS NULL OR context_card_id = ?)
-                ORDER BY updated_at DESC
-                LIMIT ?
+                ORDER BY updated_at DESC, created_at DESC, id DESC
+                LIMIT ? OFFSET ?
                 """,
-                arguments: [contextCardId, contextCardId, limit]
+                arguments: [contextCardId, contextCardId, limit, offset]
             )
 
             return try rows.map(memory(from:))

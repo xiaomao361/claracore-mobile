@@ -192,6 +192,29 @@ final class ConversationImporterRegistryTests: XCTestCase {
 
         XCTAssertEqual(existing?.id, item.id)
     }
+
+    func testInboxStoreAllowsSameThreadWithDifferentContentHash() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let store = try InboxStore(database: AppDatabase(path: databaseURL.path))
+        _ = try store.enqueue(
+            RawCapture(
+                source: .share,
+                rawContent: "短版本",
+                sourceApp: "DeepSeek",
+                sourceThreadId: "share-1"
+            )
+        )
+
+        let existing = try store.existing(
+            contentHash: RawCapture.hash("短版本后面又聊了很久的新全量版本"),
+            sourceApp: "DeepSeek",
+            sourceThreadId: "share-1"
+        )
+
+        XCTAssertNil(existing)
+    }
 }
 
 private struct StubURLLoader: URLDataLoading {

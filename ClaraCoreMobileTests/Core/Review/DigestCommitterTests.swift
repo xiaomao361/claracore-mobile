@@ -79,4 +79,68 @@ final class DigestCommitterTests: XCTestCase {
         XCTAssertEqual(lines.first?.realityLine, "mobile 已能导入并写入记忆和共同线。")
         XCTAssertEqual(memories.first?.confidence, 0.92)
     }
+
+    func testCommitCanUpdateTargetContinuityLine() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let database = try AppDatabase(path: databaseURL.path)
+        let memoriaStore = MemoriaStore(database: database)
+        let continuityStore = ContinuityStore(database: database)
+        let committer = DigestCommitter(
+            memoriaStore: memoriaStore,
+            continuityStore: continuityStore
+        )
+        let existingLine = try continuityStore.create(
+            title: "ClaraCore Mobile",
+            lastPosition: "旧位置",
+            nextStep: nil,
+            contextCardId: "role-1"
+        )
+        let provenance = ReflectionProvenance(
+            sessionId: "session-2",
+            segmentId: "segment-1",
+            characterRange: 0..<10
+        )
+        let digest = DigestResult(
+            sessionId: "session-2",
+            summary: "整理摘要",
+            candidateMemories: [
+                CandidateMemory(
+                    kind: .decision,
+                    content: "用户决定把后续导入追加到固定共同线。",
+                    confidence: 0.91,
+                    tags: ["import"],
+                    provenance: provenance
+                )
+            ],
+            candidateSharedLineUpdates: [
+                CandidateSharedLineUpdate(
+                    title: "ClaraCore Mobile",
+                    lastPosition: "1. 已确认需要固定共同线\n2. 正在把导入写入已有线",
+                    nextStep: "补充线压缩",
+                    stateSummary: "固定共同线正在接入导入流程。",
+                    confidence: 0.9,
+                    provenance: provenance
+                )
+            ],
+            conflicts: []
+        )
+
+        let result = try committer.commit(
+            digest,
+            contextCardId: "role-1",
+            targetLineId: existingLine.id
+        )
+        let lines = try continuityStore.active(contextCardId: "role-1")
+        let memories = try memoriaStore.related(toLineId: existingLine.id, limit: 10)
+
+        XCTAssertEqual(lines.count, 1)
+        XCTAssertEqual(result.continuityLines.map(\.id), [existingLine.id])
+        XCTAssertEqual(lines.first?.id, existingLine.id)
+        XCTAssertEqual(lines.first?.lastPosition, "1. 已确认需要固定共同线\n2. 正在把导入写入已有线")
+        XCTAssertEqual(lines.first?.stateSummary, "固定共同线正在接入导入流程。")
+        XCTAssertEqual(memories.map(\.content), ["用户决定把后续导入追加到固定共同线。"])
+        XCTAssertEqual(memories.first?.lineId, existingLine.id)
+    }
 }

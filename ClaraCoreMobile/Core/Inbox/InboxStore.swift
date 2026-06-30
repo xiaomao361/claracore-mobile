@@ -77,33 +77,17 @@ final class InboxStore {
 
     func existing(contentHash: String, sourceApp: String?, sourceThreadId: String?) throws -> InboxItem? {
         try database.dbQueue.read { db in
-            let row: Row?
-            if let sourceApp, let sourceThreadId {
-                row = try Row.fetchOne(
-                    db,
-                    sql: """
-                    SELECT *
-                    FROM inbox
-                    WHERE content_hash = ?
-                       OR (source_app = ? AND source_thread_id = ?)
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                    """,
-                    arguments: [contentHash, sourceApp, sourceThreadId]
-                )
-            } else {
-                row = try Row.fetchOne(
-                    db,
-                    sql: """
-                    SELECT *
-                    FROM inbox
-                    WHERE content_hash = ?
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                    """,
-                    arguments: [contentHash]
-                )
-            }
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT *
+                FROM inbox
+                WHERE content_hash = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                arguments: [contentHash]
+            )
 
             return row.map(item(from:))
         }

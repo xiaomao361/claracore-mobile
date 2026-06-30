@@ -11,10 +11,14 @@ struct ContinuityFeatureView: View {
     @State private var editingLine: ContinuityLine?
     @State private var statusMessage: String?
     @State private var errorMessage: String?
+    @State private var isLoadingLines = false
+    @State private var hasMoreLines = true
+
+    private let pageSize = 20
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            LazyVStack(alignment: .leading, spacing: 20) {
                 HStack {
                     ClaraSectionLabel(title: "当前共同线")
                     Spacer()
@@ -34,7 +38,7 @@ struct ContinuityFeatureView: View {
                         accent: ClaraDesign.continuity
                     )
                 } else {
-                    VStack(spacing: 12) {
+                    LazyVStack(spacing: 12) {
                         ForEach(lines) { line in
                             ClaraCard(accent: ClaraDesign.continuity) {
                                 VStack(alignment: .leading, spacing: 10) {
@@ -105,6 +109,16 @@ struct ContinuityFeatureView: View {
                             }
                         }
                     }
+
+                    if hasMoreLines || isLoadingLines {
+                        LoadMoreRow(
+                            isLoading: isLoadingLines,
+                            title: hasMoreLines ? "加载更多共同线" : "正在加载共同线..."
+                        )
+                        .onAppear {
+                            loadMoreLinesIfNeeded()
+                        }
+                    }
                 }
 
                 if let statusMessage {
@@ -115,10 +129,10 @@ struct ContinuityFeatureView: View {
         }
         .claraScreenBackground()
         .task {
-            reload()
+            reload(reset: true)
         }
         .onAppear {
-            reload()
+            reload(reset: true)
         }
         .sheet(item: $selectedLine) { line in
             NavigationStack {
@@ -150,14 +164,34 @@ struct ContinuityFeatureView: View {
         )
     }
 
-    private func reload() {
+    private func reload(reset: Bool = true) {
+        guard !isLoadingLines else { return }
+        isLoadingLines = true
         do {
-            lines = try store.active()
+            let offset = reset ? 0 : lines.count
+            let page = try store.active(limit: pageSize, offset: offset)
+            if reset {
+                lines = page
+            } else {
+                appendUniqueLines(page)
+            }
+            hasMoreLines = page.count == pageSize
             contextCards = Dictionary(uniqueKeysWithValues: try contextCardStore.list().map { ($0.id, $0) })
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+        isLoadingLines = false
+    }
+
+    private func loadMoreLinesIfNeeded() {
+        guard hasMoreLines, !isLoadingLines else { return }
+        reload(reset: false)
+    }
+
+    private func appendUniqueLines(_ page: [ContinuityLine]) {
+        let existingIDs = Set(lines.map(\.id))
+        lines.append(contentsOf: page.filter { !existingIDs.contains($0.id) })
     }
 
     private func roleTitle(for line: ContinuityLine) -> String {
@@ -171,7 +205,7 @@ struct ContinuityFeatureView: View {
         do {
             try store.delete(id: line.id)
             statusMessage = "共同线已删除。"
-            reload()
+            reload(reset: true)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -182,7 +216,7 @@ struct ContinuityFeatureView: View {
             try store.update(id: line.id, title: title, lastPosition: lastPosition, nextStep: nextStep)
             editingLine = nil
             statusMessage = "共同线已更新。"
-            reload()
+            reload(reset: true)
         } catch {
             errorMessage = error.localizedDescription
         }

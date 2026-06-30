@@ -12,10 +12,14 @@ struct MemoriaFeatureView: View {
     @State private var kindFilter: MemoryKindFilter = .all
     @State private var sourceFilter: String = MemorySourceFilter.all
     @State private var onlyLinkedToLine = false
+    @State private var isLoadingRecent = false
+    @State private var hasMoreRecent = true
+
+    private let pageSize = 20
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            LazyVStack(alignment: .leading, spacing: 20) {
                 ClaraSectionLabel(title: "最近记忆")
 
                 MemoryFilterBar(
@@ -33,13 +37,23 @@ struct MemoriaFeatureView: View {
                         accent: ClaraDesign.memory
                     )
                 } else {
-                    VStack(spacing: 12) {
+                    LazyVStack(spacing: 12) {
                         ForEach(filteredRecent) { memory in
                             MemoryCard(
                                 memory: memory,
                                 onEdit: { editingMemory = memory },
                                 onDelete: { deleteMemory(memory) }
                             )
+                        }
+                    }
+
+                    if hasMoreRecent || isLoadingRecent {
+                        LoadMoreRow(
+                            isLoading: isLoadingRecent,
+                            title: hasMoreRecent ? "加载更多记忆" : "正在加载记忆..."
+                        )
+                        .onAppear {
+                            loadMoreRecentIfNeeded()
                         }
                     }
                 }
@@ -86,9 +100,9 @@ struct MemoriaFeatureView: View {
         }
         .claraScreenBackground()
         .claraKeyboardDismissable()
-        .task { loadRecent() }
+        .task { loadRecent(reset: true) }
         .onAppear {
-            loadRecent()
+            loadRecent(reset: true)
             if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 recall()
             }
@@ -113,7 +127,7 @@ struct MemoriaFeatureView: View {
     private func recall() {
         do {
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            results = try store.recall(query: trimmed, limit: 20)
+            results = try store.recall(query: trimmed, limit: pageSize)
             statusMessage = results.isEmpty ? "没有找到匹配记忆。" : "找到 \(results.count) 条记忆。"
             errorMessage = nil
         } catch {
@@ -121,13 +135,33 @@ struct MemoriaFeatureView: View {
         }
     }
 
-    private func loadRecent() {
+    private func loadRecent(reset: Bool) {
+        guard !isLoadingRecent else { return }
+        isLoadingRecent = true
         do {
-            recent = try store.recent(limit: 20)
+            let offset = reset ? 0 : recent.count
+            let page = try store.recent(limit: pageSize, offset: offset)
+            if reset {
+                recent = page
+            } else {
+                appendUniqueRecent(page)
+            }
+            hasMoreRecent = page.count == pageSize
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+        isLoadingRecent = false
+    }
+
+    private func loadMoreRecentIfNeeded() {
+        guard hasMoreRecent, !isLoadingRecent else { return }
+        loadRecent(reset: false)
+    }
+
+    private func appendUniqueRecent(_ page: [Memory]) {
+        let existingIDs = Set(recent.map(\.id))
+        recent.append(contentsOf: page.filter { !existingIDs.contains($0.id) })
     }
 
     private func updateMemory(id: String, content: String, tags: [String], isPrivate: Bool) {
@@ -135,7 +169,7 @@ struct MemoriaFeatureView: View {
             try store.update(id: id, content: content, tags: tags, isPrivate: isPrivate)
             editingMemory = nil
             statusMessage = "记忆已更新。"
-            loadRecent()
+            loadRecent(reset: true)
             if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 recall()
             }
