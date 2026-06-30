@@ -79,6 +79,36 @@ final class OpenAICompatibleReflectionServiceTests: XCTestCase {
 
         try await service.validateConnection()
     }
+
+    func testModelProviderClientListsAvailableModels() async throws {
+        CapturingURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.url?.path, "/v1/models")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-key")
+
+            let responseBody = #"{"data":[{"id":"z-model"},{"id":"a-model"}]}"#
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            ))
+            return (response, Data(responseBody.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CapturingURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let client = ModelProviderClient(
+            baseURL: try XCTUnwrap(URL(string: "https://llm.example/v1")),
+            apiKey: "test-key",
+            urlSession: session
+        )
+
+        let models = try await client.listModels()
+
+        XCTAssertEqual(models.map(\.id), ["a-model", "z-model"])
+    }
 }
 
 private final class CapturingURLProtocol: URLProtocol {

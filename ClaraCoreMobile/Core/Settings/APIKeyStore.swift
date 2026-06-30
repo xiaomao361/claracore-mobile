@@ -65,6 +65,72 @@ enum ModelProviderConfigurationStore {
     }
 }
 
+struct ModelProviderClient {
+    enum ClientError: LocalizedError, Equatable {
+        case invalidBaseURL
+        case emptyModels
+        case invalidResponse
+        case httpStatus(Int, String)
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidBaseURL:
+                return "模型 Base URL 无效。"
+            case .emptyModels:
+                return "这个地址没有返回可用模型。请检查 Base URL 或 Key。"
+            case .invalidResponse:
+                return "模型列表返回格式异常。"
+            case let .httpStatus(statusCode, body):
+                if statusCode == 401 || statusCode == 403 {
+                    return "模型 Key 无效或没有权限读取模型列表。"
+                }
+                let detail = body.trimmingCharacters(in: .whitespacesAndNewlines)
+                return detail.isEmpty ? "模型列表请求失败：HTTP \(statusCode)。" : "模型列表请求失败：HTTP \(statusCode)，\(detail)"
+            }
+        }
+    }
+
+    struct Model: Decodable, Identifiable, Equatable {
+        var id: String
+    }
+
+    private struct ModelsResponse: Decodable {
+        var data: [Model]
+    }
+
+    var baseURL: URL
+    var apiKey: String
+    var urlSession: URLSession = .shared
+
+    func listModels() async throws -> [Model] {
+        var request = URLRequest(url: baseURL.appendingPathComponent("models"))
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (data, response) = try await urlSession.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ClientError.invalidResponse
+        }
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw ClientError.httpStatus(httpResponse.statusCode, String(data: data, encoding: .utf8) ?? "")
+        }
+        let decoded: ModelsResponse
+        do {
+            decoded = try JSONDecoder().decode(ModelsResponse.self, from: data)
+        } catch {
+            throw ClientError.invalidResponse
+        }
+        let models = decoded.data
+            .filter { !$0.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted { $0.id.localizedStandardCompare($1.id) == .orderedAscending }
+        guard !models.isEmpty else {
+            throw ClientError.emptyModels
+        }
+        return models
+    }
+}
+
 final class KeychainAPIKeyStore: APIKeyStore {
     enum StoreError: Error {
         case unexpectedStatus(OSStatus)

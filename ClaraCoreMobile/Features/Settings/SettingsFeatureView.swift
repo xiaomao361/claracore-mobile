@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SettingsFeatureView: View {
     let contextCardStore: ContextCardStore
@@ -15,8 +16,10 @@ struct SettingsFeatureView: View {
     @State private var modelBaseURL = ""
     @State private var modelName = ""
     @State private var modelAPIKey = ""
+    @State private var availableModels: [ModelProviderClient.Model] = []
     @State private var hasSavedModelKey = false
     @State private var isTestingModel = false
+    @State private var isLoadingModels = false
     @State private var statusMessage: String?
     @State private var errorMessage: String?
 
@@ -99,13 +102,20 @@ struct SettingsFeatureView: View {
                     }
                 }
 
-                ClaraSectionLabel(title: "默认整理模型")
+                ClaraSectionLabel(title: "整理引擎")
 
                 ClaraCard(accent: reflectionConfiguration.mode == .remoteModel ? ClaraDesign.memory : ClaraDesign.reflection) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("当前模式")
-                                .foregroundStyle(ClaraDesign.ink)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(reflectionConfiguration.mode == .remoteModel ? "远程整理已启用" : "本地占位")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(ClaraDesign.ink)
+                                Text(reflectionConfiguration.mode == .remoteModel ? "导入后会调用下方模型配置，生成记忆和共同线。" : "未保存模型 Key 时不会远程整理，也不会自动写入候选记忆。")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(ClaraDesign.inkMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                             Spacer()
                             ClaraStatusPill(
                                 title: currentModeTitle,
@@ -114,11 +124,11 @@ struct SettingsFeatureView: View {
                             )
                         }
 
-                        if reflectionConfiguration.mode == .localPlaceholder {
-                            Text("本地占位模式只会生成摘要，不会提取候选记忆或共同线。配置默认模型 Key 后，导入会自动进入真实整理流程。")
-                                .font(.system(size: 14))
-                                .foregroundStyle(ClaraDesign.inkMuted)
-                                .fixedSize(horizontal: false, vertical: true)
+                        if let provider = reflectionConfiguration.modelProvider {
+                            HStack(spacing: 8) {
+                                ClaraStatusPill(title: provider.trimmedProviderName, color: ClaraDesign.memory, systemImage: "server.rack")
+                                ClaraStatusPill(title: provider.trimmedModel.isEmpty ? "未选择模型" : provider.trimmedModel, color: ClaraDesign.continuity, systemImage: "cpu")
+                            }
                         }
                     }
                 }
@@ -126,66 +136,141 @@ struct SettingsFeatureView: View {
                 ClaraSectionLabel(title: "模型配置")
 
                 ClaraCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack {
-                            Text("OpenAI-compatible")
-                                .foregroundStyle(ClaraDesign.ink)
-                            Spacer()
-                            ClaraStatusPill(title: modelProviderName.isEmpty ? "未配置" : modelProviderName, color: ClaraDesign.memory, systemImage: "server.rack")
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("OpenAI-compatible")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(ClaraDesign.ink)
+                                Spacer()
+                                ClaraStatusPill(title: hasSavedModelKey ? "Key 已保存" : "需要 Key", color: hasSavedModelKey ? ClaraDesign.memory : ClaraDesign.reflection, systemImage: hasSavedModelKey ? "lock" : "key")
+                            }
+                            Text("填写兼容 Chat Completions 的地址和 Key，先查询模型，再选择默认整理模型。DeepSeek 只是默认预设之一。")
+                                .font(.system(size: 13))
+                                .foregroundStyle(ClaraDesign.inkMuted)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
 
-                        TextField("Provider 名称，例如 DeepSeek / OpenAI / 自部署", text: $modelProviderName)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .textFieldStyle(.roundedBorder)
+                        VStack(alignment: .leading, spacing: 12) {
+                            ClaraInlineField(
+                                title: "Provider",
+                                subtitle: "只用于界面显示，例如 DeepSeek / OpenAI / 自部署。",
+                                text: $modelProviderName,
+                                placeholder: "Provider 名称"
+                            )
 
-                        TextField("Base URL，例如 https://api.deepseek.com", text: $modelBaseURL)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .textFieldStyle(.roundedBorder)
-                            .keyboardType(.URL)
+                            ClaraInlineField(
+                                title: "Base URL",
+                                subtitle: "不需要写 /chat/completions。示例：https://api.openai.com/v1",
+                                text: $modelBaseURL,
+                                placeholder: "https://api.deepseek.com",
+                                keyboardType: .URL
+                            )
 
-                        TextField("Model，例如 deepseek-v4-pro / gpt-4.1", text: $modelName)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .textFieldStyle(.roundedBorder)
+                            VStack(alignment: .leading, spacing: 7) {
+                                Text("API Key")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(ClaraDesign.ink)
+                                SecureField(hasSavedModelKey ? "已保存，留空则不修改" : "输入模型 API Key", text: $modelAPIKey)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .textFieldStyle(.roundedBorder)
+                                Text("Key 只保存到本机 Keychain；查询模型和测试连接会把它作为 Authorization header 发给上面的 Base URL。")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(ClaraDesign.inkMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
 
-                        SecureField(hasSavedModelKey ? "API Key 已保存，留空则不修改" : "API Key", text: $modelAPIKey)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .textFieldStyle(.roundedBorder)
+                        HStack(spacing: 10) {
+                            Button {
+                                loadAvailableModels()
+                            } label: {
+                                Label(isLoadingModels ? "正在查询" : "查询模型", systemImage: "list.bullet.rectangle")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .disabled(!canLoadModels || isLoadingModels)
+                            .buttonStyle(ClaraSecondaryButtonStyle())
 
-                        HStack {
+                            Button {
+                                testModelConnection()
+                            } label: {
+                                Label(isTestingModel ? "正在测试" : "测试连接", systemImage: "checkmark.seal")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .disabled(!canTestModelConnection || isTestingModel)
+                            .buttonStyle(ClaraSecondaryButtonStyle())
+                        }
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("默认整理模型")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(ClaraDesign.ink)
+                                Spacer()
+                                if !availableModels.isEmpty {
+                                    ClaraStatusPill(title: "\(availableModels.count) 个可选", color: ClaraDesign.continuity, systemImage: "checklist")
+                                }
+                            }
+
+                            TextField("先查询模型，或手动输入 model id", text: $modelName)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .textFieldStyle(.roundedBorder)
+
+                            if !availableModels.isEmpty {
+                                VStack(spacing: 8) {
+                                    ForEach(availableModels.prefix(12)) { model in
+                                        Button {
+                                            modelName = model.id
+                                            statusMessage = "已选择模型：\(model.id)"
+                                        } label: {
+                                            HStack(spacing: 10) {
+                                                Image(systemName: modelName == model.id ? "checkmark.circle.fill" : "circle")
+                                                    .foregroundStyle(modelName == model.id ? ClaraDesign.memory : ClaraDesign.inkMuted)
+                                                Text(model.id)
+                                                    .font(.system(size: 14, weight: modelName == model.id ? .semibold : .regular))
+                                                    .foregroundStyle(ClaraDesign.ink)
+                                                    .lineLimit(1)
+                                                    .truncationMode(.middle)
+                                                Spacer()
+                                            }
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 9)
+                                            .background(modelName == model.id ? ClaraDesign.memory.opacity(0.10) : ClaraDesign.surfaceMuted.opacity(0.45))
+                                            .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+
+                                    if availableModels.count > 12 {
+                                        Text("还有 \(availableModels.count - 12) 个模型未显示，可直接复制 model id 到输入框。")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(ClaraDesign.inkMuted)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                }
+                            }
+                        }
+
+                        HStack(spacing: 10) {
                             Button {
                                 saveModelConfiguration()
                             } label: {
-                                Label("保存配置", systemImage: "key")
+                                Label("保存配置", systemImage: "square.and.arrow.down")
+                                    .frame(maxWidth: .infinity)
                             }
                             .disabled(!canSaveModelConfiguration)
                             .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.memory))
-
-                            Spacer()
 
                             Button(role: .destructive) {
                                 deleteModelKey()
                             } label: {
                                 Label("删除 Key", systemImage: "trash")
+                                    .frame(maxWidth: .infinity)
                             }
                             .disabled(!hasSavedModelKey)
                             .buttonStyle(ClaraSecondaryButtonStyle())
-                        }
-
-                        Button {
-                            testModelConnection()
-                        } label: {
-                            Label(isTestingModel ? "正在测试" : "测试连接", systemImage: "checkmark.seal")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .disabled(!canTestModelConnection || isTestingModel)
-                        .buttonStyle(ClaraSecondaryButtonStyle())
-
-                        if hasSavedModelKey {
-                            ClaraStatusPill(title: "已保存到本机 Keychain", color: ClaraDesign.memory, systemImage: "lock")
                         }
                     }
                 }
@@ -241,6 +326,11 @@ struct SettingsFeatureView: View {
             (hasSavedModelKey || !modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
+    private var canLoadModels: Bool {
+        currentModelDraft.baseURL != nil &&
+            (hasSavedModelKey || !modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+
     private var currentModelDraft: ModelProviderConfiguration {
         ModelProviderConfiguration(
             providerName: modelProviderName,
@@ -271,6 +361,7 @@ struct SettingsFeatureView: View {
             resetContextCardDraft()
             resetModelConfigurationDraft()
             hasSavedModelKey = try readSavedModelKey() != nil
+            availableModels = []
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }
@@ -341,6 +432,46 @@ struct SettingsFeatureView: View {
             onConfigurationChanged()
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
+        }
+    }
+
+    private func loadAvailableModels() {
+        guard !isLoadingModels else { return }
+        isLoadingModels = true
+        statusMessage = "正在查询可用模型..."
+
+        Task {
+            do {
+                let configuration = currentModelDraft
+                guard let baseURL = configuration.baseURL else {
+                    throw SettingsModelError.invalidConfiguration
+                }
+                let enteredKey = modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                let savedKey = try readSavedModelKey()
+                let key = enteredKey.isEmpty ? savedKey : enteredKey
+                guard let key, !key.isEmpty else {
+                    throw OpenAICompatibleReflectionService.ServiceError.missingAPIKey
+                }
+
+                let models = try await ModelProviderClient(baseURL: baseURL, apiKey: key).listModels()
+
+                await MainActor.run {
+                    availableModels = models
+                    if modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       let firstModel = models.first {
+                        modelName = firstModel.id
+                    }
+                    isLoadingModels = false
+                    statusMessage = "已找到 \(models.count) 个可用模型。"
+                    errorMessage = nil
+                }
+            } catch {
+                await MainActor.run {
+                    isLoadingModels = false
+                    statusMessage = nil
+                    errorMessage = ClaraErrorPresenter.message(for: error)
+                }
+            }
         }
     }
 
@@ -420,6 +551,31 @@ private enum SettingsModelError: LocalizedError {
         switch self {
         case .invalidConfiguration:
             return "模型配置不完整。请确认 Base URL 和 Model 都有效。"
+        }
+    }
+}
+
+private struct ClaraInlineField: View {
+    var title: String
+    var subtitle: String
+    @Binding var text: String
+    var placeholder: String
+    var keyboardType: UIKeyboardType = .default
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(ClaraDesign.ink)
+            TextField(placeholder, text: $text)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(keyboardType)
+                .textFieldStyle(.roundedBorder)
+            Text(subtitle)
+                .font(.system(size: 12))
+                .foregroundStyle(ClaraDesign.inkMuted)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
