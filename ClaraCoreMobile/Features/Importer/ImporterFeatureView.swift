@@ -21,6 +21,7 @@ struct ImporterFeatureView: View {
     @State private var isFileImporterPresented = false
     @State private var progress: ReflectionProgress?
     @State private var lastCommitResult: DigestCommitResult?
+    @State private var isSourceExpanded = true
 
     var body: some View {
         ScrollView {
@@ -34,81 +35,99 @@ struct ImporterFeatureView: View {
                         .foregroundStyle(ClaraDesign.inkMuted)
                 }
 
-                ClaraSectionLabel(title: "来源")
-
-                ClaraCard(accent: importerMatch != nil ? ClaraDesign.memory : nil) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Picker("角色卡", selection: selectedContextCardBinding) {
-                            ForEach(contextCards) { card in
-                                Text(card.title).tag(card.id)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .disabled(contextCards.isEmpty || isImporting)
-
-                        TextEditor(text: $input)
-                            .frame(minHeight: 160)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .scrollContentBackground(.hidden)
-                            .foregroundStyle(ClaraDesign.ink)
-                            .padding(8)
-                            .background(ClaraDesign.surfaceMuted.opacity(0.55))
-                            .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
-
-                        HStack {
-                            Button {
-                                importInput()
-                            } label: {
-                                Label("导入并整理", systemImage: "sparkles")
-                            }
-                            .disabled(trimmedInput.isEmpty || isImporting)
-                            .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.memory))
-
-                            Button {
-                                pasteFromClipboard()
-                            } label: {
-                                Label("粘贴", systemImage: "doc.on.clipboard")
-                            }
-                            .disabled(isImporting)
-                            .buttonStyle(ClaraSecondaryButtonStyle())
-
-                            Button {
-                                isFileImporterPresented = true
-                            } label: {
-                                Label("文件", systemImage: "doc")
-                            }
-                            .disabled(isImporting)
-                            .buttonStyle(ClaraSecondaryButtonStyle())
-                        }
-                    }
+                if let lastCommitResult, !isSourceExpanded, !isImporting {
+                    ImportResultCard(
+                        result: lastCommitResult,
+                        onNewImport: beginNewImport,
+                        onShowMemories: onShowMemories,
+                        onShowContinuity: onShowContinuity
+                    )
                 }
 
-                ClaraSectionLabel(title: "识别")
+                if isSourceExpanded || lastCommitResult == nil || isImporting {
+                    ClaraSectionLabel(title: "来源")
 
-                ClaraCard {
-                    VStack(spacing: 14) {
-                        HStack {
-                            Text("已支持的分享链接")
+                    ClaraCard(accent: importerMatch != nil ? ClaraDesign.memory : nil) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Picker("角色卡", selection: selectedContextCardBinding) {
+                                ForEach(contextCards) { card in
+                                    Text(card.title).tag(card.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .disabled(contextCards.isEmpty || isImporting)
+
+                            TextEditor(text: $input)
+                                .frame(minHeight: 128)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .scrollContentBackground(.hidden)
                                 .foregroundStyle(ClaraDesign.ink)
-                            Spacer()
-                            ClaraStatusPill(
-                                title: importerMatch?.preview.sourceApp ?? importerMatch?.preview.title ?? "待识别",
-                                color: importerMatch != nil ? ClaraDesign.memory : ClaraDesign.inkMuted,
-                                systemImage: importerMatch != nil ? "checkmark" : nil
-                            )
+                                .padding(8)
+                                .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                                .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
+
+                            VStack(spacing: 10) {
+                                Button {
+                                    importInput()
+                                } label: {
+                                    Label("导入并整理", systemImage: "sparkles")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .disabled(trimmedInput.isEmpty || isImporting)
+                                .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.memory))
+
+                                HStack(spacing: 10) {
+                                    Button {
+                                        pasteFromClipboard()
+                                    } label: {
+                                        Label("粘贴", systemImage: "doc.on.clipboard")
+                                            .frame(maxWidth: .infinity)
+                                    }
+                                    .disabled(isImporting)
+                                    .buttonStyle(ClaraSecondaryButtonStyle())
+
+                                    Button {
+                                        isFileImporterPresented = true
+                                    } label: {
+                                        Label("文件", systemImage: "doc")
+                                            .frame(maxWidth: .infinity)
+                                    }
+                                    .disabled(isImporting)
+                                    .buttonStyle(ClaraSecondaryButtonStyle())
+                                }
+                            }
                         }
+                    }
 
-                        Divider()
-                            .background(ClaraDesign.hairline)
+                    if !trimmedInput.isEmpty || isImporting {
+                        ClaraSectionLabel(title: "识别")
 
-                        HStack {
-                            Text("兜底方式")
-                                .foregroundStyle(ClaraDesign.ink)
-                            Spacer()
-                            Text(importerMatch?.preview.detail ?? fallbackLabel)
-                                .foregroundStyle(ClaraDesign.inkMuted)
-                                .multilineTextAlignment(.trailing)
+                        ClaraCard {
+                            VStack(spacing: 14) {
+                                HStack {
+                                    Text("来源格式")
+                                        .foregroundStyle(ClaraDesign.ink)
+                                    Spacer()
+                                    ClaraStatusPill(
+                                        title: importerMatch?.preview.sourceApp ?? importerMatch?.preview.title ?? "通用导入",
+                                        color: importerMatch != nil ? ClaraDesign.memory : ClaraDesign.inkMuted,
+                                        systemImage: importerMatch != nil ? "checkmark" : nil
+                                    )
+                                }
+
+                                Divider()
+                                    .background(ClaraDesign.hairline)
+
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("处理方式")
+                                        .foregroundStyle(ClaraDesign.ink)
+                                    Spacer()
+                                    Text(importerMatch?.preview.detail ?? fallbackLabel)
+                                        .foregroundStyle(ClaraDesign.inkMuted)
+                                        .multilineTextAlignment(.trailing)
+                                }
+                            }
                         }
                     }
                 }
@@ -128,9 +147,10 @@ struct ImporterFeatureView: View {
                     }
                 }
 
-                if let lastCommitResult {
+                if let lastCommitResult, isSourceExpanded || isImporting {
                     ImportResultCard(
                         result: lastCommitResult,
+                        onNewImport: beginNewImport,
                         onShowMemories: onShowMemories,
                         onShowContinuity: onShowContinuity
                     )
@@ -191,6 +211,16 @@ struct ImporterFeatureView: View {
 
     private func pasteFromClipboard() {
         input = UIPasteboard.general.string ?? ""
+        isSourceExpanded = true
+        lastCommitResult = nil
+    }
+
+    private func beginNewImport() {
+        input = ""
+        statusMessage = nil
+        progress = nil
+        lastCommitResult = nil
+        isSourceExpanded = true
     }
 
     private func loadContextCards() {
@@ -274,8 +304,9 @@ struct ImporterFeatureView: View {
 
                 await MainActor.run {
                     input = ""
-                    statusMessage = "已完成：写入 \(committed.memories.count) 条记忆，\(committed.continuityLines.count) 条共同线。"
+                    statusMessage = nil
                     lastCommitResult = committed
+                    isSourceExpanded = false
                     isImporting = false
                     progress = nil
                 }
@@ -348,68 +379,108 @@ struct ImporterFeatureView: View {
 
 private struct ImportResultCard: View {
     var result: DigestCommitResult
+    var onNewImport: () -> Void
     var onShowMemories: () -> Void
     var onShowContinuity: () -> Void
 
     var body: some View {
         ClaraCard(accent: ClaraDesign.memory) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label("本次整理结果", systemImage: "checkmark.circle")
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    Label(result.committedCount > 0 ? "整理完成" : "没有写入新内容", systemImage: result.committedCount > 0 ? "checkmark.circle" : "exclamationmark.circle")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(ClaraDesign.ink)
                     Spacer()
-                    ClaraStatusPill(
-                        title: "\(result.committedCount) 项",
-                        color: ClaraDesign.memory,
-                        systemImage: "tray.full"
-                    )
+                    VStack(alignment: .trailing, spacing: 6) {
+                        ClaraStatusPill(
+                            title: "记忆 \(result.memories.count)",
+                            color: result.memories.isEmpty ? ClaraDesign.inkMuted : ClaraDesign.memory,
+                            systemImage: "square.stack"
+                        )
+                        ClaraStatusPill(
+                            title: "共同线 \(result.continuityLines.count)",
+                            color: result.continuityLines.isEmpty ? ClaraDesign.inkMuted : ClaraDesign.continuity,
+                            systemImage: "point.topleft.down.curvedto.point.bottomright.up"
+                        )
+                    }
                 }
 
-                if !result.memories.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("记忆")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(ClaraDesign.inkMuted)
-                        ForEach(result.memories.prefix(3)) { memory in
-                            Label(memory.content, systemImage: "square.stack")
-                                .font(.system(size: 14))
-                                .foregroundStyle(ClaraDesign.ink)
-                                .lineLimit(2)
+                if result.committedCount == 0 {
+                    Text("这次导入已处理，但没有形成新的记忆或共同线。可以换一段更完整的对话再试。")
+                        .font(.system(size: 14))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                }
+
+                ResultPreviewSection(
+                    title: "记忆",
+                    emptyTitle: "没有新增记忆",
+                    systemImage: "square.stack",
+                    values: result.memories.prefix(3).map(\.content)
+                )
+
+                ResultPreviewSection(
+                    title: "共同线",
+                    emptyTitle: "没有新增共同线",
+                    systemImage: "point.topleft.down.curvedto.point.bottomright.up",
+                    values: result.continuityLines.prefix(3).map(\.title)
+                )
+
+                VStack(spacing: 10) {
+                    if !result.memories.isEmpty {
+                        Button {
+                            onShowMemories()
+                        } label: {
+                            Label("查看记忆", systemImage: "square.stack")
+                                .frame(maxWidth: .infinity)
                         }
+                        .buttonStyle(ClaraSecondaryButtonStyle())
                     }
-                }
 
-                if !result.continuityLines.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("共同线")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(ClaraDesign.inkMuted)
-                        ForEach(result.continuityLines.prefix(3)) { line in
-                            Label(line.title, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
-                                .font(.system(size: 14))
-                                .foregroundStyle(ClaraDesign.ink)
-                                .lineLimit(2)
+                    if !result.continuityLines.isEmpty {
+                        Button {
+                            onShowContinuity()
+                        } label: {
+                            Label("查看共同线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                                .frame(maxWidth: .infinity)
                         }
+                        .buttonStyle(ClaraSecondaryButtonStyle())
                     }
+
+                    Button {
+                        onNewImport()
+                    } label: {
+                        Label("继续导入", systemImage: "plus")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(ClaraSecondaryButtonStyle())
                 }
+            }
+        }
+    }
+}
 
-                HStack {
-                    Button {
-                        onShowMemories()
-                    } label: {
-                        Label("查看记忆", systemImage: "square.stack")
-                    }
-                    .disabled(result.memories.isEmpty)
-                    .buttonStyle(ClaraSecondaryButtonStyle())
+private struct ResultPreviewSection: View {
+    var title: String
+    var emptyTitle: String
+    var systemImage: String
+    var values: [String]
 
-                    Button {
-                        onShowContinuity()
-                    } label: {
-                        Label("查看共同线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
-                    }
-                    .disabled(result.continuityLines.isEmpty)
-                    .buttonStyle(ClaraSecondaryButtonStyle())
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(ClaraDesign.inkMuted)
+
+            if values.isEmpty {
+                Text(emptyTitle)
+                    .font(.system(size: 14))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+            } else {
+                ForEach(values, id: \.self) { value in
+                    Label(value, systemImage: systemImage)
+                        .font(.system(size: 14))
+                        .foregroundStyle(ClaraDesign.ink)
+                        .lineLimit(2)
                 }
             }
         }
