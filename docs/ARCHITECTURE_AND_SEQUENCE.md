@@ -3,7 +3,7 @@
 Date: 2026-06-29
 Status: Active development baseline
 
-## Development Checkpoint: 2026-06-29
+## Development Checkpoint: 2026-06-30
 
 Current node:
 - The project has a bootable SwiftUI / GRDB iOS app under `ClaraCore/apps/claracore-mobile`.
@@ -15,7 +15,7 @@ Current node:
   - Memory stores a small number of durable facts or decisions.
 
 Implemented and verified:
-- App shell with tabs: 导入, 收件箱, 记忆, 共同线, 设置.
+- App shell with tabs: 导入, 记忆, 共同线, 设置.
 - Local SQLite migrations for Memoria, Inbox, Import Sessions, Capture Segments, and Continuity Lines.
 - Manual text, clipboard text, and DeepSeek share URL import.
 - DeepSeek share URL decoding through `https://chat.deepseek.com/api/v0/share/content?share_id={shareId}`.
@@ -29,11 +29,11 @@ Implemented and verified:
 - Committed memories can now bind to the Shared Line created from the same digest through `lineId`; recall prefers line-bound memories before falling back to FTS.
 - Shared Line milestone text renders as structured steps in the list and recall package surfaces.
 - Settings exposes the default Context Card editor for Agent / User profiles.
-- Inbox behavior: organizing a capture does not remove it from pending; only successful commit or discard removes it from the active inbox.
+- Import behavior: user-facing flow is one step. Importer queues an internal inbox row for duplicate/status tracking, automatically prepares/organizes/commits, then marks the internal row committed.
 - App icon asset catalog exists at `ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset`.
 - Manual first-build end-to-end checklist exists at `docs/MANUAL_E2E_CHECKLIST.md`.
-- DeepSeek real end-to-end pass has been verified on simulator with the test share URL:
-  - Import -> Inbox -> organize -> review -> commit -> memory list -> Shared Line list -> recall package copy.
+- DeepSeek real end-to-end path now targets:
+  - Import -> auto organize -> auto commit -> memory list -> Shared Line list -> recall package copy.
 - Reflection output has been tightened:
   - default memory candidates are few and conservative;
   - memories should be facts or decisions, not summaries;
@@ -55,7 +55,7 @@ Next technical work, independent from UI polish:
 UI session boundary:
 - The UI session may change layout, copy, visual hierarchy, empty states, and interaction affordances.
 - It should not change Core schemas, reflection prompts, importer parsing, or commit semantics without updating this document.
-- Keep the first testable build standard unchanged: import DeepSeek share link -> organize -> review candidates -> commit -> see memory and Shared Line -> copy recall package for DeepSeek.
+- Keep the first testable build standard aligned with the simplified flow: import DeepSeek share link -> auto organize and commit -> see memory and Shared Line -> copy recall package for DeepSeek.
 
 ## Product Boundary
 
@@ -66,8 +66,8 @@ The first version primarily targets domestic Chinese users. Importer priorities,
 The mobile app must do five things well:
 
 1. Capture useful material from mobile AI usage.
-2. Hold captures in an Inbox before they become durable memory.
-3. Let the user review and commit what matters.
+2. Automatically organize useful captures into durable memory and Shared Lines.
+3. Let the user correct mistakes by editing or deleting the resulting memory/Shared Line.
 4. Store and recall committed memories locally.
 5. Preserve lightweight continuity through the Shared Line.
 
@@ -252,12 +252,15 @@ Responsibility:
 - Receive raw material from manual input, clipboard, Share Sheet, files, or URLs.
 - Normalize source metadata into `RawCapture`.
 - Preserve source tracking for future incremental merge: `sourceApp`, `sourceThreadId`, `contentHash`, and `capturedAt`.
-- Queue captures into Inbox.
+- Queue captures into the internal Inbox table for duplicate/status tracking.
+- Drive the normal user path through automatic organize and commit.
 
 V1 supported inputs:
 - Manual text entry.
 - Clipboard text import.
+- `.txt` file import.
 - URL import for DeepSeek shared conversations, using `https://chat.deepseek.com/share/{shareId}`.
+- Generic public text/html URL fallback and provider-domain recognition.
 
 V1 importer support matrix:
 
@@ -266,8 +269,9 @@ V1 importer support matrix:
 | DeepSeek share URL | Must support in v1 | Extract `{shareId}` from `https://chat.deepseek.com/share/{shareId}`, fetch `https://chat.deepseek.com/api/v0/share/content?share_id={shareId}`, decode turns, and convert to one immutable `RawCapture`. |
 | Manual text | Must support in v1 | Store exactly what the user enters as a `RawCapture` with source metadata. |
 | Clipboard text | Must support in v1 | Store clipboard text as a `RawCapture`; use content hash for duplicate detection. |
-| Other domestic AI share URLs | Post-v1 priority | Inspect and fixture-test each provider format before enabling. Likely candidates should be chosen from real user workflows, not guessed upfront. |
-| Generic URL | Deferred | Do not ship fragile webpage scraping before the DeepSeek path is stable. |
+| `.txt` file | Must support in v1 | Read plain text from the selected file and preserve filename metadata. |
+| Other domestic AI share URLs | Provider profile first | Identify common provider domains and use generic text/html extraction until real fixtures support parser-specific handling. |
+| Generic URL | Supported as fallback | Fetch public text/html or text/plain pages and extract readable text; LLM-assisted extraction remains future work. |
 | ChatGPT / Claude share URL | Deferred | Add after domestic provider flows are stable and their share formats are inspected and covered by fixture tests. |
 | File export | Deferred | Add after import session and digest rollback are stable. |
 
@@ -497,18 +501,18 @@ Acceptance:
 - App opens to stable tabs.
 - Memoria store/search still works.
 
-### Phase 2: Importer And Inbox
+### Phase 2: Importer And Internal Inbox
 
 Goal:
 - Add `RawCapture`.
 - Add Inbox table and store.
 - Add manual and clipboard import paths.
-- Pending captures render in Inbox.
+- Internal inbox rows track duplicate/status state.
 - Track `contentHash`, `sourceApp`, and `sourceThreadId` so later matching can detect duplicate or continued external conversations.
 
 Acceptance:
 - Paste or type content into Importer.
-- Capture appears in Inbox as pending.
+- Importer automatically organizes and commits the capture.
 - A DeepSeek share URL such as `https://chat.deepseek.com/share/suy08uspxl9wzja7uc` decodes into ordered conversation turns and a `RawCapture`.
 
 ### Phase 3: Review And Commit

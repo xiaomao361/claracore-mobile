@@ -112,7 +112,7 @@ struct SettingsFeatureView: View {
                         }
 
                         if reflectionConfiguration.mode == .localPlaceholder {
-                            Text("本地占位模式只会生成摘要，不会提取候选记忆或共同线。配置默认模型 Key 后，收件箱里的整理才会进入真实提取流程。")
+                            Text("本地占位模式只会生成摘要，不会提取候选记忆或共同线。配置默认模型 Key 后，导入会自动进入真实整理流程。")
                                 .font(.system(size: 14))
                                 .foregroundStyle(ClaraDesign.inkMuted)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -279,7 +279,7 @@ struct SettingsFeatureView: View {
             try apiKeyStore.save(trimmed, service: .deepSeek)
             deepSeekAPIKey = ""
             hasSavedDeepSeekKey = true
-            statusMessage = "默认整理模型已启用。之后收件箱整理会使用当前 Provider 提取候选项。"
+            statusMessage = "默认整理模型已启用。之后导入会自动整理并写入记忆和共同线。"
             onConfigurationChanged()
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
