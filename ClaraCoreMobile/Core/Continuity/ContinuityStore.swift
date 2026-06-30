@@ -104,6 +104,10 @@ final class ContinuityStore {
 
     func delete(id: String) throws {
         try database.dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE memories SET line_id = NULL, updated_at = ? WHERE line_id = ?",
+                arguments: [dateFormatter.string(from: Date()), id]
+            )
             try db.execute(sql: "DELETE FROM continuity_lines WHERE id = ?", arguments: [id])
         }
     }

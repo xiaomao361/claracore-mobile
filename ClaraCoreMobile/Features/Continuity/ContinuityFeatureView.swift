@@ -110,6 +110,9 @@ struct ContinuityFeatureView: View {
         .task {
             reload()
         }
+        .onAppear {
+            reload()
+        }
         .sheet(item: $selectedLine) { line in
             NavigationStack {
                 RecallPackageView(

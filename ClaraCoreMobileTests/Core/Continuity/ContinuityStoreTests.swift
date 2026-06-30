@@ -38,12 +38,21 @@ final class ContinuityStoreTests: XCTestCase {
         let databaseURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("sqlite")
-        let store = try ContinuityStore(database: AppDatabase(path: databaseURL.path))
+        let database = try AppDatabase(path: databaseURL.path)
+        let store = ContinuityStore(database: database)
+        let memoriaStore = MemoriaStore(database: database)
         let line = try store.create(title: "要删除的线", lastPosition: "临时状态", nextStep: nil)
+        let memory = try memoriaStore.store(
+            content: "这条记忆原本绑定共同线",
+            tags: ["line"],
+            isPrivate: false,
+            lineId: line.id
+        )
 
         try store.delete(id: line.id)
 
         XCTAssertTrue(try store.active().isEmpty)
+        XCTAssertNil(try memoriaStore.get(id: memory.id)?.lineId)
     }
 
     func testUpdateChangesActiveLineContent() throws {

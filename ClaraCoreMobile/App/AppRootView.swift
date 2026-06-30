@@ -3,6 +3,7 @@ import SwiftUI
 struct AppRootView: View {
     @State private var dependencies: AppDependencies?
     @State private var selectedContextCardID: String?
+    @State private var selectedTab: AppTab = .importer
     @State private var errorMessage: String?
 
     var body: some View {
@@ -33,7 +34,7 @@ struct AppRootView: View {
     }
 
     private func tabShell(dependencies: AppDependencies) -> some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 ImporterFeatureView(
                     inboxStore: dependencies.inboxStore,
@@ -43,17 +44,21 @@ struct AppRootView: View {
                     reflectionConfiguration: dependencies.reflectionConfiguration,
                     contextCardStore: dependencies.contextCardStore,
                     importerRegistry: dependencies.conversationImporterRegistry,
-                    selectedContextCardID: $selectedContextCardID
+                    selectedContextCardID: $selectedContextCardID,
+                    onShowMemories: { selectedTab = .memoria },
+                    onShowContinuity: { selectedTab = .continuity }
                 )
                 .navigationTitle(AppTab.importer.title)
             }
             .tabItem { AppTab.importer.label }
+            .tag(AppTab.importer)
 
             NavigationStack {
                 MemoriaFeatureView(store: dependencies.memoriaStore)
                     .navigationTitle(AppTab.memoria.title)
             }
             .tabItem { AppTab.memoria.label }
+            .tag(AppTab.memoria)
 
             NavigationStack {
                 ContinuityFeatureView(
@@ -64,6 +69,7 @@ struct AppRootView: View {
                     .navigationTitle(AppTab.continuity.title)
             }
             .tabItem { AppTab.continuity.label }
+            .tag(AppTab.continuity)
 
             NavigationStack {
                 SettingsFeatureView(
@@ -76,6 +82,7 @@ struct AppRootView: View {
                     .navigationTitle(AppTab.settings.title)
             }
             .tabItem { AppTab.settings.label }
+            .tag(AppTab.settings)
         }
         .tint(ClaraDesign.memory)
     }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum AppTab {
+enum AppTab: Hashable {
     case importer
     case memoria
     case continuity

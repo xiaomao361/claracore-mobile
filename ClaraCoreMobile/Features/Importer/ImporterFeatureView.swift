@@ -11,6 +11,8 @@ struct ImporterFeatureView: View {
     let contextCardStore: ContextCardStore
     let importerRegistry: ConversationImporterRegistry
     @Binding var selectedContextCardID: String?
+    let onShowMemories: () -> Void
+    let onShowContinuity: () -> Void
 
     @State private var input = ""
     @State private var contextCards: [ContextCard] = []
@@ -18,6 +20,7 @@ struct ImporterFeatureView: View {
     @State private var isImporting = false
     @State private var isFileImporterPresented = false
     @State private var progress: ReflectionProgress?
+    @State private var lastCommitResult: DigestCommitResult?
 
     var body: some View {
         ScrollView {
@@ -124,6 +127,14 @@ struct ImporterFeatureView: View {
                             .foregroundStyle(isSuccessStatus(statusMessage) ? ClaraDesign.memory : ClaraDesign.danger)
                     }
                 }
+
+                if let lastCommitResult {
+                    ImportResultCard(
+                        result: lastCommitResult,
+                        onShowMemories: onShowMemories,
+                        onShowContinuity: onShowContinuity
+                    )
+                }
             }
             .padding(20)
         }
@@ -221,6 +232,7 @@ struct ImporterFeatureView: View {
         isImporting = true
         progress = .preparing
         statusMessage = nil
+        lastCommitResult = nil
 
         Task {
             var enqueuedItem: InboxItem?
@@ -263,6 +275,7 @@ struct ImporterFeatureView: View {
                 await MainActor.run {
                     input = ""
                     statusMessage = "已完成：写入 \(committed.memories.count) 条记忆，\(committed.continuityLines.count) 条共同线。"
+                    lastCommitResult = committed
                     isImporting = false
                     progress = nil
                 }
@@ -333,6 +346,76 @@ struct ImporterFeatureView: View {
     }
 }
 
+private struct ImportResultCard: View {
+    var result: DigestCommitResult
+    var onShowMemories: () -> Void
+    var onShowContinuity: () -> Void
+
+    var body: some View {
+        ClaraCard(accent: ClaraDesign.memory) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("本次整理结果", systemImage: "checkmark.circle")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(ClaraDesign.ink)
+                    Spacer()
+                    ClaraStatusPill(
+                        title: "\(result.committedCount) 项",
+                        color: ClaraDesign.memory,
+                        systemImage: "tray.full"
+                    )
+                }
+
+                if !result.memories.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("记忆")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                        ForEach(result.memories.prefix(3)) { memory in
+                            Label(memory.content, systemImage: "square.stack")
+                                .font(.system(size: 14))
+                                .foregroundStyle(ClaraDesign.ink)
+                                .lineLimit(2)
+                        }
+                    }
+                }
+
+                if !result.continuityLines.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("共同线")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                        ForEach(result.continuityLines.prefix(3)) { line in
+                            Label(line.title, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                                .font(.system(size: 14))
+                                .foregroundStyle(ClaraDesign.ink)
+                                .lineLimit(2)
+                        }
+                    }
+                }
+
+                HStack {
+                    Button {
+                        onShowMemories()
+                    } label: {
+                        Label("查看记忆", systemImage: "square.stack")
+                    }
+                    .disabled(result.memories.isEmpty)
+                    .buttonStyle(ClaraSecondaryButtonStyle())
+
+                    Button {
+                        onShowContinuity()
+                    } label: {
+                        Label("查看共同线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                    }
+                    .disabled(result.continuityLines.isEmpty)
+                    .buttonStyle(ClaraSecondaryButtonStyle())
+                }
+            }
+        }
+    }
+}
+
 private struct ImportProgressView: View {
     var title: String
     var detail: String
@@ -377,6 +460,8 @@ private struct ImportProgressView: View {
         reflectionConfiguration: ReflectionConfiguration(mode: .localPlaceholder),
         contextCardStore: ContextCardStore(database: database),
         importerRegistry: ConversationImporterRegistry.live(),
-        selectedContextCardID: .constant(ContextCardStore.defaultCardID)
+        selectedContextCardID: .constant(ContextCardStore.defaultCardID),
+        onShowMemories: {},
+        onShowContinuity: {}
     )
 }

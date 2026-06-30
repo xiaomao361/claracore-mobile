@@ -83,6 +83,12 @@ struct MemoriaFeatureView: View {
         .claraScreenBackground()
         .claraKeyboardDismissable()
         .task { loadRecent() }
+        .onAppear {
+            loadRecent()
+            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                recall()
+            }
+        }
         .sheet(item: $editingMemory) { memory in
             NavigationStack {
                 MemoryEditView(memory: memory) { content, tags, isPrivate in
