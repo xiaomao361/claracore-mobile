@@ -6,14 +6,14 @@ Scope: final manual validation after source repair completion
 ## Current Status
 
 - Source repairs are complete.
-- Simulator verification passed: XcodeBuildMCP `build_sim` and `test_sim` with 50 tests, 0 failed.
-- Rich Shared Line state has been added and installed on the test iPhone.
+- Simulator verification passed with the full XCTest suite, 0 failed.
+- Model configuration polish and rich Shared Line state have been added and installed on the test iPhone.
 - This checklist is the remaining true-device pass before considering the repair batch done.
 
 ## Preconditions
 
 - Install and launch `ClaraCoreMobile` on the test iPhone.
-- If testing real reflection, save a default model configuration in `设置`: Provider name, OpenAI-compatible Base URL, Model, and API Key.
+- If testing real reflection, save a default model configuration in `设置`: Provider name, OpenAI-compatible Base URL, API Key, then query available models and choose one returned model.
 - If no API key is available, confirm the app stays in local placeholder mode and does not create durable candidates automatically.
 - Use this DeepSeek share URL unless a fresher fixture is intentionally selected:
 
@@ -22,6 +22,18 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 ```
 
 ## Core Flow
+
+1. Open `设置`.
+2. If testing a remote model, fill Provider, Base URL, and API Key.
+3. Tap `查询模型`.
+4. Confirm the returned model list appears and select one model.
+5. Confirm `默认整理模型` is read-only and cannot be manually typed.
+6. Tap `保存配置`.
+7. Confirm the `整理引擎` card updates immediately without leaving the screen.
+8. Tap `测试连接` and confirm visible success or a clear failure message.
+9. If testing local placeholder mode, delete the saved key and confirm `整理引擎` returns to local placeholder mode.
+
+## Import Flow
 
 1. Open `导入`.
 2. Paste the DeepSeek share URL.
@@ -74,6 +86,8 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 - Duplicate imports show a recovery card with view/retry/continue actions.
 - Current role selection persists across app launches.
 - Save/delete/import actions produce visible feedback.
+- Saving model configuration updates the Settings status immediately without requiring a tab switch or app restart.
+- The default organization model is selected only from queried model results, not typed manually.
 - No startup failure occurs if Keychain read fails or no default model key exists.
 
 ## Stop Criteria
@@ -85,3 +99,4 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 - Duplicate import leaves the user stuck with no action.
 - Shared Line cards do not show current station/progress.
 - Shared Line cards or recall packages lose rich continuity state after import.
+- Settings lets the user type an arbitrary default model id into the model field after model querying has been introduced.

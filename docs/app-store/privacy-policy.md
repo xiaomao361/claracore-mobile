@@ -26,12 +26,14 @@ ClaraCore Mobile stores the following data locally:
 - Shared Lines, including current position, next step, interpretation, boundary notes, and related continuity state.
 - Memories, including facts, decisions, tags, source information, confidence, importance, and local linkage to a Shared Line or Context Card.
 - Import history and duplicate-detection metadata.
-- Default model configuration, including provider display name, base URL, and model name.
+- Default model configuration, including provider display name, base URL, and the selected model name returned by the configured provider.
 - API keys in the iOS Keychain.
 
 The app does not upload this local database to ClaraCore servers.
 
 ## Remote Model Processing
+
+If the user enters a model provider base URL and API key, ClaraCore Mobile can query the configured provider's `/models` endpoint so the user can choose an available default organization model.
 
 If the user saves a default model configuration, ClaraCore Mobile can send imported conversation segments and derived draft context to the configured OpenAI-compatible model endpoint for organization.
 
@@ -41,7 +43,7 @@ This may include:
 - Context needed to extract candidate memories and Shared Line updates.
 - Model prompts used to request structured JSON output.
 
-The API key is sent only as an authorization credential to the user-configured model provider. The app does not send the API key to ClaraCore servers.
+The API key is sent only as an authorization credential to the user-configured model provider for model discovery, connection testing, and organization requests. The app does not send the API key to ClaraCore servers.
 
 If no model API key is configured, ClaraCore Mobile uses a local placeholder mode. In local placeholder mode, the app does not send conversation content to a remote model provider and does not create durable memory candidates automatically.
 
@@ -64,6 +66,7 @@ ClaraCore Mobile does not sell user data and does not use user data for advertis
 The app may transmit data only in these user-directed cases:
 
 - Fetching a public conversation share link selected by the user.
+- Querying available models from a provider configured by the user.
 - Sending imported conversation content to a user-configured model provider for organization.
 - Copying a recall package to the clipboard when the user taps the copy action.
 

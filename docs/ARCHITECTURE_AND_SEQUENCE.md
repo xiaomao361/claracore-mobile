@@ -21,7 +21,7 @@ Implemented and verified:
 - DeepSeek share URL decoding through `https://chat.deepseek.com/api/v0/share/content?share_id={shareId}`.
 - Capture segmentation and import session preparation.
 - Reflection abstraction with local placeholder and OpenAI-compatible remote model implementation.
-- Default model configuration for any OpenAI-compatible `/chat/completions` endpoint; API keys are stored through local Keychain settings and must not be written to source, fixtures, docs, or git.
+- Default model configuration for any OpenAI-compatible endpoint; Settings queries `/models`, requires the user to select a returned model, and uses `/chat/completions` for organization. API keys are stored through local Keychain settings and must not be written to source, fixtures, docs, or git.
 - Startup fallback: Keychain read failures must not block app launch; the app falls back to local placeholder mode.
 - Digest commit path from candidate memories / Shared Line updates into local stores.
 - Default Context Card persistence with Agent / User profiles.
@@ -330,6 +330,8 @@ Primary code:
 Runtime provider rule:
 - API keys must be stored locally in Keychain, never in source files, fixtures, or docs.
 - If a default model key and valid OpenAI-compatible configuration exist, `AppDependencies` uses `OpenAICompatibleReflectionService`.
+- Settings owns model discovery through the configured provider's `/models` endpoint. The default organization model is read-only in the form and must be selected from the queried results.
+- Saving model configuration must update the Settings status immediately from local view state; the user should not need to switch tabs to see whether remote organization is enabled.
 - If no model key exists, the app falls back to `RuleBasedReflectionService`, which is intentionally a local placeholder and does not create commit candidates.
 
 ### 4. Continuity / Shared Line
@@ -587,6 +589,7 @@ protocol ReflectionService {
 Implementations:
 - `RuleBasedReflectionService`: local placeholder for tests and offline mode. It does not create durable facts automatically.
 - `OpenAICompatibleReflectionService`: remote LLM mode for OpenAI-compatible `/chat/completions` providers. Uses the API key stored through the app's Keychain settings. Keys must never be committed.
+- `ModelProviderClient`: model discovery client for OpenAI-compatible `/models` providers. It is used by Settings before saving a default organization model.
 
 Large conversations must be processed as:
 

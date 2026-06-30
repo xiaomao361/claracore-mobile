@@ -18,7 +18,11 @@ If GitHub Issues are not enabled for this repository, contact the developer thro
 
 ### Do I need a DeepSeek key?
 
-No. DeepSeek public share links are one supported import source, but the default organization model is configurable. Any OpenAI-compatible model endpoint can be used if the user provides a base URL, model name, and API key.
+No. DeepSeek public share links are one supported import source, but the default organization model is configurable. Any OpenAI-compatible model endpoint can be used if the user provides a base URL and API key, queries available models, and selects one returned model.
+
+### Can I type any model name manually?
+
+No. The default organization model is selected from the model list returned by the configured provider's `/models` endpoint. This keeps the saved configuration tied to a model the provider reported as available.
 
 ### What happens without a model API key?
 

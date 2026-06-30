@@ -8,9 +8,10 @@ The first milestone is deliberately small and verified in order:
 2. Recall them with SQLite FTS5.
 3. Queue raw captures in Inbox.
 4. Segment large imports into resumable import sessions.
-5. Import DeepSeek shared conversations from `https://chat.deepseek.com/share/{shareId}`.
-6. Reflect segments into conservative memory and one Shared Line candidate per import.
-7. Copy a recall package back into an external AI app.
+5. Import public AI conversation share links, including DeepSeek shared conversations from `https://chat.deepseek.com/share/{shareId}`.
+6. Configure an OpenAI-compatible organization model by entering a provider/base URL/API key, querying available models, and selecting one returned model.
+7. Reflect segments into conservative memory and one Shared Line candidate per import.
+8. Copy a recall package back into an external AI app.
 
 Current product model:
 

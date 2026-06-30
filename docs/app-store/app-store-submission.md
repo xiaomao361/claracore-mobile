@@ -63,16 +63,17 @@ Testing with a remote model:
 1. In Settings, enter an OpenAI-compatible model configuration:
    Provider: [PROVIDER_NAME]
    Base URL: [OPENAI_COMPATIBLE_BASE_URL]
-   Model: [MODEL_NAME]
    API Key: [TEST_API_KEY_PROVIDED_IN_APP_STORE_CONNECT_NOTES_ONLY]
-2. Tap Save Configuration.
-3. Tap Test Connection.
-4. Open Import.
-5. Paste a short transcript or a public conversation share link.
-6. Tap Import and Organize.
-7. Confirm the result screen shows committed Memory and Shared Line counts.
-8. Open Memory and delete one test memory.
-9. Open Shared Line, copy the recall package, and confirm the copied text includes role, user, continuity state, and related factual memories.
+2. Tap Query Models (`查询模型`).
+3. Select one returned model from the list. The default organization model field is read-only and cannot be manually typed.
+4. Tap Save Configuration (`保存配置`) and confirm the organization engine status updates immediately in Settings.
+5. Tap Test Connection (`测试连接`).
+6. Open Import.
+7. Paste a short transcript or a public conversation share link.
+8. Tap Import and Organize.
+9. Confirm the result screen shows committed Memory and Shared Line counts.
+10. Open Memory and delete one test memory.
+11. Open Shared Line, copy the recall package, and confirm the copied text includes role, user, continuity state, and related factual memories.
 
 The app does not include ads, tracking, user accounts, or a developer-operated cloud sync service. User content is stored locally unless the user configures a remote model provider and starts organization. API keys are stored in the iOS Keychain.
 
@@ -143,7 +144,7 @@ Do not disclose analytics, purchases, location, contacts, browsing history, heal
 Prepare screenshots that show actual app behavior:
 
 1. Import screen with role card selector and "paste link/text/file" entry.
-2. Model configuration in Settings with provider/base URL/model fields, with the API key hidden.
+2. Model configuration in Settings with provider/base URL/API key fields, queried model results, and the selected read-only default model, with the API key hidden.
 3. Import result screen showing Memory and Shared Line counts.
 4. Memory list showing user-editable, deletable factual memories.
 5. Shared Line screen showing current station, milestones, next step, and continuity state.
@@ -189,7 +190,7 @@ ClaraCore Mobile 是一个本地优先的 AI 对话记忆整理工具。
 - 查看、编辑和删除本地记忆
 - 查看共同线的当前状态、里程碑和下一步
 - 复制回召包到外部 AI 应用继续对话
-- 配置任意 OpenAI-compatible 默认整理模型
+- 查询并选择任意 OpenAI-compatible 默认整理模型
 
 隐私与控制：
 - 导入内容、记忆、角色卡和共同线默认存储在本机
@@ -198,7 +199,7 @@ ClaraCore Mobile 是一个本地优先的 AI 对话记忆整理工具。
 - 配置远程模型后，只有在你主动导入并整理时，相关内容才会发送到你选择的模型提供方
 - 无广告，无跟踪，无 ClaraCore 账号
 
-DeepSeek 公开分享链接是支持的导入来源之一，但 ClaraCore 不依赖 DeepSeek 作为默认模型。你可以配置任意兼容 OpenAI Chat Completions 协议的模型端点。
+DeepSeek 公开分享链接是支持的导入来源之一，但 ClaraCore 不依赖 DeepSeek 作为默认模型。你可以配置任意兼容 OpenAI 协议的模型端点，查询可用模型后选择默认整理模型。
 ```
 
 ### Keywords Draft
@@ -214,7 +215,7 @@ Use:
 ```text
 支持导入用户主动提供的公开分享链接和复制文本。
 支持 DeepSeek 公开分享链接作为一种导入来源。
-默认整理模型可配置为任意 OpenAI-compatible endpoint。
+默认整理模型可配置为任意 OpenAI-compatible endpoint，并从该 endpoint 返回的模型列表中选择。
 ```
 
 Avoid:
@@ -234,15 +235,17 @@ Run this before public App Store submission:
 2. Launch for the first time without a model API key.
 3. Confirm Settings opens and model configuration fields are visible.
 4. Confirm Import explains that a default model key is required for real organization.
-5. Save a test model configuration with a non-production API key.
-6. Tap Test Connection and confirm visible success or clear failure.
-7. Import a short pasted transcript.
-8. Confirm result card shows Memory and Shared Line counts.
-9. Delete one memory and confirm feedback.
-10. Open Shared Line and confirm current station, milestones, next step, and continuity state.
-11. Copy recall package and paste it into Notes to verify clipboard output.
-12. Delete the saved model key and confirm the app returns to local placeholder mode.
-13. Reopen the app and confirm it does not crash when no key exists.
+5. Enter Provider, Base URL, and a non-production API key.
+6. Query available models and select one returned model.
+7. Save the configuration and confirm the Settings organization engine status updates immediately.
+8. Tap Test Connection and confirm visible success or clear failure.
+9. Import a short pasted transcript.
+10. Confirm result card shows Memory and Shared Line counts.
+11. Delete one memory and confirm feedback.
+12. Open Shared Line and confirm current station, milestones, next step, and continuity state.
+13. Copy recall package and paste it into Notes to verify clipboard output.
+14. Delete the saved model key and confirm the app returns to local placeholder mode.
+15. Reopen the app and confirm it does not crash when no key exists.
 
 Record:
 
