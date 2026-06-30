@@ -1,11 +1,17 @@
 # ClaraCore Mobile Manual E2E Checklist
 
 Date: 2026-06-30
-Scope: one-step import repair pass
+Scope: final manual validation after source repair completion
+
+## Current Status
+
+- Source repairs are complete.
+- Simulator verification passed: XcodeBuildMCP `build_sim` and `test_sim` with 50 tests, 0 failed.
+- This checklist is the remaining true-device pass before considering the repair batch done.
 
 ## Preconditions
 
-- Build and launch `ClaraCoreMobile` on an iPhone simulator.
+- Install and launch `ClaraCoreMobile` on the test iPhone.
 - If testing real reflection, save a DeepSeek API key in `设置`.
 - If no API key is available, confirm the app stays in local placeholder mode and does not create durable candidates automatically.
 - Use this DeepSeek share URL unless a fresher fixture is intentionally selected:

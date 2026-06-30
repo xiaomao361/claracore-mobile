@@ -1,7 +1,22 @@
 # ClaraCore Mobile Fix Plan
 
 Date: 2026-06-30
-Status: Active repair plan
+Status: Source repair complete; final true-device pass pending
+
+## Current Completion State
+
+As of 2026-06-30, the planned source repairs from Phase 1 through Phase 13 have been implemented and committed.
+
+Verified:
+
+- XcodeBuildMCP `build_sim` passed.
+- XcodeBuildMCP `test_sim` passed: 50 tests, 0 failed.
+- Manual E2E checklist has been updated to the one-step import flow.
+
+Pending:
+
+- Final iPhone installation and manual device pass.
+- Provider-specific parsers for ChatGPT, Claude, Gemini, Kimi, Doubao, and Tongyi/Qwen remain fixture-gated. The app currently recognizes those domains and uses generic public webpage/text extraction with clear private-link errors.
 
 ## Why This Exists
 
