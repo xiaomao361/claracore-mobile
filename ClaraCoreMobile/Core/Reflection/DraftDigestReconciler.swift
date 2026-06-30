@@ -13,11 +13,14 @@ struct DraftDigestReconciler {
         summaryOverride: String? = nil,
         conflicts: [String] = []
     ) -> DigestResult {
-        DigestResult(
+        let memories = dedupeMemories(drafts.flatMap(\.candidateMemories))
+        let sharedLines = dedupeSharedLines(drafts.flatMap(\.candidateSharedLineUpdates))
+
+        return DigestResult(
             sessionId: session.id,
             summary: normalizedSummary(from: drafts, override: summaryOverride),
-            candidateMemories: dedupeMemories(drafts.flatMap(\.candidateMemories)),
-            candidateSharedLineUpdates: dedupeSharedLines(drafts.flatMap(\.candidateSharedLineUpdates)),
+            candidateMemories: memories.isEmpty ? fallbackMemories(session: session, from: drafts, sharedLines: sharedLines) : memories,
+            candidateSharedLineUpdates: sharedLines,
             conflicts: Array(Set(conflicts + drafts.flatMap(\.uncertainItems))).sorted()
         )
     }
@@ -83,6 +86,123 @@ struct DraftDigestReconciler {
             .map { $0 }
     }
 
+    private func fallbackMemories(
+        session: ImportSession,
+        from drafts: [SegmentReflectionDraft],
+        sharedLines: [CandidateSharedLineUpdate]
+    ) -> [CandidateMemory] {
+        guard !sharedLines.isEmpty else { return [] }
+
+        let summaryCandidates = drafts.flatMap { draft in
+            fallbackSentences(from: draft.summary).map { sentence in
+                FallbackMemoryInput(
+                    sentence: sentence,
+                    title: nil,
+                    provenance: ReflectionProvenance(
+                        sessionId: session.id,
+                        segmentId: draft.segmentId,
+                        characterRange: 0..<0
+                    )
+                )
+            }
+        }
+
+        let lineCandidates = sharedLines.flatMap { line in
+            fallbackSentences(from: "\(line.lastPosition)\n\(line.nextStep ?? "")").map { sentence in
+                FallbackMemoryInput(
+                    sentence: sentence,
+                    title: line.title,
+                    provenance: line.provenance
+                )
+            }
+        }
+
+        let candidates = (summaryCandidates + lineCandidates)
+            .compactMap { fallbackMemory(from: $0) }
+
+        return dedupeMemories(candidates).prefix(3).map { $0 }
+    }
+
+    private func fallbackMemory(from input: FallbackMemoryInput) -> CandidateMemory? {
+        let sentence = cleanFallbackSentence(input.sentence)
+        guard sentence.count >= 8 else { return nil }
+        guard !isWeakFallbackSentence(sentence) else { return nil }
+        guard let kind = fallbackMemoryKind(for: sentence) else { return nil }
+
+        let content: String
+        if shouldAttachLineTitle(to: sentence), let title = input.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+            content = "\(title)：\(sentence)"
+        } else {
+            content = sentence
+        }
+
+        return CandidateMemory(
+            kind: kind,
+            content: ensureTerminalPunctuation(content),
+            confidence: 0.78,
+            tags: ["fallback", "shared-line"],
+            provenance: input.provenance
+        )
+    }
+
+    private func fallbackSentences(from value: String) -> [String] {
+        value
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\n", with: "。")
+            .components(separatedBy: CharacterSet(charactersIn: "。！？!?"))
+            .map(cleanFallbackSentence)
+            .filter { !$0.isEmpty }
+    }
+
+    private func cleanFallbackSentence(_ value: String) -> String {
+        var result = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        while let first = result.first, first.isNumber || first == "." || first == "、" || first == "-" || first == " " {
+            result.removeFirst()
+            result = result.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return result
+    }
+
+    private func fallbackMemoryKind(for sentence: String) -> CandidateMemory.Kind? {
+        if containsAny(sentence, ["偏好", "希望", "倾向", "更喜欢"]) {
+            return .preference
+        }
+        if containsAny(sentence, ["决定", "采用", "默认使用", "选定", "确定用", "v1 先", "V1 先"]) {
+            return .decision
+        }
+        if containsAny(sentence, ["已完成", "已确认", "已定位", "诊断结论", "失败点", "当前卡在", "卡在", "不可用", "已经修复"]) {
+            return .fact
+        }
+        return nil
+    }
+
+    private func isWeakFallbackSentence(_ sentence: String) -> Bool {
+        let weakValues = [
+            "已确认问题",
+            "已完成导入",
+            "正在验证",
+            "继续验证",
+            "继续测试",
+            "开始整理",
+            "整理完成",
+            "下一步"
+        ]
+        return weakValues.contains { sentence.contains($0) }
+    }
+
+    private func shouldAttachLineTitle(to sentence: String) -> Bool {
+        sentence.hasPrefix("已") || sentence.hasPrefix("正在") || sentence.hasPrefix("配置") || sentence.hasPrefix("问题")
+    }
+
+    private func containsAny(_ value: String, _ needles: [String]) -> Bool {
+        needles.contains { value.contains($0) }
+    }
+
+    private func ensureTerminalPunctuation(_ value: String) -> String {
+        guard let last = value.last, !"。！？.!?".contains(last) else { return value }
+        return "\(value)。"
+    }
+
     private func stronger(_ lhs: CandidateMemory, _ rhs: CandidateMemory) -> CandidateMemory {
         if lhs.confidence == rhs.confidence {
             return lhs.content.count >= rhs.content.count ? lhs : rhs
@@ -133,4 +253,10 @@ struct DraftDigestReconciler {
             .joined()
             .trimmingCharacters(in: .punctuationCharacters)
     }
+}
+
+private struct FallbackMemoryInput {
+    var sentence: String
+    var title: String?
+    var provenance: ReflectionProvenance
 }

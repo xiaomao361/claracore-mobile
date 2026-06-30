@@ -163,6 +163,97 @@ final class DraftDigestReconcilerTests: XCTestCase {
         XCTAssertEqual(digest.candidateSharedLineUpdates.count, 1)
     }
 
+    func testDigestCreatesFallbackMemoryWhenLineHasDurableSignalButNoMemory() {
+        let session = ImportSession(source: .share, sourceApp: "DeepSeek", title: "Shared Conversation")
+        let provenance = provenance(sessionId: session.id, segmentId: "segment-1")
+        let draft = SegmentReflectionDraft(
+            segmentId: "segment-1",
+            summary: "用户在排查 API Key 和 gateway.bind 配置校验问题。",
+            candidateMemories: [],
+            candidateSharedLineUpdates: [
+                CandidateSharedLineUpdate(
+                    title: "API Key 与网关配置排查",
+                    lastPosition: "1. 已确认 API Key 不可用\n2. 配置校验失败点是 gateway.bind 只能为 loopback 或 all",
+                    nextStep: "检查网关配置并重新验证",
+                    confidence: 0.86,
+                    provenance: provenance
+                )
+            ],
+            uncertainItems: []
+        )
+
+        let digest = DraftDigestReconciler().digest(session: session, drafts: [draft])
+
+        XCTAssertEqual(digest.candidateSharedLineUpdates.count, 1)
+        XCTAssertEqual(digest.candidateMemories.count, 2)
+        XCTAssertEqual(
+            Set(digest.candidateMemories.map(\.content)),
+            Set([
+                "API Key 与网关配置排查：已确认 API Key 不可用。",
+                "API Key 与网关配置排查：配置校验失败点是 gateway.bind 只能为 loopback 或 all。"
+            ])
+        )
+        XCTAssertTrue(digest.candidateMemories.allSatisfy { $0.tags.contains("fallback") })
+        XCTAssertTrue(digest.candidateMemories.allSatisfy { $0.provenance.sessionId == session.id })
+    }
+
+    func testDigestDoesNotCreateFallbackMemoryForLowSignalLine() {
+        let session = ImportSession(source: .share, title: "Shared Conversation")
+        let provenance = provenance(sessionId: session.id, segmentId: "segment-1")
+        let draft = SegmentReflectionDraft(
+            segmentId: "segment-1",
+            summary: "这是一段普通讨论摘要。",
+            candidateMemories: [],
+            candidateSharedLineUpdates: [
+                CandidateSharedLineUpdate(
+                    title: "普通导入验证",
+                    lastPosition: "1. 已确认问题\n2. 正在验证回召",
+                    nextStep: "继续测试",
+                    confidence: 0.86,
+                    provenance: provenance
+                )
+            ],
+            uncertainItems: []
+        )
+
+        let digest = DraftDigestReconciler().digest(session: session, drafts: [draft])
+
+        XCTAssertTrue(digest.candidateMemories.isEmpty)
+        XCTAssertEqual(digest.candidateSharedLineUpdates.count, 1)
+    }
+
+    func testDigestDoesNotAddFallbackWhenStrongMemoryExists() {
+        let session = ImportSession(source: .share, title: "Shared Conversation")
+        let provenance = provenance(sessionId: session.id, segmentId: "segment-1")
+        let draft = SegmentReflectionDraft(
+            segmentId: "segment-1",
+            summary: "用户决定先修导入结果。",
+            candidateMemories: [
+                CandidateMemory(
+                    kind: .decision,
+                    content: "用户决定先修导入结果。",
+                    confidence: 0.9,
+                    tags: ["import"],
+                    provenance: provenance
+                )
+            ],
+            candidateSharedLineUpdates: [
+                CandidateSharedLineUpdate(
+                    title: "导入结果修复",
+                    lastPosition: "1. 已确认导入结果缺少记忆",
+                    nextStep: "补充兜底逻辑",
+                    confidence: 0.86,
+                    provenance: provenance
+                )
+            ],
+            uncertainItems: []
+        )
+
+        let digest = DraftDigestReconciler().digest(session: session, drafts: [draft])
+
+        XCTAssertEqual(digest.candidateMemories.map(\.content), ["用户决定先修导入结果。"])
+    }
+
     func testDigestFormatsSharedLineMilestones() {
         let session = ImportSession(source: .manual, title: "长对话")
         let provenance = provenance(sessionId: session.id, segmentId: "segment-1")

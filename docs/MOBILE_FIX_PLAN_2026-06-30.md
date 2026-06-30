@@ -550,6 +550,10 @@ Why:
 
 Real-device testing showed a DeepSeek share URL can finish with only a Shared Line. That makes the import feel incomplete and weakens later recall.
 
+Status:
+
+- 2026-06-30: Implemented conservative line-only digest fallback. When a digest has Shared Lines but no Memory, the reconciler derives up to three fallback memories only from strong durable signals such as completed outcomes, decisions, preferences, active blockers, or diagnostic conclusions. DeepSeek final digest prompt now explicitly asks for at least one memory when durable content exists.
+
 Tasks:
 
 1. Add a post-reconcile guard in the digest pipeline:
@@ -567,6 +571,7 @@ Acceptance:
 - The known DeepSeek share-link shape no longer creates only a Shared Line when durable content exists.
 - A low-signal import can still legitimately produce zero memories.
 - Simulator build and tests pass.
+- 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 48 tests, 0 failed.
 
 ### Phase 7: Shared Line Milestone Experience
 

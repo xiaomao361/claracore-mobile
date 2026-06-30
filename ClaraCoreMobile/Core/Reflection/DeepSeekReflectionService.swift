@@ -112,6 +112,7 @@ final class DeepSeekReflectionService: ReflectionService {
 
         Rules:
         - candidateMemories: 0 to 3 items. Store only durable facts, stable preferences, project decisions, completed outcomes, active blockers, or diagnostic outcomes.
+        - If candidateSharedLineUpdates is non-empty and the session contains any durable decision, preference, completed outcome, active blocker, or diagnostic conclusion, candidateMemories should include at least 1 item.
         - Do not store broad troubleshooting checklists, product explanations, comparison details, or every technical point as memory.
         - A good memory sounds like: "我们完成了 X", "用户决定 Y", "项目 v1 采用 Z", "用户偏好 W", "用户当前卡在 X", "X 的诊断结论是 Y".
         - candidateSharedLineUpdates: 1 to 5 items when the conversation has an ongoing process.
