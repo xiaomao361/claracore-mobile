@@ -164,41 +164,26 @@ private struct MemoryCard: View {
 
     var body: some View {
         ClaraCard(accent: ClaraDesign.memory) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(memory.content)
                     .font(.system(size: 16))
                     .foregroundStyle(ClaraDesign.ink)
                     .fixedSize(horizontal: false, vertical: true)
 
-                HStack(spacing: 8) {
-                    ClaraStatusPill(title: memory.kindTitle, color: memory.kindAccent)
-
-                    if let sourceAgent = memory.sourceAgent {
-                        ClaraStatusPill(title: sourceAgent, color: ClaraDesign.inkMuted, systemImage: "doc.text")
-                    }
-
-                    if memory.contextCardId != nil {
-                        ClaraStatusPill(title: "角色", color: ClaraDesign.continuity, systemImage: "person.text.rectangle")
-                    }
-
-                    if memory.lineId != nil {
-                        ClaraStatusPill(title: "共同线", color: ClaraDesign.continuity, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
-                    }
-                }
+                MemoryPillRow(items: memory.metaPills)
 
                 if !memory.visibleTags.isEmpty {
-                    HStack(spacing: 8) {
-                        ForEach(memory.visibleTags.prefix(5), id: \.self) { tag in
-                            ClaraStatusPill(title: tag, color: ClaraDesign.memory)
-                        }
-                    }
+                    MemoryPillRow(items: memory.visibleTags.prefix(6).map {
+                        MemoryPillItem(title: $0, color: ClaraDesign.memory, systemImage: nil)
+                    })
                 }
 
-                HStack {
+                HStack(spacing: 10) {
                     Button {
                         onEdit()
                     } label: {
                         Label("编辑", systemImage: "pencil")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.memory))
 
@@ -206,10 +191,39 @@ private struct MemoryCard: View {
                         onDelete()
                     } label: {
                         Label("删除", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.danger))
                 }
             }
+        }
+    }
+}
+
+private struct MemoryPillItem: Identifiable {
+    var id: String { "\(title)-\(systemImage ?? "dot")" }
+    var title: String
+    var color: Color
+    var systemImage: String?
+}
+
+private struct MemoryPillRow: View {
+    var items: [MemoryPillItem]
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(items) { item in
+                    ClaraStatusPill(
+                        title: item.title,
+                        color: item.color,
+                        systemImage: item.systemImage
+                    )
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                }
+            }
+            .padding(.trailing, 2)
         }
     }
 }
@@ -263,15 +277,20 @@ private struct MemoryFilterBar: View {
                     Picker("来源", selection: $sourceFilter) {
                         Text(MemorySourceFilter.all).tag(MemorySourceFilter.all)
                         ForEach(availableSources, id: \.self) { source in
-                            Text(source).tag(source)
+                            Text(source.displaySourceAgent).tag(source)
                         }
                     }
                     .pickerStyle(.menu)
+                    .font(.system(size: 15, weight: .medium))
 
                     Spacer()
 
-                    Toggle("共同线", isOn: $onlyLinkedToLine)
-                        .toggleStyle(.button)
+                    Button {
+                        onlyLinkedToLine.toggle()
+                    } label: {
+                        Label("共同线", systemImage: onlyLinkedToLine ? "checkmark.circle.fill" : "point.topleft.down.curvedto.point.bottomright.up")
+                    }
+                    .buttonStyle(ClaraCompactButtonStyle(color: onlyLinkedToLine ? ClaraDesign.continuity : ClaraDesign.inkMuted))
                 }
             }
         }
@@ -309,6 +328,22 @@ private extension Memory {
         tags.filter { !["fact", "preference", "decision", "task", "mobile"].contains($0) }
     }
 
+    var metaPills: [MemoryPillItem] {
+        var items = [
+            MemoryPillItem(title: kindTitle, color: kindAccent, systemImage: nil)
+        ]
+        if let sourceAgent {
+            items.append(MemoryPillItem(title: sourceAgent.displaySourceAgent, color: ClaraDesign.inkMuted, systemImage: "doc.text"))
+        }
+        if contextCardId != nil {
+            items.append(MemoryPillItem(title: "角色", color: ClaraDesign.continuity, systemImage: "person.text.rectangle"))
+        }
+        if lineId != nil {
+            items.append(MemoryPillItem(title: "共同线", color: ClaraDesign.continuity, systemImage: "point.topleft.down.curvedto.point.bottomright.up"))
+        }
+        return items
+    }
+
     func matches(kindFilter: MemoryKindFilter, sourceFilter: String, onlyLinkedToLine: Bool) -> Bool {
         if kindFilter != .all, !tags.contains(kindFilter.rawValue) {
             return false
@@ -320,6 +355,19 @@ private extension Memory {
             return false
         }
         return true
+    }
+}
+
+private extension String {
+    var displaySourceAgent: String {
+        switch self {
+        case "mobile-reflection":
+            return "整理"
+        case "mobile":
+            return "本机"
+        default:
+            return self
+        }
     }
 }
 
