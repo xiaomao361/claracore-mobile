@@ -104,14 +104,14 @@ struct SettingsFeatureView: View {
 
                 ClaraSectionLabel(title: "整理引擎")
 
-                ClaraCard(accent: reflectionConfiguration.mode == .remoteModel ? ClaraDesign.memory : ClaraDesign.reflection) {
+                ClaraCard(accent: isRemoteModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(reflectionConfiguration.mode == .remoteModel ? "远程整理已启用" : "本地占位")
+                                Text(isRemoteModelEnabled ? "远程整理已启用" : "本地占位")
                                     .font(.system(size: 17, weight: .semibold))
                                     .foregroundStyle(ClaraDesign.ink)
-                                Text(reflectionConfiguration.mode == .remoteModel ? "导入后会调用下方模型配置，生成记忆和共同线。" : "未保存模型 Key 时不会远程整理，也不会自动写入候选记忆。")
+                                Text(isRemoteModelEnabled ? "导入后会调用下方模型配置，生成记忆和共同线。" : "未保存模型 Key 时不会远程整理，也不会自动写入候选记忆。")
                                     .font(.system(size: 13))
                                     .foregroundStyle(ClaraDesign.inkMuted)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -119,16 +119,14 @@ struct SettingsFeatureView: View {
                             Spacer()
                             ClaraStatusPill(
                                 title: currentModeTitle,
-                                color: reflectionConfiguration.mode == .remoteModel ? ClaraDesign.memory : ClaraDesign.reflection,
-                                systemImage: reflectionConfiguration.mode == .remoteModel ? "checkmark.seal" : "sparkles"
+                                color: isRemoteModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection,
+                                systemImage: isRemoteModelEnabled ? "checkmark.seal" : "sparkles"
                             )
                         }
 
-                        if let provider = reflectionConfiguration.modelProvider {
-                            HStack(spacing: 8) {
-                                ClaraStatusPill(title: provider.trimmedProviderName, color: ClaraDesign.memory, systemImage: "server.rack")
-                                ClaraStatusPill(title: provider.trimmedModel.isEmpty ? "未选择模型" : provider.trimmedModel, color: ClaraDesign.continuity, systemImage: "cpu")
-                            }
+                        HStack(spacing: 8) {
+                            ClaraStatusPill(title: currentModelDraft.trimmedProviderName, color: ClaraDesign.memory, systemImage: "server.rack")
+                            ClaraStatusPill(title: currentModelDraft.trimmedModel.isEmpty ? "未选择模型" : currentModelDraft.trimmedModel, color: ClaraDesign.continuity, systemImage: "cpu")
                         }
                     }
                 }
@@ -213,10 +211,20 @@ struct SettingsFeatureView: View {
                                 }
                             }
 
-                            TextField("先查询模型，或手动输入 model id", text: $modelName)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .textFieldStyle(.roundedBorder)
+                            HStack(spacing: 10) {
+                                Image(systemName: modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "cpu" : "checkmark.circle.fill")
+                                    .foregroundStyle(modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? ClaraDesign.inkMuted : ClaraDesign.memory)
+                                Text(modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "请先查询模型并选择" : modelName)
+                                    .font(.system(size: 15, weight: modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .regular : .semibold))
+                                    .foregroundStyle(modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? ClaraDesign.inkMuted : ClaraDesign.ink)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 11)
+                            .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                            .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
 
                             if !availableModels.isEmpty {
                                 VStack(spacing: 8) {
@@ -244,12 +252,17 @@ struct SettingsFeatureView: View {
                                     }
 
                                     if availableModels.count > 12 {
-                                        Text("还有 \(availableModels.count - 12) 个模型未显示，可直接复制 model id 到输入框。")
+                                        Text("还有 \(availableModels.count - 12) 个模型未显示。当前只展示前 12 个，后续可以增加搜索筛选。")
                                             .font(.system(size: 12))
                                             .foregroundStyle(ClaraDesign.inkMuted)
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                 }
+                            } else {
+                                Text("模型只能从查询结果中选择。请先填写 Base URL 和 API Key，然后点击“查询模型”。")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(ClaraDesign.inkMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
 
@@ -307,11 +320,16 @@ struct SettingsFeatureView: View {
     }
 
     private var currentModeTitle: String {
-        if reflectionConfiguration.mode == .remoteModel,
-           let provider = reflectionConfiguration.modelProvider {
-            return provider.trimmedProviderName
+        if isRemoteModelEnabled {
+            return currentModelDraft.trimmedProviderName
         }
-        return reflectionConfiguration.mode.title
+        return ReflectionConfiguration.Mode.localPlaceholder.title
+    }
+
+    private var isRemoteModelEnabled: Bool {
+        hasSavedModelKey &&
+            currentModelDraft.baseURL != nil &&
+            !currentModelDraft.trimmedModel.isEmpty
     }
 
     private var canSaveModelConfiguration: Bool {
