@@ -335,6 +335,10 @@ private extension Memory {
         if let sourceAgent {
             items.append(MemoryPillItem(title: sourceAgent.displaySourceAgent, color: ClaraDesign.inkMuted, systemImage: "doc.text"))
         }
+        items.append(MemoryPillItem(title: "可信 \(Int(memoryConfidencePercent))%", color: ClaraDesign.inkMuted, systemImage: "checkmark.seal"))
+        if importance > 0 {
+            items.append(MemoryPillItem(title: "重要 \(Int(memoryImportancePercent))%", color: ClaraDesign.review, systemImage: "star"))
+        }
         if contextCardId != nil {
             items.append(MemoryPillItem(title: "角色", color: ClaraDesign.continuity, systemImage: "person.text.rectangle"))
         }
@@ -342,6 +346,14 @@ private extension Memory {
             items.append(MemoryPillItem(title: "共同线", color: ClaraDesign.continuity, systemImage: "point.topleft.down.curvedto.point.bottomright.up"))
         }
         return items
+    }
+
+    var memoryConfidencePercent: Double {
+        min(max(confidence, 0), 1) * 100
+    }
+
+    var memoryImportancePercent: Double {
+        min(max(importance, 0), 1) * 100
     }
 
     func matches(kindFilter: MemoryKindFilter, sourceFilter: String, onlyLinkedToLine: Bool) -> Bool {

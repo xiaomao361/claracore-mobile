@@ -24,7 +24,15 @@ final class DigestCommitter {
                 title: update.title,
                 lastPosition: update.lastPosition,
                 nextStep: update.nextStep,
-                contextCardId: contextCardId
+                contextCardId: contextCardId,
+                stateSummary: update.stateSummary,
+                currentInterpretation: update.currentInterpretation,
+                interpretationStatus: update.interpretationStatus,
+                emotionalArc: update.emotionalArc,
+                affectiveTrace: update.affectiveTrace,
+                realityLine: update.realityLine,
+                boundaryNotes: update.boundaryNotes,
+                misreadRisks: update.misreadRisks
             )
         }
         let defaultLineId = lines.first?.id
@@ -36,7 +44,9 @@ final class DigestCommitter {
                 isPrivate: false,
                 sourceAgent: "mobile-reflection",
                 lineId: defaultLineId,
-                contextCardId: contextCardId
+                contextCardId: contextCardId,
+                confidence: candidate.confidence,
+                importance: min(max(candidate.confidence - 0.5, 0), 0.5) * 2
             )
         }
 

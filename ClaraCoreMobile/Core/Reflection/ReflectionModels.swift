@@ -45,6 +45,14 @@ struct CandidateSharedLineUpdate: Identifiable, Codable, Equatable {
     var title: String
     var lastPosition: String
     var nextStep: String?
+    var stateSummary: String
+    var currentInterpretation: String
+    var interpretationStatus: String
+    var emotionalArc: [String]
+    var affectiveTrace: [AffectiveTraceNode]
+    var realityLine: String
+    var boundaryNotes: String
+    var misreadRisks: String
     var confidence: Double
     var provenance: ReflectionProvenance
 
@@ -53,6 +61,14 @@ struct CandidateSharedLineUpdate: Identifiable, Codable, Equatable {
         title: String,
         lastPosition: String,
         nextStep: String?,
+        stateSummary: String = "",
+        currentInterpretation: String = "",
+        interpretationStatus: String = "active",
+        emotionalArc: [String] = [],
+        affectiveTrace: [AffectiveTraceNode] = [],
+        realityLine: String = "",
+        boundaryNotes: String = "",
+        misreadRisks: String = "",
         confidence: Double,
         provenance: ReflectionProvenance
     ) {
@@ -60,6 +76,14 @@ struct CandidateSharedLineUpdate: Identifiable, Codable, Equatable {
         self.title = title
         self.lastPosition = lastPosition
         self.nextStep = nextStep
+        self.stateSummary = stateSummary
+        self.currentInterpretation = currentInterpretation
+        self.interpretationStatus = interpretationStatus
+        self.emotionalArc = emotionalArc
+        self.affectiveTrace = affectiveTrace
+        self.realityLine = realityLine
+        self.boundaryNotes = boundaryNotes
+        self.misreadRisks = misreadRisks
         self.confidence = confidence
         self.provenance = provenance
     }

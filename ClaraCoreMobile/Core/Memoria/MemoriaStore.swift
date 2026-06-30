@@ -18,7 +18,9 @@ final class MemoriaStore {
         isPrivate: Bool,
         sourceAgent: String? = "mobile",
         lineId: String? = nil,
-        contextCardId: String? = nil
+        contextCardId: String? = nil,
+        confidence: Double = 1.0,
+        importance: Double = 0.0
     ) throws -> Memory {
         let now = Date()
         let memory = Memory(
@@ -30,6 +32,8 @@ final class MemoriaStore {
             sourceAgent: sourceAgent,
             lineId: lineId,
             contextCardId: contextCardId,
+            confidence: confidence,
+            importance: importance,
             createdAt: now,
             updatedAt: now
         )
@@ -41,8 +45,9 @@ final class MemoriaStore {
             try db.execute(
                 sql: """
                 INSERT INTO memories (
-                    id, content, tags, is_private, is_archived, source_agent, line_id, context_card_id, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id, content, tags, is_private, is_archived, source_agent,
+                    line_id, context_card_id, confidence, importance, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 arguments: [
                     memory.id,
@@ -53,6 +58,8 @@ final class MemoriaStore {
                     memory.sourceAgent,
                     memory.lineId,
                     memory.contextCardId,
+                    memory.confidence,
+                    memory.importance,
                     createdAt,
                     createdAt
                 ]
@@ -219,6 +226,8 @@ final class MemoriaStore {
             sourceAgent: row["source_agent"],
             lineId: row["line_id"],
             contextCardId: row["context_card_id"],
+            confidence: row["confidence"],
+            importance: row["importance"],
             createdAt: createdAt,
             updatedAt: updatedAt
         )

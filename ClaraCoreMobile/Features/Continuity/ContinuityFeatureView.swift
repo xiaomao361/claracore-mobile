@@ -58,6 +58,7 @@ struct ContinuityFeatureView: View {
                                         )
                                     }
                                     CurrentStationCard(line: line)
+                                    ContinuityRichStateView(line: line, compact: true)
                                     MilestoneStepsView(steps: line.completedMilestoneSteps, limit: 3, mode: .completed)
                                     if let nextStep = line.nextStep, !nextStep.isEmpty {
                                         VStack(alignment: .leading, spacing: 6) {
@@ -184,6 +185,111 @@ struct ContinuityFeatureView: View {
             reload()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private struct ContinuityRichStateView: View {
+    var line: ContinuityLine
+    var compact = false
+
+    var body: some View {
+        if line.hasRichState {
+            VStack(alignment: .leading, spacing: 8) {
+                if !line.stateSummary.isEmpty {
+                    RichStateRow(title: "状态", value: line.stateSummary, systemImage: "waveform.path.ecg")
+                }
+
+                if !line.currentInterpretation.isEmpty {
+                    RichStateRow(
+                        title: line.interpretationStatusTitle,
+                        value: line.currentInterpretation,
+                        systemImage: "eye"
+                    )
+                }
+
+                if let trace = line.latestAffectiveTrace {
+                    HStack(spacing: 8) {
+                        ClaraStatusPill(title: trace.tone.isEmpty ? "情绪" : trace.tone, color: ClaraDesign.reflection, systemImage: "heart")
+                        ClaraStatusPill(title: trace.valenceTitle, color: ClaraDesign.reflection)
+                        ClaraStatusPill(title: trace.intensityTitle, color: ClaraDesign.reflection)
+                    }
+                }
+
+                if !line.emotionalArc.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("位置弧线")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                        ForEach(Array(line.emotionalArc.prefix(compact ? 2 : 6).enumerated()), id: \.offset) { _, item in
+                            Label(item, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                                .font(.system(size: 13))
+                                .foregroundStyle(ClaraDesign.ink)
+                                .lineLimit(compact ? 1 : nil)
+                        }
+                    }
+                }
+
+                if !compact {
+                    if !line.realityLine.isEmpty {
+                        RichStateRow(title: "确认事实", value: line.realityLine, systemImage: "checkmark.seal")
+                    }
+                    if !line.boundaryNotes.isEmpty {
+                        RichStateRow(title: "边界", value: line.boundaryNotes, systemImage: "hand.raised")
+                    }
+                    if !line.misreadRisks.isEmpty {
+                        RichStateRow(title: "误读风险", value: line.misreadRisks, systemImage: "exclamationmark.triangle")
+                    }
+                }
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(ClaraDesign.surfaceMuted.opacity(0.45))
+            .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
+        }
+    }
+}
+
+private struct RichStateRow: View {
+    var title: String
+    var value: String
+    var systemImage: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: systemImage)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(ClaraDesign.inkMuted)
+            Text(value)
+                .font(.system(size: 13))
+                .foregroundStyle(ClaraDesign.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private extension AffectiveTraceNode {
+    var valenceTitle: String {
+        switch valence {
+        case "positive":
+            return "正向"
+        case "negative":
+            return "负向"
+        case "mixed":
+            return "混合"
+        default:
+            return "未明"
+        }
+    }
+
+    var intensityTitle: String {
+        switch intensity {
+        case "low":
+            return "低强度"
+        case "high":
+            return "高强度"
+        default:
+            return "中强度"
         }
     }
 }

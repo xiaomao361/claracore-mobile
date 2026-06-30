@@ -194,6 +194,22 @@ struct AppDatabase {
             """)
         }
 
+        migrator.registerMigration("addContinuityRichState") { db in
+            try db.execute(sql: """
+            ALTER TABLE continuity_lines ADD COLUMN state_summary TEXT NOT NULL DEFAULT '';
+            ALTER TABLE continuity_lines ADD COLUMN current_interpretation TEXT NOT NULL DEFAULT '';
+            ALTER TABLE continuity_lines ADD COLUMN interpretation_status TEXT NOT NULL DEFAULT 'active';
+            ALTER TABLE continuity_lines ADD COLUMN emotional_arc TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE continuity_lines ADD COLUMN affective_trace TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE continuity_lines ADD COLUMN reality_line TEXT NOT NULL DEFAULT '';
+            ALTER TABLE continuity_lines ADD COLUMN boundary_notes TEXT NOT NULL DEFAULT '';
+            ALTER TABLE continuity_lines ADD COLUMN misread_risks TEXT NOT NULL DEFAULT '';
+
+            ALTER TABLE memories ADD COLUMN confidence REAL NOT NULL DEFAULT 1.0;
+            ALTER TABLE memories ADD COLUMN importance REAL NOT NULL DEFAULT 0.0;
+            """)
+        }
+
         return migrator
     }
 }

@@ -17,6 +17,7 @@ struct RecallContextPackage: Equatable {
             }
             .joined(separator: "\n")
         }
+        let continuityStateText = line.richRecallText
 
         return """
         你现在继续使用下面这个角色和用户关系。
@@ -32,6 +33,9 @@ struct RecallContextPackage: Equatable {
         已经走到：
         \(line.lastPosition)
         接下来先做：\(line.nextStep?.isEmpty == false ? line.nextStep! : "先确认当前最需要推进的一步。")
+
+        【连续性状态】
+        \(continuityStateText)
 
         【需要记住的事实】
         \(memoryText)
@@ -77,5 +81,34 @@ private extension Memory {
             return "事实"
         }
         return nil
+    }
+}
+
+private extension ContinuityLine {
+    var richRecallText: String {
+        var parts: [String] = []
+        if !stateSummary.isEmpty {
+            parts.append("状态摘要：\(stateSummary)")
+        }
+        if !currentInterpretation.isEmpty {
+            parts.append("当前解释（\(interpretationStatusTitle)）：\(currentInterpretation)")
+        }
+        if !emotionalArc.isEmpty {
+            parts.append("位置弧线：\n" + emotionalArc.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n"))
+        }
+        if let trace = latestAffectiveTrace {
+            let signals = trace.signals.isEmpty ? "" : "；信号：\(trace.signals.joined(separator: "、"))"
+            parts.append("情绪弧线：\(trace.tone.isEmpty ? "未命名" : trace.tone)，\(trace.valence)，\(trace.intensity)，\(trace.stability)\(signals)。\(trace.note)")
+        }
+        if !realityLine.isEmpty {
+            parts.append("确认事实：\(realityLine)")
+        }
+        if !boundaryNotes.isEmpty {
+            parts.append("边界：\(boundaryNotes)")
+        }
+        if !misreadRisks.isEmpty {
+            parts.append("误读风险：\(misreadRisks)")
+        }
+        return parts.isEmpty ? "暂无额外弧线状态。" : parts.joined(separator: "\n")
     }
 }

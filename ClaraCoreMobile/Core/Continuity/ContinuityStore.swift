@@ -4,13 +4,28 @@ import GRDB
 final class ContinuityStore {
     private let database: AppDatabase
     private let dateFormatter = ISO8601DateFormatter()
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
 
     init(database: AppDatabase) {
         self.database = database
     }
 
     @discardableResult
-    func create(title: String, lastPosition: String, nextStep: String?, contextCardId: String? = nil) throws -> ContinuityLine {
+    func create(
+        title: String,
+        lastPosition: String,
+        nextStep: String?,
+        contextCardId: String? = nil,
+        stateSummary: String = "",
+        currentInterpretation: String = "",
+        interpretationStatus: String = "active",
+        emotionalArc: [String] = [],
+        affectiveTrace: [AffectiveTraceNode] = [],
+        realityLine: String = "",
+        boundaryNotes: String = "",
+        misreadRisks: String = ""
+    ) throws -> ContinuityLine {
         let now = Date()
         let line = ContinuityLine(
             id: UUID().uuidString,
@@ -18,17 +33,30 @@ final class ContinuityStore {
             lastPosition: lastPosition,
             nextStep: nextStep,
             contextCardId: contextCardId,
+            stateSummary: stateSummary,
+            currentInterpretation: currentInterpretation,
+            interpretationStatus: interpretationStatus,
+            emotionalArc: emotionalArc,
+            affectiveTrace: affectiveTrace,
+            realityLine: realityLine,
+            boundaryNotes: boundaryNotes,
+            misreadRisks: misreadRisks,
             status: .active,
             createdAt: now,
             updatedAt: now
         )
+        let emotionalArcJSON = try jsonString(emotionalArc)
+        let affectiveTraceJSON = try jsonString(affectiveTrace)
 
         try database.dbQueue.write { db in
             try db.execute(
                 sql: """
                 INSERT INTO continuity_lines (
-                    id, title, last_position, next_step, context_card_id, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    id, title, last_position, next_step, context_card_id,
+                    state_summary, current_interpretation, interpretation_status,
+                    emotional_arc, affective_trace, reality_line, boundary_notes, misread_risks,
+                    status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 arguments: [
                     line.id,
@@ -36,6 +64,14 @@ final class ContinuityStore {
                     line.lastPosition,
                     line.nextStep,
                     line.contextCardId,
+                    line.stateSummary,
+                    line.currentInterpretation,
+                    line.interpretationStatus,
+                    emotionalArcJSON,
+                    affectiveTraceJSON,
+                    line.realityLine,
+                    line.boundaryNotes,
+                    line.misreadRisks,
                     line.status.rawValue,
                     dateFormatter.string(from: line.createdAt),
                     dateFormatter.string(from: line.updatedAt)
@@ -63,6 +99,15 @@ final class ContinuityStore {
 
             return rows.map(line(from:))
         }
+    }
+
+    private func jsonString<T: Encodable>(_ value: T) throws -> String {
+        try String(data: encoder.encode(value), encoding: .utf8) ?? "[]"
+    }
+
+    private func decodeJSON<T: Decodable>(_ type: T.Type, from value: String) -> T? {
+        guard let data = value.data(using: .utf8) else { return nil }
+        return try? decoder.decode(type, from: data)
     }
 
     func update(id: String, title: String, lastPosition: String, nextStep: String?) throws {
@@ -123,6 +168,14 @@ final class ContinuityStore {
             lastPosition: row["last_position"],
             nextStep: row["next_step"],
             contextCardId: row["context_card_id"],
+            stateSummary: row["state_summary"],
+            currentInterpretation: row["current_interpretation"],
+            interpretationStatus: row["interpretation_status"],
+            emotionalArc: decodeJSON([String].self, from: row["emotional_arc"]) ?? [],
+            affectiveTrace: decodeJSON([AffectiveTraceNode].self, from: row["affective_trace"]) ?? [],
+            realityLine: row["reality_line"],
+            boundaryNotes: row["boundary_notes"],
+            misreadRisks: row["misread_risks"],
             status: ContinuityLine.Status(rawValue: statusValue) ?? .active,
             createdAt: dateFormatter.date(from: createdAtString) ?? Date(),
             updatedAt: dateFormatter.date(from: updatedAtString) ?? Date()

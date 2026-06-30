@@ -76,6 +76,7 @@ final class DeepSeekReflectionService: ReflectionService {
         Good active-blocker memories: "用户当前卡在 API Key 不可用的问题。", "配置校验失败点是 gateway.bind 只能为 loopback 或 all。"
         Bad memories: broad troubleshooting checklists, how a third-party feature works, every comparison point, temporary implementation chatter.
         Shared Line updates should preserve process progress as milestones. Use lastPosition as a compact numbered milestone trail.
+        Shared Line updates should also capture mobile continuity state: stateSummary, currentInterpretation, interpretationStatus, emotionalArc, affectiveTrace, realityLine, boundaryNotes, and misreadRisks when present.
         Keep this segment conservative: at most 2 memories and at most 3 shared line updates.
         Schema:
         {
@@ -85,7 +86,22 @@ final class DeepSeekReflectionService: ReflectionService {
             {"kind":"fact|preference|decision|task","content":"...", "confidence":0.0, "tags":["..."], "rangeStart":0, "rangeEnd":10}
           ],
           "candidateSharedLineUpdates": [
-            {"title":"...", "lastPosition":"...", "nextStep":"...", "confidence":0.0, "rangeStart":0, "rangeEnd":10}
+            {
+              "title":"...",
+              "lastPosition":"...",
+              "nextStep":"...",
+              "stateSummary":"compact recoverable state",
+              "currentInterpretation":"what the situation currently means",
+              "interpretationStatus":"active|needs_review|stale|closed",
+              "emotionalArc":["1. position shift", "2. pressure eased"],
+              "affectiveTrace":[{"tone":"focused","valence":"positive|negative|mixed|unclear","intensity":"low|medium|high","stability":"session|stable|volatile","signals":["..."],"note":"..."}],
+              "realityLine":"confirmed ground",
+              "boundaryNotes":"limits or boundaries",
+              "misreadRisks":"what not to overread",
+              "confidence":0.0,
+              "rangeStart":0,
+              "rangeEnd":10
+            }
           ],
           "uncertainItems": ["..."]
         }
@@ -118,6 +134,15 @@ final class DeepSeekReflectionService: ReflectionService {
         - candidateSharedLineUpdates: 1 to 5 items when the conversation has an ongoing process.
         - Shared lines are process tracks. lastPosition should look like milestones, for example "1. 已确认问题\n2. 已完成导入\n3. 正在验证回召".
         - nextStep should be the next concrete step, not a summary.
+        - For each Shared Line, include recoverable continuity state:
+          - stateSummary: compact current state.
+          - currentInterpretation: current read of the situation.
+          - interpretationStatus: active, needs_review, stale, or closed.
+          - emotionalArc: position/emotional arc as short ordered Chinese phrases.
+          - affectiveTrace: one or two emotional nodes with tone, valence, intensity, stability, signals, note.
+          - realityLine: confirmed ground only.
+          - boundaryNotes: explicit limits or user boundaries.
+          - misreadRisks: what the next AI should not over-assume.
         - It is OK for shared lines to outnumber memories.
 
         Schema:
@@ -127,7 +152,20 @@ final class DeepSeekReflectionService: ReflectionService {
             {"kind":"fact|preference|decision","content":"...", "confidence":0.0, "tags":["..."]}
           ],
           "candidateSharedLineUpdates": [
-            {"title":"...", "lastPosition":"1. ...\\n2. ...", "nextStep":"...", "confidence":0.0}
+            {
+              "title":"...",
+              "lastPosition":"1. ...\\n2. ...",
+              "nextStep":"...",
+              "stateSummary":"...",
+              "currentInterpretation":"...",
+              "interpretationStatus":"active|needs_review|stale|closed",
+              "emotionalArc":["..."],
+              "affectiveTrace":[{"tone":"...","valence":"positive|negative|mixed|unclear","intensity":"low|medium|high","stability":"session|stable|volatile","signals":["..."],"note":"..."}],
+              "realityLine":"...",
+              "boundaryNotes":"...",
+              "misreadRisks":"...",
+              "confidence":0.0
+            }
           ],
           "conflicts": []
         }
@@ -251,9 +289,26 @@ private struct DeepSeekSegmentResponse: Decodable {
     }
 
     struct LineUpdate: Decodable {
+        struct TraceNode: Decodable {
+            var tone: String?
+            var valence: String?
+            var intensity: String?
+            var stability: String?
+            var signals: [String]?
+            var note: String?
+        }
+
         var title: String
         var lastPosition: String
         var nextStep: String?
+        var stateSummary: String?
+        var currentInterpretation: String?
+        var interpretationStatus: String?
+        var emotionalArc: [String]?
+        var affectiveTrace: [TraceNode]?
+        var realityLine: String?
+        var boundaryNotes: String?
+        var misreadRisks: String?
         var confidence: Double
         var rangeStart: Int
         var rangeEnd: Int
@@ -297,6 +352,23 @@ private struct DeepSeekSegmentResponse: Decodable {
                     title: update.title,
                     lastPosition: update.lastPosition,
                     nextStep: update.nextStep,
+                    stateSummary: update.stateSummary ?? "",
+                    currentInterpretation: update.currentInterpretation ?? "",
+                    interpretationStatus: update.interpretationStatus ?? "active",
+                    emotionalArc: update.emotionalArc ?? [],
+                    affectiveTrace: update.affectiveTrace?.map { node in
+                        AffectiveTraceNode(
+                            tone: node.tone ?? "",
+                            valence: node.valence ?? "unclear",
+                            intensity: node.intensity ?? "medium",
+                            stability: node.stability ?? "session",
+                            signals: node.signals ?? [],
+                            note: node.note ?? ""
+                        )
+                    } ?? [],
+                    realityLine: update.realityLine ?? "",
+                    boundaryNotes: update.boundaryNotes ?? "",
+                    misreadRisks: update.misreadRisks ?? "",
                     confidence: update.confidence,
                     provenance: .init(
                         sessionId: segment.sessionId,
@@ -331,9 +403,26 @@ private struct DeepSeekDigestResponse: Decodable {
     }
 
     struct LineUpdate: Decodable {
+        struct TraceNode: Decodable {
+            var tone: String?
+            var valence: String?
+            var intensity: String?
+            var stability: String?
+            var signals: [String]?
+            var note: String?
+        }
+
         var title: String
         var lastPosition: String
         var nextStep: String?
+        var stateSummary: String?
+        var currentInterpretation: String?
+        var interpretationStatus: String?
+        var emotionalArc: [String]?
+        var affectiveTrace: [TraceNode]?
+        var realityLine: String?
+        var boundaryNotes: String?
+        var misreadRisks: String?
         var confidence: Double
     }
 
@@ -364,6 +453,23 @@ private struct DeepSeekDigestResponse: Decodable {
                 title: update.title,
                 lastPosition: update.lastPosition,
                 nextStep: update.nextStep,
+                stateSummary: update.stateSummary ?? "",
+                currentInterpretation: update.currentInterpretation ?? "",
+                interpretationStatus: update.interpretationStatus ?? "active",
+                emotionalArc: update.emotionalArc ?? [],
+                affectiveTrace: update.affectiveTrace?.map { node in
+                    AffectiveTraceNode(
+                        tone: node.tone ?? "",
+                        valence: node.valence ?? "unclear",
+                        intensity: node.intensity ?? "medium",
+                        stability: node.stability ?? "session",
+                        signals: node.signals ?? [],
+                        note: node.note ?? ""
+                    )
+                } ?? [],
+                realityLine: update.realityLine ?? "",
+                boundaryNotes: update.boundaryNotes ?? "",
+                misreadRisks: update.misreadRisks ?? "",
                 confidence: update.confidence,
                 provenance: provenance
             )

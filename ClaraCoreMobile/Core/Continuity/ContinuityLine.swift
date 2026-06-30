@@ -1,5 +1,33 @@
 import Foundation
 
+struct AffectiveTraceNode: Codable, Equatable, Identifiable {
+    var id: String
+    var tone: String
+    var valence: String
+    var intensity: String
+    var stability: String
+    var signals: [String]
+    var note: String
+
+    init(
+        id: String = UUID().uuidString,
+        tone: String = "",
+        valence: String = "unclear",
+        intensity: String = "medium",
+        stability: String = "session",
+        signals: [String] = [],
+        note: String = ""
+    ) {
+        self.id = id
+        self.tone = tone
+        self.valence = valence
+        self.intensity = intensity
+        self.stability = stability
+        self.signals = signals
+        self.note = note
+    }
+}
+
 struct ContinuityLine: Identifiable, Equatable {
     enum Status: String, CaseIterable {
         case active
@@ -11,6 +39,14 @@ struct ContinuityLine: Identifiable, Equatable {
     var lastPosition: String
     var nextStep: String?
     var contextCardId: String? = nil
+    var stateSummary: String = ""
+    var currentInterpretation: String = ""
+    var interpretationStatus: String = "active"
+    var emotionalArc: [String] = []
+    var affectiveTrace: [AffectiveTraceNode] = []
+    var realityLine: String = ""
+    var boundaryNotes: String = ""
+    var misreadRisks: String = ""
     var status: Status
     var createdAt: Date
     var updatedAt: Date
@@ -66,5 +102,32 @@ struct ContinuityLine: Identifiable, Equatable {
         let completedCount = completedMilestoneSteps.count
         guard completedCount > 0 else { return "当前站" }
         return "已过 \(completedCount) 站"
+    }
+
+    var latestAffectiveTrace: AffectiveTraceNode? {
+        affectiveTrace.last
+    }
+
+    var hasRichState: Bool {
+        !stateSummary.isEmpty ||
+            !currentInterpretation.isEmpty ||
+            !emotionalArc.isEmpty ||
+            !affectiveTrace.isEmpty ||
+            !realityLine.isEmpty ||
+            !boundaryNotes.isEmpty ||
+            !misreadRisks.isEmpty
+    }
+
+    var interpretationStatusTitle: String {
+        switch interpretationStatus {
+        case "needs_review":
+            return "待确认"
+        case "stale":
+            return "可能过期"
+        case "closed":
+            return "已关闭"
+        default:
+            return "进行中"
+        }
     }
 }
