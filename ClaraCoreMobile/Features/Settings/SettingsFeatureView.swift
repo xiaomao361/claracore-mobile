@@ -110,7 +110,7 @@ struct SettingsFeatureView: View {
 
                 ClaraCard(accent: organizationEngineMode == .externalModel ? ClaraDesign.memory : ClaraDesign.reflection) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Picker("整理方式", selection: $organizationEngineMode) {
+                        Picker("偏好整理方式", selection: $organizationEngineMode) {
                             ForEach(OrganizationEngineMode.allCases) { mode in
                                 Text(mode.title).tag(mode)
                             }
@@ -122,6 +122,7 @@ struct SettingsFeatureView: View {
 
                         EngineModeSummary(
                             mode: organizationEngineMode,
+                            effectiveMode: reflectionConfiguration.mode,
                             isExternalModelReady: isExternalModelReady,
                             providerTitle: currentModelDraft.trimmedProviderName,
                             modelTitle: currentModelDraft.trimmedModel
@@ -675,12 +676,33 @@ private enum SettingsModelError: LocalizedError {
 
 private struct EngineModeSummary: View {
     var mode: OrganizationEngineMode
+    var effectiveMode: ReflectionConfiguration.Mode
     var isExternalModelReady: Bool
     var providerTitle: String
     var modelTitle: String
 
+    private var isEffectivelyExternal: Bool {
+        effectiveMode == .remoteModel
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                ClaraStatusPill(
+                    title: isEffectivelyExternal ? "当前生效：外部模型" : "当前生效：本机规则",
+                    color: isEffectivelyExternal ? ClaraDesign.memory : ClaraDesign.reflection,
+                    systemImage: isEffectivelyExternal ? "checkmark.seal" : "checkmark.shield"
+                )
+
+                if mode == .externalModel, !isEffectivelyExternal {
+                    ClaraStatusPill(
+                        title: "外部模型未就绪",
+                        color: ClaraDesign.reflection,
+                        systemImage: "exclamationmark.triangle"
+                    )
+                }
+            }
+
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: mode == .localRules ? "lock.laptopcomputer" : "server.rack")
                     .font(.system(size: 18, weight: .semibold))
@@ -688,10 +710,10 @@ private struct EngineModeSummary: View {
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(mode.title)
+                    Text("已选择：\(mode.title)")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(ClaraDesign.ink)
-                    Text(mode.detail)
+                    Text(statusDetail)
                         .font(.system(size: 13))
                         .foregroundStyle(ClaraDesign.inkMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -726,6 +748,16 @@ private struct EngineModeSummary: View {
                 )
             }
         }
+    }
+
+    private var statusDetail: String {
+        if mode == .localRules {
+            return "下一次导入会直接使用本机规则。导入内容不会发送给模型提供方。"
+        }
+        if isEffectivelyExternal {
+            return "下一次导入会使用 \(providerTitle) 的 \(modelTitle) 整理。内容只会在你主动导入并整理时发送。"
+        }
+        return "你已选择外部模型，但配置还没有生效。请保存可用的 Base URL、API Key 和模型；在此之前，下一次导入仍会使用本机规则。"
     }
 }
 
