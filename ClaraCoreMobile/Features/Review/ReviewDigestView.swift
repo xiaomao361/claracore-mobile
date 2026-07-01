@@ -65,7 +65,7 @@ struct ReviewDigestView: View {
                         .font(.caption)
                         .foregroundStyle(ClaraDesign.inkMuted)
                 } else if hasNoCandidates {
-                    Text("没有可提交的候选项。通常是当前仍处于本地占位整理模式；请到设置里配置默认整理模型后重新整理。")
+                    Text("没有可提交的候选项。请回到原文 Archive 检查导入内容是否为空，或配置外部模型后重新整理。")
                         .font(.caption)
                         .foregroundStyle(ClaraDesign.inkMuted)
                         .fixedSize(horizontal: false, vertical: true)

@@ -111,10 +111,10 @@ struct SettingsFeatureView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(isRemoteModelEnabled ? "远程整理已启用" : "本地占位")
+                                Text(isRemoteModelEnabled ? "外部模型已启用" : "本机整理")
                                     .font(.system(size: 17, weight: .semibold))
                                     .foregroundStyle(ClaraDesign.ink)
-                                Text(isRemoteModelEnabled ? "导入后会调用下方模型配置，生成记忆和共同线。" : "未保存模型 Key 时不会远程整理，也不会自动写入候选记忆。")
+                                Text(isRemoteModelEnabled ? "导入后会调用下方模型配置，生成记忆和共同线。" : "未保存模型 Key 时，会用本机规则整理并写入可回看的记忆和共同线。")
                                     .font(.system(size: 13))
                                     .foregroundStyle(ClaraDesign.inkMuted)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -323,7 +323,7 @@ struct SettingsFeatureView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(ClaraDesign.ink)
 
-                        Text("ClaraCore 默认把导入原文、记忆、角色卡和共同线保存在本机；只有在你配置模型并主动整理时，才会把内容发送到你选择的模型提供方。")
+                            Text("ClaraCore 默认用本机逻辑保存和整理导入材料；只有在你配置外部模型、确认说明并主动整理时，才会把必要内容发送到你选择的模型提供方。")
                             .font(.system(size: 13))
                             .foregroundStyle(ClaraDesign.inkMuted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -593,7 +593,7 @@ struct SettingsFeatureView: View {
             try apiKeyStore.delete(service: .modelProvider)
             try apiKeyStore.delete(service: .deepSeek)
             hasSavedModelKey = false
-            statusMessage = "模型 Key 已删除，整理会回到本地占位模式。"
+            statusMessage = "模型 Key 已删除，整理会回到本机规则模式。"
             onConfigurationChanged()
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
@@ -666,7 +666,7 @@ private enum SettingsModelError: LocalizedError {
         case .invalidConfiguration:
             return "模型配置不完整。请确认 Base URL 和 Model 都有效。"
         case .missingThirdPartyAIConsent:
-            return "请先确认第三方 AI 处理说明，再保存模型配置。"
+            return "请先确认外部模型处理说明，再保存模型配置。"
         }
     }
 }
@@ -678,10 +678,10 @@ private struct ThirdPartyAIConsentBox: View {
         VStack(alignment: .leading, spacing: 10) {
             Toggle(isOn: $isAccepted) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("我同意把导入内容发送到我配置的模型提供方")
+                    Text("我同意在需要时使用我配置的外部模型")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(ClaraDesign.ink)
-                    Text("仅在你主动点击导入并整理时发送；目标是上方 Base URL 对应的第三方或自部署服务。提供方可能按自己的政策处理请求。")
+                    Text("默认使用本机处理逻辑。只有在你主动点击导入并整理时，应用才会把必要内容发送到上方 Base URL 对应的第三方或自部署服务。提供方可能按自己的政策处理请求。")
                         .font(.system(size: 12))
                         .foregroundStyle(ClaraDesign.inkMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -690,7 +690,7 @@ private struct ThirdPartyAIConsentBox: View {
             .toggleStyle(.switch)
 
             if !isAccepted {
-                Label("保存远程模型配置前需要明确同意。", systemImage: "exclamationmark.triangle")
+                Label("保存外部模型配置前需要明确同意。", systemImage: "exclamationmark.triangle")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(ClaraDesign.reflection)
             }
@@ -707,7 +707,7 @@ private struct PrivacyPolicyDetailView: View {
             VStack(alignment: .leading, spacing: 18) {
                 LegalSection(
                     title: "摘要",
-                    text: "ClaraCore Mobile 是本地优先的 AI 对话记忆整理工具。应用不包含广告、第三方追踪或 ClaraCore 账号。API Key 保存在 iOS Keychain。导入原文、原始对话 Archive、记忆、角色卡、共同线和导入历史默认保存在本机。"
+                    text: "ClaraCore Mobile 是本地优先的对话记忆整理工具。应用不包含广告、第三方追踪或 ClaraCore 账号。API Key 保存在 iOS Keychain。导入原文、原始对话 Archive、记忆、角色卡、共同线和导入历史默认保存在本机。"
                 )
 
                 LegalSection(
@@ -716,8 +716,8 @@ private struct PrivacyPolicyDetailView: View {
                 )
 
                 LegalSection(
-                    title: "远程模型处理",
-                    text: "如果用户配置 OpenAI-compatible Base URL 和 API Key，应用可以查询该提供方的 /models endpoint，并在用户主动导入并整理时，把导入内容片段和必要上下文发送到该提供方以生成记忆和共同线。未配置 Key 或未明确同意第三方 AI 处理时，应用不会进行远程整理。"
+                    title: "本机处理与外部模型",
+                    text: "应用默认使用本机逻辑保存导入材料、管理原文 Archive、记忆和共同线。如果用户配置 OpenAI-compatible Base URL 和 API Key，应用可以查询该提供方的 /models endpoint；只有在用户明确同意外部模型处理并主动导入整理时，才会把必要内容片段和上下文发送到该提供方。未配置 Key 或未明确同意时，应用不会把导入内容发送给外部模型。"
                 )
 
                 LegalSection(
@@ -732,7 +732,7 @@ private struct PrivacyPolicyDetailView: View {
 
                 LegalSection(
                     title: "删除与控制",
-                    text: "用户可以在应用内删除记忆和共同线，可以删除保存的模型 API Key，也可以停止使用远程模型配置。用户应避免导入自己不愿意保存在本机或发送给所选模型提供方的敏感内容。"
+                    text: "用户可以在应用内删除记忆和共同线，可以删除保存的模型 API Key，也可以停止使用外部模型配置。用户应避免导入自己不愿意保存在本机或发送给所选模型提供方的敏感内容。"
                 )
             }
             .padding(20)
@@ -760,7 +760,7 @@ private struct SupportDetailView: View {
 
                 LegalSection(
                     title: "常见问题",
-                    text: "ClaraCore 不会自动读取其他 AI 应用的聊天记录。用户需要主动粘贴文本、选择文件或提供公开分享链接。没有保存模型 Key 时，应用不会把对话发送到远程模型。"
+                    text: "ClaraCore 不会自动读取其他应用的聊天记录。用户需要主动粘贴文本、选择文件或提供公开分享链接。没有保存模型 Key，或没有确认外部模型处理说明时，应用不会把对话发送到外部模型。"
                 )
 
                 LegalSection(

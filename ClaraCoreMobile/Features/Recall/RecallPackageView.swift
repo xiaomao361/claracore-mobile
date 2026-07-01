@@ -64,7 +64,7 @@ struct RecallPackageView: View {
 
             Section("相关事实记忆") {
                 if candidateMemories.isEmpty {
-                    Text("没有检索到相关事实记忆。仍可复制共同线给外部 AI。")
+                    Text("没有检索到相关事实记忆。仍可复制共同线给外部对话应用。")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(candidateMemories) { memory in
@@ -98,7 +98,7 @@ struct RecallPackageView: View {
                 Button {
                     copyPackage()
                 } label: {
-                    Label("复制给外部 AI", systemImage: "doc.on.doc")
+                    Label("复制给外部应用", systemImage: "doc.on.doc")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -191,7 +191,7 @@ struct RecallPackageView: View {
             request: request
         )
         UIPasteboard.general.string = package.formattedText
-        copiedMessage = "已复制。现在可以粘贴到外部 AI。"
+        copiedMessage = "已复制。现在可以粘贴到外部对话应用。"
     }
 }
 
@@ -200,7 +200,7 @@ struct RecallPackageView: View {
     let line = try! ContinuityStore(database: database).create(
         title: "ClaraCore Mobile",
         lastPosition: "正在打通导入和整理。",
-        nextStep: "复制上下文给外部 AI。"
+        nextStep: "复制上下文给外部对话应用。"
     )
     return NavigationStack {
         RecallPackageView(

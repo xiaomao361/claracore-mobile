@@ -36,7 +36,7 @@ struct InboxFeatureView: View {
                 if items.isEmpty {
                     ClaraEmptyState(
                         title: "暂无待处理导入",
-                        message: "从 AI 对话分享链接或手动文本导入后，需要整理的内容会先停在这里。",
+                        message: "从对话分享链接或手动文本导入后，需要整理的内容会先停在这里。",
                         systemImage: "tray",
                         accent: ClaraDesign.memory
                     )

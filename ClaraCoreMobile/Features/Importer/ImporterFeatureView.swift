@@ -315,12 +315,8 @@ struct ImporterFeatureView: View {
     private func importCapture(from inputValue: ConversationImportInput, allowDuplicate: Bool = false) {
         let contextCardId = selectedContextCardID ?? contextCards.first?.id
         let targetLineId = selectedTargetLineID == ImportTargetLine.newLineID ? nil : selectedTargetLineID
-        guard reflectionConfiguration.mode == .remoteModel else {
-            statusMessage = "请先到设置里保存并测试默认整理模型 Key。"
-            return
-        }
-        guard hasAcceptedThirdPartyAIProcessing else {
-            statusMessage = "请先到设置里确认第三方 AI 处理说明，再导入并整理。"
+        if reflectionConfiguration.mode == .remoteModel, !hasAcceptedThirdPartyAIProcessing {
+            statusMessage = "请先到设置里确认外部模型处理说明，再导入并整理。"
             return
         }
 
@@ -419,7 +415,7 @@ struct ImporterFeatureView: View {
         case let .segmenting(total):
             "已切分为 \(total) 段。"
         case let .reflectingSegment(current, total):
-            "正在整理第 \(current)/\(total) 段。"
+            reflectionConfiguration.mode == .remoteModel ? "正在用外部模型整理第 \(current)/\(total) 段。" : "正在用本机规则整理第 \(current)/\(total) 段。"
         case let .reconciling(total):
             "正在合并 \(total) 段整理结果。"
         case .ready:
@@ -451,7 +447,7 @@ struct ImporterFeatureView: View {
         case let .segmenting(total):
             "已生成 \(total) 个内容片段"
         case let .reflectingSegment(current, total):
-            "正在处理第 \(current) / \(total) 段"
+            reflectionConfiguration.mode == .remoteModel ? "正在处理第 \(current) / \(total) 段，内容会发送到已配置的模型提供方" : "正在处理第 \(current) / \(total) 段，内容保留在本机"
         case let .reconciling(total):
             "正在把 \(total) 段结果合成最终记忆和共同线"
         case .ready:

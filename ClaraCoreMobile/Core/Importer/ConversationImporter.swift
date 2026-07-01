@@ -294,7 +294,7 @@ struct ProviderURLProfile: Equatable {
 
 struct ProviderURLConversationImporter: ConversationImporter {
     let id = "provider-url"
-    let displayName = "AI 分享链接"
+    let displayName = "对话分享链接"
     let profiles: [ProviderURLProfile]
     let urlLoader: any URLDataLoading
 

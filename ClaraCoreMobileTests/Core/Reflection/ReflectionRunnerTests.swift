@@ -33,7 +33,9 @@ final class ReflectionRunnerTests: XCTestCase {
         XCTAssertEqual(result.session.id, prepared.session.id)
         XCTAssertEqual(result.drafts.count, prepared.segments.count)
         XCTAssertEqual(result.digest.sessionId, prepared.session.id)
-        XCTAssertTrue(result.digest.summary.contains("第一段内容"))
+        XCTAssertFalse(result.digest.summary.isEmpty)
+        XCTAssertFalse(result.digest.candidateMemories.isEmpty)
+        XCTAssertFalse(result.digest.candidateSharedLineUpdates.isEmpty)
     }
 }
 

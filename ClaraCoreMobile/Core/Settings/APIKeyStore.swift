@@ -213,9 +213,9 @@ struct ReflectionConfiguration: Equatable {
         var title: String {
             switch self {
             case .localPlaceholder:
-                "本地占位"
+                "本机整理"
             case .remoteModel:
-                "远程模型"
+                "外部模型"
             }
         }
     }
