@@ -4,6 +4,9 @@ struct ContinuityFeatureView: View {
     let store: ContinuityStore
     let memoriaStore: MemoriaStore
     let contextCardStore: ContextCardStore
+    let contextCardId: String?
+    let contextCardTitle: String
+    @Binding var focusedLineID: String?
 
     @State private var lines: [ContinuityLine] = []
     @State private var contextCards: [String: ContextCard] = [:]
@@ -22,6 +25,11 @@ struct ContinuityFeatureView: View {
                 HStack {
                     ClaraSectionLabel(title: "当前共同线")
                     Spacer()
+                    ClaraStatusPill(
+                        title: contextCardTitle,
+                        color: ClaraDesign.continuity,
+                        systemImage: "person.text.rectangle"
+                    )
                     Button {
                         reload()
                     } label: {
@@ -134,6 +142,12 @@ struct ContinuityFeatureView: View {
         .onAppear {
             reload(reset: true)
         }
+        .onChange(of: focusedLineID) { _, _ in
+            focusPendingLineIfNeeded()
+        }
+        .onChange(of: contextCardId) { _, _ in
+            reload(reset: true)
+        }
         .sheet(item: $selectedLine) { line in
             NavigationStack {
                 RecallPackageView(
@@ -169,7 +183,7 @@ struct ContinuityFeatureView: View {
         isLoadingLines = true
         do {
             let offset = reset ? 0 : lines.count
-            let page = try store.active(limit: pageSize, offset: offset)
+            let page = try store.active(limit: pageSize, offset: offset, contextCardId: contextCardId)
             if reset {
                 lines = page
             } else {
@@ -177,6 +191,7 @@ struct ContinuityFeatureView: View {
             }
             hasMoreLines = page.count == pageSize
             contextCards = Dictionary(uniqueKeysWithValues: try contextCardStore.list().map { ($0.id, $0) })
+            focusPendingLineIfNeeded()
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -192,6 +207,27 @@ struct ContinuityFeatureView: View {
     private func appendUniqueLines(_ page: [ContinuityLine]) {
         let existingIDs = Set(lines.map(\.id))
         lines.append(contentsOf: page.filter { !existingIDs.contains($0.id) })
+    }
+
+    private func focusPendingLineIfNeeded() {
+        guard let focusedLineID else { return }
+        do {
+            let focusedLine: ContinuityLine?
+            if let existingLine = lines.first(where: { $0.id == focusedLineID }) {
+                focusedLine = existingLine
+            } else {
+                focusedLine = try store.get(id: focusedLineID)
+            }
+            guard let focusedLine else { return }
+            if !lines.contains(where: { $0.id == focusedLine.id }) {
+                lines.insert(focusedLine, at: 0)
+            }
+            selectedLine = focusedLine
+            self.focusedLineID = nil
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func roleTitle(for line: ContinuityLine) -> String {
@@ -514,6 +550,9 @@ private struct ContinuityEditView: View {
     return ContinuityFeatureView(
         store: ContinuityStore(database: database),
         memoriaStore: MemoriaStore(database: database),
-        contextCardStore: ContextCardStore(database: database)
+        contextCardStore: ContextCardStore(database: database),
+        contextCardId: ContextCardStore.defaultCardID,
+        contextCardTitle: "默认角色卡",
+        focusedLineID: .constant(nil)
     )
 }

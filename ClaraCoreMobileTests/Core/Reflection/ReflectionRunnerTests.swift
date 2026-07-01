@@ -80,6 +80,72 @@ final class OpenAICompatibleReflectionServiceTests: XCTestCase {
         try await service.validateConnection()
     }
 
+    func testValidateConnectionAcceptsFencedJSONContent() async throws {
+        CapturingURLProtocol.requestHandler = { request in
+            let responseBody = #"""
+            {"choices":[{"message":{"content":"```json\n{\"ok\":true}\n```"}}]}
+            """#
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            ))
+            return (response, Data(responseBody.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CapturingURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let service = OpenAICompatibleReflectionService(
+            apiKey: "test-key",
+            model: "gpt-test",
+            baseURL: try XCTUnwrap(URL(string: "https://llm.example/v1")),
+            urlSession: session
+        )
+
+        try await service.validateConnection()
+    }
+
+    func testReflectToleratesMinimalModelJSON() async throws {
+        CapturingURLProtocol.requestHandler = { request in
+            let responseBody = #"""
+            {"choices":[{"message":{"content":"下面是整理结果：\n{\"segmentId\":\"segment-1\",\"summary\":\"中文导入可整理。\",\"candidateMemories\":[{\"kind\":\"fact\",\"content\":\"用户正在测试中文 DeepSeek 分享链接。\"}],\"candidateSharedLineUpdates\":[{\"title\":\"中文导入测试\",\"lastPosition\":\"1. 已发现中文链接会触发解析问题\"}],\"uncertainItems\":[]}\n请确认。"}}]}
+            """#
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            ))
+            return (response, Data(responseBody.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CapturingURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let service = OpenAICompatibleReflectionService(
+            apiKey: "test-key",
+            model: "gpt-test",
+            baseURL: try XCTUnwrap(URL(string: "https://llm.example/v1")),
+            urlSession: session
+        )
+        let segment = CaptureSegment(
+            sessionId: "session-1",
+            sequence: 0,
+            content: "USER: 测试中文 DeepSeek 分享链接。",
+            characterRange: 0..<24
+        )
+
+        let draft = try await service.reflect(segment: segment)
+
+        XCTAssertEqual(draft.summary, "中文导入可整理。")
+        XCTAssertEqual(draft.candidateMemories.first?.content, "用户正在测试中文 DeepSeek 分享链接。")
+        XCTAssertEqual(draft.candidateMemories.first?.confidence, 0.5)
+        XCTAssertEqual(draft.candidateSharedLineUpdates.first?.title, "中文导入测试")
+        XCTAssertEqual(draft.candidateSharedLineUpdates.first?.confidence, 0.5)
+    }
+
     func testModelProviderClientListsAvailableModels() async throws {
         CapturingURLProtocol.requestHandler = { request in
             XCTAssertEqual(request.httpMethod, "GET")

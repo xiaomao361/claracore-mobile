@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MemoriaFeatureView: View {
     let store: MemoriaStore
+    let contextCardId: String?
+    let contextCardTitle: String
 
     @State private var query = ""
     @State private var results: [Memory] = []
@@ -20,7 +22,15 @@ struct MemoriaFeatureView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
-                ClaraSectionLabel(title: "最近记忆")
+                HStack {
+                    ClaraSectionLabel(title: "最近记忆")
+                    Spacer()
+                    ClaraStatusPill(
+                        title: contextCardTitle,
+                        color: ClaraDesign.continuity,
+                        systemImage: "person.text.rectangle"
+                    )
+                }
 
                 MemoryFilterBar(
                     kindFilter: $kindFilter,
@@ -32,7 +42,7 @@ struct MemoriaFeatureView: View {
                 if filteredRecent.isEmpty {
                     ClaraEmptyState(
                         title: recent.isEmpty ? "暂无记忆" : "没有匹配记忆",
-                        message: recent.isEmpty ? "提交整理结果后，稳定事实会出现在这里。" : "调整筛选条件后再查看。",
+                        message: recent.isEmpty ? "当前角色还没有稳定事实。提交整理结果后会出现在这里。" : "调整筛选条件后再查看。",
                         systemImage: "square.stack",
                         accent: ClaraDesign.memory
                     )
@@ -107,6 +117,10 @@ struct MemoriaFeatureView: View {
                 recall()
             }
         }
+        .onChange(of: contextCardId) { _, _ in
+            results = []
+            loadRecent(reset: true)
+        }
         .sheet(item: $editingMemory) { memory in
             NavigationStack {
                 MemoryEditView(memory: memory) { content, tags, isPrivate in
@@ -127,7 +141,7 @@ struct MemoriaFeatureView: View {
     private func recall() {
         do {
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            results = try store.recall(query: trimmed, limit: pageSize)
+            results = try store.recall(query: trimmed, limit: pageSize, contextCardId: contextCardId)
             statusMessage = results.isEmpty ? "没有找到匹配记忆。" : "找到 \(results.count) 条记忆。"
             errorMessage = nil
         } catch {
@@ -140,7 +154,7 @@ struct MemoriaFeatureView: View {
         isLoadingRecent = true
         do {
             let offset = reset ? 0 : recent.count
-            let page = try store.recent(limit: pageSize, offset: offset)
+            let page = try store.recent(limit: pageSize, offset: offset, contextCardId: contextCardId)
             if reset {
                 recent = page
             } else {
@@ -490,5 +504,9 @@ private struct MemoryEditView: View {
 }
 
 #Preview {
-    MemoriaFeatureView(store: try! MemoriaStore(database: AppDatabase(path: ":memory:")))
+    MemoriaFeatureView(
+        store: try! MemoriaStore(database: AppDatabase(path: ":memory:")),
+        contextCardId: ContextCardStore.defaultCardID,
+        contextCardTitle: "默认角色卡"
+    )
 }

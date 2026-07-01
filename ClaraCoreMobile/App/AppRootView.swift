@@ -5,6 +5,7 @@ struct AppRootView: View {
     @State private var dependencies: AppDependencies?
     @State private var selectedContextCardID: String?
     @State private var selectedTab: AppTab = .importer
+    @State private var focusedContinuityLineID: String?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -51,7 +52,10 @@ struct AppRootView: View {
                     importerRegistry: dependencies.conversationImporterRegistry,
                     selectedContextCardID: $selectedContextCardID,
                     onShowMemories: { selectedTab = .memoria },
-                    onShowContinuity: { selectedTab = .continuity }
+                    onShowContinuity: { lineId in
+                        focusedContinuityLineID = lineId
+                        selectedTab = .continuity
+                    }
                 )
                 .navigationTitle(AppTab.importer.title)
             }
@@ -59,7 +63,11 @@ struct AppRootView: View {
             .tag(AppTab.importer)
 
             NavigationStack {
-                MemoriaFeatureView(store: dependencies.memoriaStore)
+                MemoriaFeatureView(
+                    store: dependencies.memoriaStore,
+                    contextCardId: selectedContextCardID,
+                    contextCardTitle: currentContextCardTitle(dependencies: dependencies)
+                )
                     .navigationTitle(AppTab.memoria.title)
             }
             .tabItem { AppTab.memoria.label }
@@ -69,7 +77,10 @@ struct AppRootView: View {
                 ContinuityFeatureView(
                     store: dependencies.continuityStore,
                     memoriaStore: dependencies.memoriaStore,
-                    contextCardStore: dependencies.contextCardStore
+                    contextCardStore: dependencies.contextCardStore,
+                    contextCardId: selectedContextCardID,
+                    contextCardTitle: currentContextCardTitle(dependencies: dependencies),
+                    focusedLineID: $focusedContinuityLineID
                 )
                     .navigationTitle(AppTab.continuity.title)
             }
@@ -90,6 +101,17 @@ struct AppRootView: View {
             .tag(AppTab.settings)
         }
         .tint(ClaraDesign.memory)
+    }
+
+    private func currentContextCardTitle(dependencies: AppDependencies) -> String {
+        if let selectedContextCardID,
+           let card = try? dependencies.contextCardStore.get(id: selectedContextCardID) {
+            return card.title
+        }
+        if let card = try? dependencies.contextCardStore.defaultCard() {
+            return card.title
+        }
+        return "默认角色"
     }
 
     private func bootstrap() {

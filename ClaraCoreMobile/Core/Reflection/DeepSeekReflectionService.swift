@@ -222,7 +222,8 @@ final class OpenAICompatibleReflectionService: ReflectionService {
             throw ServiceError.emptyResponse
         }
 
-        guard let jsonData = content.data(using: .utf8) else {
+        let normalizedContent = Self.extractJSONObject(from: content)
+        guard let jsonData = normalizedContent.data(using: .utf8) else {
             throw ServiceError.invalidResponse
         }
 
@@ -231,6 +232,77 @@ final class OpenAICompatibleReflectionService: ReflectionService {
         } catch {
             throw ServiceError.invalidJSON(error.localizedDescription)
         }
+    }
+
+    private static func extractJSONObject(from content: String) -> String {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("{"), trimmed.hasSuffix("}") {
+            return trimmed
+        }
+
+        if let fenced = fencedJSONBody(in: trimmed) {
+            return fenced
+        }
+
+        guard
+            let start = trimmed.firstIndex(of: "{"),
+            let end = matchingJSONObjectEnd(in: trimmed, from: start)
+        else {
+            return trimmed
+        }
+        return String(trimmed[start...end])
+    }
+
+    private static func fencedJSONBody(in content: String) -> String? {
+        guard let opening = content.range(of: "```") else {
+            return nil
+        }
+        let afterOpening = content[opening.upperBound...]
+        guard let closing = afterOpening.range(of: "```") else {
+            return nil
+        }
+        var body = String(afterOpening[..<closing.lowerBound])
+        if let newline = body.firstIndex(of: "\n") {
+            let label = body[..<newline].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if label == "json" || label.isEmpty {
+                body = String(body[body.index(after: newline)...])
+            }
+        }
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private static func matchingJSONObjectEnd(in content: String, from start: String.Index) -> String.Index? {
+        var depth = 0
+        var isInsideString = false
+        var isEscaped = false
+
+        var index = start
+        while index < content.endIndex {
+            let character = content[index]
+            if isInsideString {
+                if isEscaped {
+                    isEscaped = false
+                } else if character == "\\" {
+                    isEscaped = true
+                } else if character == "\"" {
+                    isInsideString = false
+                }
+            } else {
+                if character == "\"" {
+                    isInsideString = true
+                } else if character == "{" {
+                    depth += 1
+                } else if character == "}" {
+                    depth -= 1
+                    if depth == 0 {
+                        return index
+                    }
+                }
+            }
+            index = content.index(after: index)
+        }
+        return nil
     }
 }
 
@@ -281,6 +353,25 @@ private struct OpenAICompatibleSegmentResponse: Decodable {
         var tags: [String]
         var rangeStart: Int
         var rangeEnd: Int
+
+        enum CodingKeys: String, CodingKey {
+            case kind
+            case content
+            case confidence
+            case tags
+            case rangeStart
+            case rangeEnd
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            kind = container.decodeStringIfPresent(forKey: .kind) ?? "fact"
+            content = container.decodeStringIfPresent(forKey: .content) ?? ""
+            confidence = container.decodeDoubleIfPresent(forKey: .confidence) ?? 0.5
+            tags = (try? container.decodeIfPresent([String].self, forKey: .tags)) ?? []
+            rangeStart = container.decodeIntIfPresent(forKey: .rangeStart) ?? 0
+            rangeEnd = container.decodeIntIfPresent(forKey: .rangeEnd) ?? rangeStart
+        }
     }
 
     struct LineUpdate: Decodable {
@@ -307,6 +398,41 @@ private struct OpenAICompatibleSegmentResponse: Decodable {
         var confidence: Double
         var rangeStart: Int
         var rangeEnd: Int
+
+        enum CodingKeys: String, CodingKey {
+            case title
+            case lastPosition
+            case nextStep
+            case stateSummary
+            case currentInterpretation
+            case interpretationStatus
+            case emotionalArc
+            case affectiveTrace
+            case realityLine
+            case boundaryNotes
+            case misreadRisks
+            case confidence
+            case rangeStart
+            case rangeEnd
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            title = container.decodeStringIfPresent(forKey: .title) ?? "导入整理"
+            lastPosition = container.decodeStringIfPresent(forKey: .lastPosition) ?? ""
+            nextStep = container.decodeStringIfPresent(forKey: .nextStep)
+            stateSummary = container.decodeStringIfPresent(forKey: .stateSummary)
+            currentInterpretation = container.decodeStringIfPresent(forKey: .currentInterpretation)
+            interpretationStatus = container.decodeStringIfPresent(forKey: .interpretationStatus)
+            emotionalArc = (try? container.decodeIfPresent([String].self, forKey: .emotionalArc)) ?? []
+            affectiveTrace = (try? container.decodeIfPresent([TraceNode].self, forKey: .affectiveTrace)) ?? []
+            realityLine = container.decodeStringIfPresent(forKey: .realityLine)
+            boundaryNotes = container.decodeStringIfPresent(forKey: .boundaryNotes)
+            misreadRisks = container.decodeStringIfPresent(forKey: .misreadRisks)
+            confidence = container.decodeDoubleIfPresent(forKey: .confidence) ?? 0.5
+            rangeStart = container.decodeIntIfPresent(forKey: .rangeStart) ?? 0
+            rangeEnd = container.decodeIntIfPresent(forKey: .rangeEnd) ?? rangeStart
+        }
     }
 
     var segmentId: String
@@ -314,6 +440,23 @@ private struct OpenAICompatibleSegmentResponse: Decodable {
     var candidateMemories: [Memory]
     var candidateSharedLineUpdates: [LineUpdate]
     var uncertainItems: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case segmentId
+        case summary
+        case candidateMemories
+        case candidateSharedLineUpdates
+        case uncertainItems
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        segmentId = container.decodeStringIfPresent(forKey: .segmentId) ?? ""
+        summary = container.decodeStringIfPresent(forKey: .summary) ?? ""
+        candidateMemories = (try? container.decodeIfPresent([Memory].self, forKey: .candidateMemories)) ?? []
+        candidateSharedLineUpdates = (try? container.decodeIfPresent([LineUpdate].self, forKey: .candidateSharedLineUpdates)) ?? []
+        uncertainItems = (try? container.decodeIfPresent([String].self, forKey: .uncertainItems)) ?? []
+    }
 
     func draft(segment: CaptureSegment) -> SegmentReflectionDraft {
         SegmentReflectionDraft(
@@ -395,6 +538,21 @@ private struct OpenAICompatibleDigestResponse: Decodable {
         var content: String
         var confidence: Double
         var tags: [String]
+
+        enum CodingKeys: String, CodingKey {
+            case kind
+            case content
+            case confidence
+            case tags
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            kind = container.decodeStringIfPresent(forKey: .kind) ?? "fact"
+            content = container.decodeStringIfPresent(forKey: .content) ?? ""
+            confidence = container.decodeDoubleIfPresent(forKey: .confidence) ?? 0.5
+            tags = (try? container.decodeIfPresent([String].self, forKey: .tags)) ?? []
+        }
     }
 
     struct LineUpdate: Decodable {
@@ -419,12 +577,58 @@ private struct OpenAICompatibleDigestResponse: Decodable {
         var boundaryNotes: String?
         var misreadRisks: String?
         var confidence: Double
+
+        enum CodingKeys: String, CodingKey {
+            case title
+            case lastPosition
+            case nextStep
+            case stateSummary
+            case currentInterpretation
+            case interpretationStatus
+            case emotionalArc
+            case affectiveTrace
+            case realityLine
+            case boundaryNotes
+            case misreadRisks
+            case confidence
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            title = container.decodeStringIfPresent(forKey: .title) ?? "导入整理"
+            lastPosition = container.decodeStringIfPresent(forKey: .lastPosition) ?? ""
+            nextStep = container.decodeStringIfPresent(forKey: .nextStep)
+            stateSummary = container.decodeStringIfPresent(forKey: .stateSummary)
+            currentInterpretation = container.decodeStringIfPresent(forKey: .currentInterpretation)
+            interpretationStatus = container.decodeStringIfPresent(forKey: .interpretationStatus)
+            emotionalArc = (try? container.decodeIfPresent([String].self, forKey: .emotionalArc)) ?? []
+            affectiveTrace = (try? container.decodeIfPresent([TraceNode].self, forKey: .affectiveTrace)) ?? []
+            realityLine = container.decodeStringIfPresent(forKey: .realityLine)
+            boundaryNotes = container.decodeStringIfPresent(forKey: .boundaryNotes)
+            misreadRisks = container.decodeStringIfPresent(forKey: .misreadRisks)
+            confidence = container.decodeDoubleIfPresent(forKey: .confidence) ?? 0.5
+        }
     }
 
     var summary: String
     var candidateMemories: [Memory]?
     var candidateSharedLineUpdates: [LineUpdate]?
     var conflicts: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case summary
+        case candidateMemories
+        case candidateSharedLineUpdates
+        case conflicts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        summary = container.decodeStringIfPresent(forKey: .summary) ?? ""
+        candidateMemories = try? container.decodeIfPresent([Memory].self, forKey: .candidateMemories)
+        candidateSharedLineUpdates = try? container.decodeIfPresent([LineUpdate].self, forKey: .candidateSharedLineUpdates)
+        conflicts = (try? container.decodeIfPresent([String].self, forKey: .conflicts)) ?? []
+    }
 
     func digest(session: ImportSession, drafts: [SegmentReflectionDraft], fallback: DigestResult) -> DigestResult {
         let provenance = ReflectionProvenance(
@@ -526,5 +730,49 @@ private struct CompactDigestInput: Encodable {
             Candidate(id: $0.id, text: "\($0.title): \($0.lastPosition)", confidence: $0.confidence)
         }
         conflicts = digest.conflicts
+    }
+}
+
+private extension KeyedDecodingContainer {
+    func decodeStringIfPresent(forKey key: Key) -> String? {
+        if let value = try? decodeIfPresent(String.self, forKey: key) {
+            return value
+        }
+        if let value = try? decodeIfPresent(Int.self, forKey: key) {
+            return String(value)
+        }
+        if let value = try? decodeIfPresent(Double.self, forKey: key) {
+            return String(value)
+        }
+        if let value = try? decodeIfPresent(Bool.self, forKey: key) {
+            return value ? "true" : "false"
+        }
+        return nil
+    }
+
+    func decodeDoubleIfPresent(forKey key: Key) -> Double? {
+        if let value = try? decodeIfPresent(Double.self, forKey: key) {
+            return value
+        }
+        if let value = try? decodeIfPresent(Int.self, forKey: key) {
+            return Double(value)
+        }
+        if let value = try? decodeIfPresent(String.self, forKey: key) {
+            return Double(value)
+        }
+        return nil
+    }
+
+    func decodeIntIfPresent(forKey key: Key) -> Int? {
+        if let value = try? decodeIfPresent(Int.self, forKey: key) {
+            return value
+        }
+        if let value = try? decodeIfPresent(Double.self, forKey: key) {
+            return Int(value)
+        }
+        if let value = try? decodeIfPresent(String.self, forKey: key) {
+            return Int(value) ?? Double(value).map(Int.init)
+        }
+        return nil
     }
 }

@@ -1,6 +1,6 @@
 # ClaraCore Mobile App Store Submission Checklist
 
-Date: 2026-06-30
+Date: 2026-07-01
 Status: Draft for App Store Connect and TestFlight setup
 
 ## 1. Privacy Policy URL
@@ -65,7 +65,7 @@ Testing with a remote model:
    Base URL: [OPENAI_COMPATIBLE_BASE_URL]
    API Key: [TEST_API_KEY_PROVIDED_IN_APP_STORE_CONNECT_NOTES_ONLY]
 2. Tap Query Models (`查询模型`).
-3. Select one returned model from the list. The default organization model field is read-only and cannot be manually typed.
+3. Select one returned model from the list. If the provider returns many models, use the model search field to narrow by model id. The default organization model field is read-only and cannot be manually typed.
 4. Tap Save Configuration (`保存配置`) and confirm the organization engine status updates immediately in Settings.
 5. Tap Test Connection (`测试连接`).
 6. Open Import.
@@ -236,7 +236,7 @@ Run this before public App Store submission:
 3. Confirm Settings opens and model configuration fields are visible.
 4. Confirm Import explains that a default model key is required for real organization.
 5. Enter Provider, Base URL, and a non-production API key.
-6. Query available models and select one returned model.
+6. Query available models and select one returned model, using model search when the provider returns many results.
 7. Save the configuration and confirm the Settings organization engine status updates immediately.
 8. Tap Test Connection and confirm visible success or clear failure.
 9. Import a short pasted transcript.

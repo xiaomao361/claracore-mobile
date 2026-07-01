@@ -7,47 +7,57 @@ struct RecallContextPackage: Equatable {
     var request: String
 
     var formattedText: String {
-        let memoryText: String
+        let memoryLines: String
         if memories.isEmpty {
-            memoryText = "暂无额外事实记忆。"
+            memoryLines = "- 暂时没有额外事实记忆。"
         } else {
-            memoryText = memories.enumerated().map { index, memory in
-                let kind = memory.kindLabel.map { "【\($0)】" } ?? ""
-                return "\(index + 1). \(kind)\(memory.content)"
+            memoryLines = memories.map { memory in
+                let kind = memory.kindLabel.map { "\($0)： " } ?? ""
+                return "- \(kind)\(memory.content)"
             }
             .joined(separator: "\n")
         }
+        let completedSteps = line.completedMilestoneSteps.map { "- \($0)" }.joined(separator: "\n")
+        let completedSection = completedSteps.isEmpty ? "- 还没有明确的历史里程。" : completedSteps
+        let currentStep = line.currentMilestone ?? line.lastPosition
+        let nextStep = line.nextStep?.isEmpty == false ? line.nextStep! : "先确认当前最需要推进的一步。"
         let continuityStateText = line.richRecallText
 
         return """
-        你现在继续使用下面这个角色和用户关系。
+        请接着这段关系和这条共同线继续，不要把它改写成总结或报告。
 
-        【角色】
+        你现在的角色：
         \(contextCard.agentProfile)
 
-        【用户】
+        你正在面对的用户：
         \(contextCard.userProfile)
 
-        【我们正在延续的事】
-        标题：\(line.title)
-        已经走到：
-        \(line.lastPosition)
-        接下来先做：\(line.nextStep?.isEmpty == false ? line.nextStep! : "先确认当前最需要推进的一步。")
+        我们正在延续：
+        \(line.title)
 
-        【连续性状态】
+        已经走过：
+        \(completedSection)
+
+        现在停在：
+        - \(currentStep)
+
+        接下来先做：
+        - \(nextStep)
+
+        连续性状态：
         \(continuityStateText)
 
-        【需要记住的事实】
-        \(memoryText)
+        需要记住的事实：
+        \(memoryLines)
 
-        【这次请你这样继续】
+        这次请这样继续：
         \(request)
         """
     }
 }
 
 struct RecallContextBuilder {
-    static let defaultRequest = "请自然接着这个状态继续。不要把这些内容改写成报告；如果信息不足，先问我。"
+    static let defaultRequest = "自然接着说就好。信息不够时先问我，不要补成正式报告。"
 
     func query(for line: ContinuityLine) -> String {
         [line.title, line.lastPosition, line.nextStep]
@@ -88,27 +98,27 @@ private extension ContinuityLine {
     var richRecallText: String {
         var parts: [String] = []
         if !stateSummary.isEmpty {
-            parts.append("状态摘要：\(stateSummary)")
+            parts.append("- 当前状态：\(stateSummary)")
         }
         if !currentInterpretation.isEmpty {
-            parts.append("当前解释（\(interpretationStatusTitle)）：\(currentInterpretation)")
+            parts.append("- 当前理解（\(interpretationStatusTitle)）：\(currentInterpretation)")
         }
         if !emotionalArc.isEmpty {
-            parts.append("位置弧线：\n" + emotionalArc.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n"))
+            parts.append("- 位置弧线：\n" + emotionalArc.map { "  - \($0)" }.joined(separator: "\n"))
         }
         if let trace = latestAffectiveTrace {
             let signals = trace.signals.isEmpty ? "" : "；信号：\(trace.signals.joined(separator: "、"))"
-            parts.append("情绪弧线：\(trace.tone.isEmpty ? "未命名" : trace.tone)，\(trace.valence)，\(trace.intensity)，\(trace.stability)\(signals)。\(trace.note)")
+            parts.append("- 情绪弧线：\(trace.tone.isEmpty ? "未命名" : trace.tone)，\(trace.valence)，\(trace.intensity)，\(trace.stability)\(signals)。\(trace.note)")
         }
         if !realityLine.isEmpty {
-            parts.append("确认事实：\(realityLine)")
+            parts.append("- 已确认的现实：\(realityLine)")
         }
         if !boundaryNotes.isEmpty {
-            parts.append("边界：\(boundaryNotes)")
+            parts.append("- 边界：\(boundaryNotes)")
         }
         if !misreadRisks.isEmpty {
-            parts.append("误读风险：\(misreadRisks)")
+            parts.append("- 容易误读的地方：\(misreadRisks)")
         }
-        return parts.isEmpty ? "暂无额外弧线状态。" : parts.joined(separator: "\n")
+        return parts.isEmpty ? "- 暂无额外弧线状态。" : parts.joined(separator: "\n")
     }
 }

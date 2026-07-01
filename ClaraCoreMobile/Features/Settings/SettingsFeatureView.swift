@@ -17,6 +17,7 @@ struct SettingsFeatureView: View {
     @State private var modelName = ""
     @State private var modelAPIKey = ""
     @State private var availableModels: [ModelProviderClient.Model] = []
+    @State private var modelSearchQuery = ""
     @State private var hasSavedModelKey = false
     @State private var isTestingModel = false
     @State private var isLoadingModels = false
@@ -228,7 +229,24 @@ struct SettingsFeatureView: View {
 
                             if !availableModels.isEmpty {
                                 VStack(spacing: 8) {
-                                    ForEach(availableModels.prefix(12)) { model in
+                                    if availableModels.count > 8 {
+                                        Label {
+                                            TextField("搜索模型", text: $modelSearchQuery)
+                                                .textInputAutocapitalization(.never)
+                                                .autocorrectionDisabled()
+                                        } icon: {
+                                            Image(systemName: "magnifyingglass")
+                                                .foregroundStyle(ClaraDesign.inkMuted)
+                                        }
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(ClaraDesign.ink)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                                        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
+                                    }
+
+                                    ForEach(visibleModels) { model in
                                         Button {
                                             modelName = model.id
                                             statusMessage = "已选择模型：\(model.id)"
@@ -251,8 +269,13 @@ struct SettingsFeatureView: View {
                                         .buttonStyle(.plain)
                                     }
 
-                                    if availableModels.count > 12 {
-                                        Text("还有 \(availableModels.count - 12) 个模型未显示。当前只展示前 12 个，后续可以增加搜索筛选。")
+                                    if visibleModels.isEmpty {
+                                        Text("没有匹配的模型。请换个关键词。")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(ClaraDesign.inkMuted)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    } else if filteredModels.count > visibleModels.count {
+                                        Text("还有 \(filteredModels.count - visibleModels.count) 个匹配模型未显示，可继续缩小搜索。")
                                             .font(.system(size: 12))
                                             .foregroundStyle(ClaraDesign.inkMuted)
                                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -357,6 +380,23 @@ struct SettingsFeatureView: View {
         ).normalized
     }
 
+    private var trimmedModelSearchQuery: String {
+        modelSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var filteredModels: [ModelProviderClient.Model] {
+        guard !trimmedModelSearchQuery.isEmpty else {
+            return availableModels
+        }
+        return availableModels.filter {
+            $0.id.localizedCaseInsensitiveContains(trimmedModelSearchQuery)
+        }
+    }
+
+    private var visibleModels: [ModelProviderClient.Model] {
+        Array(filteredModels.prefix(trimmedModelSearchQuery.isEmpty ? 12 : 24))
+    }
+
     private var currentContextCard: ContextCard? {
         guard let selectedContextCardID else { return contextCards.first }
         return contextCards.first { $0.id == selectedContextCardID } ?? contextCards.first
@@ -380,6 +420,7 @@ struct SettingsFeatureView: View {
             resetModelConfigurationDraft()
             hasSavedModelKey = try readSavedModelKey() != nil
             availableModels = []
+            modelSearchQuery = ""
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }
@@ -475,6 +516,7 @@ struct SettingsFeatureView: View {
 
                 await MainActor.run {
                     availableModels = models
+                    modelSearchQuery = ""
                     if modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                        let firstModel = models.first {
                         modelName = firstModel.id

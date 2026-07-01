@@ -34,14 +34,16 @@ final class RecallContextPackageTests: XCTestCase {
 
         let package = RecallContextBuilder().build(contextCard: card, line: line, memories: [memory])
 
-        XCTAssertTrue(package.formattedText.contains("你现在继续使用下面这个角色和用户关系。"))
-        XCTAssertTrue(package.formattedText.contains("【角色】"))
-        XCTAssertTrue(package.formattedText.contains("【用户】"))
-        XCTAssertTrue(package.formattedText.contains("【我们正在延续的事】"))
-        XCTAssertTrue(package.formattedText.contains("标题：ClaraCore Mobile"))
-        XCTAssertTrue(package.formattedText.contains("【需要记住的事实】"))
-        XCTAssertTrue(package.formattedText.contains("【事实】第一版主要针对国内用户。"))
+        XCTAssertTrue(package.formattedText.contains("请接着这段关系和这条共同线继续"))
+        XCTAssertTrue(package.formattedText.contains("你现在的角色："))
+        XCTAssertTrue(package.formattedText.contains("你正在面对的用户："))
+        XCTAssertTrue(package.formattedText.contains("我们正在延续："))
+        XCTAssertTrue(package.formattedText.contains("ClaraCore Mobile"))
+        XCTAssertTrue(package.formattedText.contains("现在停在："))
+        XCTAssertTrue(package.formattedText.contains("- 正在打通整理到提交。"))
+        XCTAssertTrue(package.formattedText.contains("需要记住的事实："))
+        XCTAssertTrue(package.formattedText.contains("- 事实： 第一版主要针对国内用户。"))
         XCTAssertTrue(package.formattedText.contains("第一版主要针对国内用户。"))
-        XCTAssertTrue(package.formattedText.contains("不要把这些内容改写成报告"))
+        XCTAssertTrue(package.formattedText.contains("不要补成正式报告"))
     }
 }

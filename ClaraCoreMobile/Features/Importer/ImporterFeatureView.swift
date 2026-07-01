@@ -13,7 +13,7 @@ struct ImporterFeatureView: View {
     let importerRegistry: ConversationImporterRegistry
     @Binding var selectedContextCardID: String?
     let onShowMemories: () -> Void
-    let onShowContinuity: () -> Void
+    let onShowContinuity: (String?) -> Void
 
     @State private var input = ""
     @State private var contextCards: [ContextCard] = []
@@ -81,14 +81,11 @@ struct ImporterFeatureView: View {
                             .pickerStyle(.menu)
                             .disabled(contextCards.isEmpty || isImporting)
 
-                            Picker("写入共同线", selection: $selectedTargetLineID) {
-                                Text("新建共同线").tag(ImportTargetLine.newLineID)
-                                ForEach(activeLines) { line in
-                                    Text(line.title).tag(line.id)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .disabled(isImporting)
+                            ImportDestinationSelector(
+                                activeLines: activeLines,
+                                selectedTargetLineID: $selectedTargetLineID,
+                                isDisabled: isImporting
+                            )
 
                             TextEditor(text: $input)
                                 .frame(minHeight: 128)
@@ -467,9 +464,195 @@ private enum ImportTargetLine {
     static let newLineID = "__new_line__"
 }
 
+private struct ImportDestinationSelector: View {
+    var activeLines: [ContinuityLine]
+    @Binding var selectedTargetLineID: String
+    var isDisabled: Bool
+
+    @State private var query = ""
+
+    private var selectedLine: ContinuityLine? {
+        activeLines.first { $0.id == selectedTargetLineID }
+    }
+
+    private var trimmedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var filteredLines: [ContinuityLine] {
+        guard !trimmedQuery.isEmpty else {
+            return activeLines
+        }
+        return activeLines.filter { line in
+            line.title.localizedCaseInsensitiveContains(trimmedQuery) ||
+                line.lastPosition.localizedCaseInsensitiveContains(trimmedQuery) ||
+                (line.nextStep?.localizedCaseInsensitiveContains(trimmedQuery) ?? false)
+        }
+    }
+
+    private var visibleLines: ArraySlice<ContinuityLine> {
+        filteredLines.prefix(trimmedQuery.isEmpty ? 4 : 8)
+    }
+
+    private var overflowLines: ArraySlice<ContinuityLine> {
+        trimmedQuery.isEmpty ? activeLines.dropFirst(4) : []
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Label("整理目标", systemImage: "arrow.triangle.merge")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+                Spacer()
+                ClaraStatusPill(
+                    title: selectedLine?.title ?? "新建共同线",
+                    color: selectedLine == nil ? ClaraDesign.memory : ClaraDesign.continuity,
+                    systemImage: selectedLine == nil ? "plus" : "point.topleft.down.curvedto.point.bottomright.up"
+                )
+            }
+
+            Button {
+                selectedTargetLineID = ImportTargetLine.newLineID
+            } label: {
+                ImportDestinationRow(
+                    title: "新建共同线",
+                    detail: "从这次导入开始一条新的继续点",
+                    nextStep: nil,
+                    systemImage: "plus.circle",
+                    color: ClaraDesign.memory,
+                    isSelected: selectedLine == nil
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isDisabled)
+
+            if !activeLines.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("接到已有线")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+
+                    if activeLines.count > 4 {
+                        Label {
+                            TextField("搜索共同线", text: $query)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .disabled(isDisabled)
+                        } icon: {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(ClaraDesign.inkMuted)
+                        }
+                        .font(.system(size: 14))
+                        .foregroundStyle(ClaraDesign.ink)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
+                    }
+
+                    ForEach(Array(visibleLines)) { line in
+                        Button {
+                            selectedTargetLineID = line.id
+                        } label: {
+                            ImportDestinationRow(
+                                title: line.title,
+                                detail: line.currentMilestone ?? line.lastPosition,
+                                nextStep: line.nextStep,
+                                systemImage: "point.topleft.down.curvedto.point.bottomright.up",
+                                color: ClaraDesign.continuity,
+                                isSelected: selectedTargetLineID == line.id
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isDisabled)
+                    }
+
+                    if !trimmedQuery.isEmpty, visibleLines.isEmpty {
+                        Text("没有匹配的共同线。")
+                            .font(.system(size: 13))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                            .padding(.vertical, 4)
+                    }
+
+                    if !overflowLines.isEmpty {
+                        Menu {
+                            ForEach(Array(overflowLines)) { line in
+                                Button(line.title) {
+                                    selectedTargetLineID = line.id
+                                }
+                            }
+                        } label: {
+                            Label("更多共同线", systemImage: "ellipsis.circle")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(ClaraDesign.continuity)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(ClaraDesign.continuity.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
+                        }
+                        .disabled(isDisabled)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct ImportDestinationRow: View {
+    var title: String
+    var detail: String
+    var nextStep: String?
+    var systemImage: String
+    var color: Color
+    var isSelected: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(isSelected ? color : ClaraDesign.inkMuted)
+                .frame(width: 22, height: 22)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(ClaraDesign.ink)
+                    .lineLimit(1)
+
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let nextStep, !nextStep.isEmpty {
+                    Text("下一步：\(nextStep)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(color)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(isSelected ? color.opacity(0.10) : ClaraDesign.surfaceMuted.opacity(0.55))
+        .overlay(
+            RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous)
+                .stroke(isSelected ? color.opacity(0.55) : ClaraDesign.hairline, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
+        .contentShape(Rectangle())
+    }
+}
+
 private struct DuplicateImportResult: Equatable {
     var itemId: String
     var sourceTitle: String
+    var lineIds: [String]
     var memoryCount: Int
     var lineCount: Int
     var hasResolvableResult: Bool
@@ -483,6 +666,7 @@ private struct DuplicateImportResult: Equatable {
         let lineIds = item.metadata["committed_line_ids"]?
             .split(separator: ",")
             .map(String.init) ?? []
+        self.lineIds = lineIds
         memoryCount = memoryIds.count
         lineCount = lineIds.count
         hasResolvableResult = !memoryIds.isEmpty || !lineIds.isEmpty
@@ -492,7 +676,7 @@ private struct DuplicateImportResult: Equatable {
 private struct DuplicateImportCard: View {
     var result: DuplicateImportResult
     var onShowMemories: () -> Void
-    var onShowContinuity: () -> Void
+    var onShowContinuity: (String?) -> Void
     var onRetry: () -> Void
     var onNewImport: () -> Void
 
@@ -539,7 +723,7 @@ private struct DuplicateImportCard: View {
 
                     if result.lineCount > 0 {
                         Button {
-                            onShowContinuity()
+                            onShowContinuity(result.lineIds.first)
                         } label: {
                             Label("查看共同线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
                                 .frame(maxWidth: .infinity)
@@ -572,7 +756,7 @@ private struct ImportResultCard: View {
     var result: DigestCommitResult
     var onNewImport: () -> Void
     var onShowMemories: () -> Void
-    var onShowContinuity: () -> Void
+    var onShowContinuity: (String?) -> Void
 
     var body: some View {
         ClaraCard(accent: ClaraDesign.memory) {
@@ -610,10 +794,15 @@ private struct ImportResultCard: View {
                 )
 
                 ResultPreviewSection(
-                    title: "共同线",
-                    emptyTitle: "没有新增共同线",
+                    title: "写入共同线",
+                    emptyTitle: "没有写入共同线",
                     systemImage: "point.topleft.down.curvedto.point.bottomright.up",
-                    values: result.continuityLines.prefix(3).map(\.title)
+                    values: result.continuityLines.prefix(3).map { line in
+                        if let currentMilestone = line.currentMilestone {
+                            return "\(line.title)：\(currentMilestone)"
+                        }
+                        return line.title
+                    }
                 )
 
                 VStack(spacing: 10) {
@@ -629,7 +818,7 @@ private struct ImportResultCard: View {
 
                     if !result.continuityLines.isEmpty {
                         Button {
-                            onShowContinuity()
+                            onShowContinuity(result.continuityLines.first?.id)
                         } label: {
                             Label("查看共同线", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
                                 .frame(maxWidth: .infinity)
@@ -725,6 +914,6 @@ private struct ImportProgressView: View {
         importerRegistry: ConversationImporterRegistry.live(),
         selectedContextCardID: .constant(ContextCardStore.defaultCardID),
         onShowMemories: {},
-        onShowContinuity: {}
+        onShowContinuity: { _ in }
     )
 }

@@ -1,22 +1,21 @@
 # ClaraCore Mobile Fix Plan
 
-Date: 2026-06-30
-Status: Source repair complete; continuity richness pass implemented
+Date: 2026-07-01
+Status: Source repair complete; v0.1 phone delivery loop installed and launched on test device
 
 ## Current Completion State
 
-As of 2026-06-30, the planned source repairs from Phase 1 through Phase 13 have been implemented and committed. After real-device review, the mobile Shared Line model was expanded beyond the minimal v1 fields because the phone flow still needs rich continuity state even though it is not an agent runtime.
+As of 2026-07-01, the planned source repairs from Phase 1 through Phase 13 have been implemented. After real-device review, the mobile Shared Line model was expanded beyond the minimal v1 fields because the phone flow still needs rich continuity state even though it is not an agent runtime. The current build now focuses on a shippable v0.1 phone loop: configure model, import, organize, write Memory / Shared Line, jump to the written Shared Line, and copy a natural continuation brief.
 
 Verified:
 
-- XcodeBuildMCP `build_sim` passed.
-- XcodeBuildMCP `test_sim` passed: 50 tests, 0 failed.
-- Manual E2E checklist has been updated to the one-step import flow.
-- Rich continuity source changes were built, tested, installed, and launched on the test iPhone.
+- `xcodebuild test -scheme ClaraCoreMobile -destination 'platform=iOS Simulator,name=iPhone 17'` passed: 56 tests, 0 failed.
+- Manual E2E checklist has been updated to the current v0.1 flow.
+- Current source changes were built, installed, and launched on the test iPhone.
 
 Pending:
 
-- Final manual true-device pass after continuity richness changes.
+- User acceptance pass on the latest installed test-device build.
 - Provider-specific parsers for ChatGPT, Claude, Gemini, Kimi, Doubao, and Tongyi/Qwen remain fixture-gated. The app currently recognizes those domains and uses generic public webpage/text extraction with clear private-link errors.
 
 Latest continuity richness change:
@@ -545,6 +544,7 @@ Make extracted outputs useful enough for daily use.
 Status:
 
 - 2026-06-30: Initial quality pass completed. Durable preferences are retained, review groups candidate memories by type, memory cards show type/source/role/line/tag signals, shared line cards separate current position from next step, and recall copy now uses role-continuation wording.
+- 2026-07-01: Recall copy was tightened into a more natural continuation brief with direct Chinese instructions, bullet-style shared-line state, and less report-like section language.
 
 Tasks:
 
@@ -695,6 +695,7 @@ Make multiple role cards feel like a normal part of import and recall, not just 
 Status:
 
 - 2026-06-30: Active role card now persists across app launches. Import shows the current target role before organizing.
+- 2026-07-01: Memory and Shared Line pages now show the active role card and scope their lists/searches to that role.
 
 Tasks:
 
@@ -707,6 +708,8 @@ Tasks:
 Acceptance:
 
 - User can tell which role an import will belong to before tapping import.
+- User can tell which role Memory and Shared Line pages are showing.
+- Switching the active role refreshes Memory and Shared Line lists instead of mixing role spaces.
 - Switching roles does not leak memories or Shared Lines into the wrong recall by default.
 - 2026-06-30: XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
 
@@ -778,7 +781,8 @@ Bring docs/checklists back in sync, then do the final true-device verification p
 
 Status:
 
-- 2026-06-30: Updated manual E2E checklist to the one-step import flow and added checks for duplicate recovery, result cards, Shared Line milestones, memory filters, role persistence, and action feedback. True-device pass remains intentionally deferred until source changes are complete.
+- 2026-06-30: Updated manual E2E checklist to the one-step import flow and added checks for duplicate recovery, result cards, Shared Line milestones, memory filters, role persistence, and action feedback.
+- 2026-07-01: True-device pass was run on the test iPhone after source repair completion.
 
 Tasks:
 
@@ -803,7 +807,8 @@ Acceptance:
 
 - Manual checklist matches the app that ships.
 - True-device pass is done once, after development is complete.
-- 2026-06-30: Manual checklist updated. XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed. True-device pass remains deferred by request.
+- 2026-06-30: Manual checklist updated. XcodeBuildMCP `build_sim` passed; XcodeBuildMCP `test_sim` passed 50 tests, 0 failed.
+- 2026-07-01: True-device pass completed on the test iPhone.
 
 ## Non-Goals For This Repair Batch
 

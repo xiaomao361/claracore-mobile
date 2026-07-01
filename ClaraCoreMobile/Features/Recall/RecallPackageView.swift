@@ -89,7 +89,7 @@ struct RecallPackageView: View {
                 }
             }
 
-            Section("请求") {
+            Section("接下来怎么继续") {
                 TextEditor(text: $request)
                     .frame(minHeight: 96)
             }
@@ -111,7 +111,7 @@ struct RecallPackageView: View {
                 }
             }
         }
-        .navigationTitle("回召")
+        .navigationTitle("复制上下文")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("关闭") {

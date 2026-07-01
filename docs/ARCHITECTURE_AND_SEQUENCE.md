@@ -1,18 +1,22 @@
 # ClaraCore Mobile Architecture And Build Sequence
 
-Date: 2026-06-29
+Date: 2026-07-01
 Status: Active development baseline
 
-## Development Checkpoint: 2026-06-30
+## Development Checkpoint: 2026-07-01
 
 Current node:
 - The project has a bootable SwiftUI / GRDB iOS app under `ClaraCore/apps/claracore-mobile`.
-- The UI is intentionally functional and Chinese-first, but visual/product UI refinement is owned by a separate UI session from this point.
-- This development track should continue focusing on data flow, reflection reliability, persistence, tests, and end-to-end behavior.
 - The product model has been simplified around Context Card + Shared Line + Memory:
   - Context Card defines who the agent is and who the user is.
   - Shared Line tracks the process/state of one continuing topic.
   - Memory stores a small number of durable facts or decisions.
+- Current v0.1 goal: make the phone app usable for one reliable loop:
+  - configure a default OpenAI-compatible organizing model;
+  - import a selected AI conversation, share URL, pasted text, or `.txt` file;
+  - automatically organize into the active role space;
+  - write a small set of memories and one Shared Line;
+  - jump back to that exact Shared Line and copy a natural continuation brief for an external AI.
 
 Implemented and verified:
 - App shell with tabs: 导入, 记忆, 共同线, 设置.
@@ -25,11 +29,15 @@ Implemented and verified:
 - Startup fallback: Keychain read failures must not block app launch; the app falls back to local placeholder mode.
 - Digest commit path from candidate memories / Shared Line updates into local stores.
 - Default Context Card persistence with Agent / User profiles.
-- Recall packaging from the default Context Card plus one Shared Line and selected factual memories into a copyable DeepSeek context package.
+- Recall packaging from the active Context Card plus one Shared Line and selected factual memories into a copyable continuation brief for an external AI.
 - Committed memories can now bind to the Shared Line created from the same digest through `lineId`; recall prefers line-bound memories before falling back to FTS.
 - Shared Line milestone text renders as structured steps in the list and recall package surfaces.
 - Settings exposes the default Context Card editor for Agent / User profiles.
 - Import behavior: user-facing flow is one step. Importer queues an internal inbox row for duplicate/status tracking, automatically prepares/organizes/commits, then marks the internal row committed.
+- Import can target a new Shared Line or append to an existing Shared Line in the active role space.
+- Import result cards can jump directly to the exact Shared Line that was written.
+- Memory and Shared Line pages show the active role card and scope their lists/searches to that role.
+- Settings model selection supports searching returned model ids, so users are not limited to the first visible models.
 - App icon asset catalog exists at `ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset`.
 - Manual first-build end-to-end checklist exists at `docs/MANUAL_E2E_CHECKLIST.md`.
 - DeepSeek real end-to-end path now targets:
@@ -44,13 +52,15 @@ Latest verification:
 - `plutil -lint ClaraCoreMobile.xcodeproj/project.pbxproj`
 - `python3 -m json.tool ClaraCoreMobile/Assets.xcassets/Contents.json`
 - `python3 -m json.tool ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset/Contents.json`
-- XcodeBuildMCP `build_sim`
-- XcodeBuildMCP `test_sim`: 31 tests passed, 0 failed
-- XcodeBuildMCP `build_run_sim`: app installed and launched on iPhone 17 simulator
+- `xcodebuild test -scheme ClaraCoreMobile -destination 'platform=iOS Simulator,name=iPhone 17'`: passed, 56 tests, 0 failed
+- `xcodebuild -scheme ClaraCoreMobile -configuration Debug -destination 'id=00008120-00181C143C60201E' -derivedDataPath /tmp/claracore-mobile-device-build build`: passed
+- `xcrun devicectl device install app --device 90761EB0-EAB1-50F4-9C91-757567E4F852 /tmp/claracore-mobile-device-build/Build/Products/Debug-iphoneos/ClaraCoreMobile.app`: installed on `zhouwei iphone`
+- `xcrun devicectl device process launch --device 90761EB0-EAB1-50F4-9C91-757567E4F852 com.claracore.mobile`: launched
 
-Next technical work, independent from UI polish:
-1. Run the manual first-build checklist on simulator and record any product/data-flow gaps.
-2. Keep UI polish in the separate UI session unless a visual issue blocks the checklist.
+Next technical work:
+1. Run the updated manual checklist on the test iPhone against the latest installed build.
+2. Fix only blockers that break the v0.1 loop before widening provider-specific parser support.
+3. Keep the first shippable standard aligned with the simplified flow: configure model -> import -> auto organize and commit -> see memory and Shared Line -> copy continuation brief.
 
 UI session boundary:
 - The UI session may change layout, copy, visual hierarchy, empty states, and interaction affordances.
@@ -213,29 +223,37 @@ selected Context Card
 Target structure:
 
 ```text
-# Agent
+请接着这段关系和这条共同线继续，不要把它改写成总结或报告。
+
+你现在的角色：
 ...
 
-# 用户
+你正在面对的用户：
 ...
 
-# 共同线
-标题：
-里程碑：
-1. ...
-2. ...
-下一步：
+我们正在延续：
 ...
 
-# 相关事实记忆
-1. ...
-2. ...
+已经走过：
+- ...
 
-# 请求
-请基于以上上下文继续。不要假设未提供的信息；如果信息不足，先指出缺口。
+现在停在：
+- ...
+
+接下来先做：
+- ...
+
+连续性状态：
+- ...
+
+需要记住的事实：
+- ...
+
+这次请这样继续：
+自然接着说就好。信息不够时先问我，不要补成正式报告。
 ```
 
-The current implementation builds this structure from the default Context Card, selected Shared Line, and selected related memories.
+The current implementation builds this structure from the active Context Card, selected Shared Line, and selected related memories.
 
 ## V1 Modules
 
@@ -382,24 +400,34 @@ User selects a Shared Line
 The package should be structured as:
 
 ```text
-# 共同线
-Title:
-Last position:
-Next step:
+请接着这段关系和这条共同线继续，不要把它改写成总结或报告。
 
-【连续性状态】
-当前状态:
-当前解释:
-位置/情绪弧线:
-确认事实:
-边界:
-误读风险:
+你现在的角色：
+...
 
-# 相关事实记忆
+你正在面对的用户：
+...
+
+我们正在延续：
+...
+
+已经走过：
 - ...
 
-# 给 DeepSeek 的请求
-请基于以上上下文继续，不要改写事实记忆。
+现在停在：
+- ...
+
+接下来先做：
+- ...
+
+连续性状态：
+- ...
+
+需要记住的事实：
+- ...
+
+这次请这样继续：
+自然接着说就好。信息不够时先问我，不要补成正式报告。
 ```
 
 Importer and Reflection must not own this flow. It belongs to Continuity + Memoria + a small recall packaging service.
