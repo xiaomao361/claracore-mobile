@@ -26,11 +26,14 @@ struct AppDependencies {
         let inboxStore = InboxStore(database: database)
         let importSessionStore = ImportSessionStore(database: database)
         let segmenter = FixedSizeCaptureSegmenter()
+        let organizationEngineMode = OrganizationEngineModeStore.load()
         let modelProviderConfiguration = ModelProviderConfigurationStore.load()
         let modelProviderAPIKey = (try? apiKeyStore.read(service: .modelProvider)) ?? (try? apiKeyStore.read(service: .deepSeek))
         let reflectionService: ReflectionService
         let reflectionConfiguration: ReflectionConfiguration
-        if let modelProviderAPIKey, !modelProviderAPIKey.isEmpty,
+        if organizationEngineMode == .externalModel,
+           let modelProviderAPIKey,
+           !modelProviderAPIKey.isEmpty,
            let baseURL = modelProviderConfiguration.baseURL,
            !modelProviderConfiguration.trimmedModel.isEmpty {
             reflectionService = OpenAICompatibleReflectionService(
@@ -38,10 +41,18 @@ struct AppDependencies {
                 model: modelProviderConfiguration.trimmedModel,
                 baseURL: baseURL
             )
-            reflectionConfiguration = ReflectionConfiguration(mode: .remoteModel, modelProvider: modelProviderConfiguration.normalized)
+            reflectionConfiguration = ReflectionConfiguration(
+                mode: .remoteModel,
+                preferredEngineMode: organizationEngineMode,
+                modelProvider: modelProviderConfiguration.normalized
+            )
         } else {
             reflectionService = RuleBasedReflectionService()
-            reflectionConfiguration = ReflectionConfiguration(mode: .localPlaceholder, modelProvider: modelProviderConfiguration.normalized)
+            reflectionConfiguration = ReflectionConfiguration(
+                mode: .localPlaceholder,
+                preferredEngineMode: organizationEngineMode,
+                modelProvider: modelProviderConfiguration.normalized
+            )
         }
         let deepSeekShareImporter = DeepSeekShareImporter()
         return AppDependencies(

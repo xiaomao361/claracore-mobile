@@ -65,6 +65,49 @@ enum ModelProviderConfigurationStore {
     }
 }
 
+enum OrganizationEngineMode: String, Codable, CaseIterable, Identifiable {
+    case localRules
+    case externalModel
+
+    static let userDefaultsKey = "organizationEngineMode"
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .localRules:
+            "本机规则"
+        case .externalModel:
+            "外部模型"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .localRules:
+            "默认方式。导入内容保留在本机，用保守规则摘取记忆和共同线。"
+        case .externalModel:
+            "可选增强。主动整理时把必要内容发送到你配置的模型提供方。"
+        }
+    }
+}
+
+enum OrganizationEngineModeStore {
+    static func load(userDefaults: UserDefaults = .standard) -> OrganizationEngineMode {
+        guard let value = userDefaults.string(forKey: OrganizationEngineMode.userDefaultsKey),
+              let mode = OrganizationEngineMode(rawValue: value) else {
+            return .localRules
+        }
+        return mode
+    }
+
+    static func save(_ mode: OrganizationEngineMode, userDefaults: UserDefaults = .standard) {
+        userDefaults.set(mode.rawValue, forKey: OrganizationEngineMode.userDefaultsKey)
+    }
+}
+
 struct ModelProviderClient {
     enum ClientError: LocalizedError, Equatable {
         case invalidBaseURL
@@ -221,5 +264,6 @@ struct ReflectionConfiguration: Equatable {
     }
 
     var mode: Mode
+    var preferredEngineMode: OrganizationEngineMode = .localRules
     var modelProvider: ModelProviderConfiguration?
 }

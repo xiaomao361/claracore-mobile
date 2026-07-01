@@ -46,4 +46,19 @@ final class ClaraErrorPresenterTests: XCTestCase {
         XCTAssertEqual(loaded.baseURLString, "https://api.openai.com/v1")
         XCTAssertEqual(loaded.model, "gpt-4.1")
     }
+
+    func testOrganizationEngineModeDefaultsToLocalRules() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "engine-mode-default-\(UUID().uuidString)"))
+        defaults.removeObject(forKey: OrganizationEngineMode.userDefaultsKey)
+
+        XCTAssertEqual(OrganizationEngineModeStore.load(userDefaults: defaults), .localRules)
+    }
+
+    func testOrganizationEngineModePersistsExternalModel() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "engine-mode-save-\(UUID().uuidString)"))
+
+        OrganizationEngineModeStore.save(.externalModel, userDefaults: defaults)
+
+        XCTAssertEqual(OrganizationEngineModeStore.load(userDefaults: defaults), .externalModel)
+    }
 }

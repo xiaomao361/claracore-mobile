@@ -20,6 +20,7 @@ struct SettingsFeatureView: View {
     @State private var modelAPIKey = ""
     @State private var availableModels: [ModelProviderClient.Model] = []
     @State private var modelSearchQuery = ""
+    @State private var organizationEngineMode: OrganizationEngineMode = .localRules
     @State private var hasSavedModelKey = false
     @State private var isTestingModel = false
     @State private var isLoadingModels = false
@@ -107,50 +108,45 @@ struct SettingsFeatureView: View {
 
                 ClaraSectionLabel(title: "整理引擎")
 
-                ClaraCard(accent: isRemoteModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(isRemoteModelEnabled ? "外部模型已启用" : "本机整理")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundStyle(ClaraDesign.ink)
-                                Text(isRemoteModelEnabled ? "导入后会调用下方模型配置，生成记忆和共同线。" : "未保存模型 Key 时，会用本机规则整理并写入可回看的记忆和共同线。")
+                ClaraCard(accent: organizationEngineMode == .externalModel ? ClaraDesign.memory : ClaraDesign.reflection) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Picker("整理方式", selection: $organizationEngineMode) {
+                            ForEach(OrganizationEngineMode.allCases) { mode in
+                                Text(mode.title).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: organizationEngineMode) { _, newValue in
+                            saveOrganizationEngineMode(newValue)
+                        }
+
+                        EngineModeSummary(
+                            mode: organizationEngineMode,
+                            isExternalModelReady: isExternalModelReady,
+                            providerTitle: currentModelDraft.trimmedProviderName,
+                            modelTitle: currentModelDraft.trimmedModel
+                        )
+                    }
+                }
+
+                if organizationEngineMode == .externalModel {
+                    ClaraSectionLabel(title: "外部模型配置")
+
+                    ClaraCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text("OpenAI-compatible")
+                                        .font(.system(size: 17, weight: .semibold))
+                                        .foregroundStyle(ClaraDesign.ink)
+                                    Spacer()
+                                    ClaraStatusPill(title: hasSavedModelKey ? "Key 已保存" : "需要 Key", color: hasSavedModelKey ? ClaraDesign.memory : ClaraDesign.reflection, systemImage: hasSavedModelKey ? "lock" : "key")
+                                }
+                                Text("填写兼容 Chat Completions 的地址和 Key，先查询模型，再选择默认整理模型。DeepSeek 只是默认预设之一。")
                                     .font(.system(size: 13))
                                     .foregroundStyle(ClaraDesign.inkMuted)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
-                            Spacer()
-                            ClaraStatusPill(
-                                title: currentModeTitle,
-                                color: isRemoteModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection,
-                                systemImage: isRemoteModelEnabled ? "checkmark.seal" : "sparkles"
-                            )
-                        }
-
-                        HStack(spacing: 8) {
-                            ClaraStatusPill(title: currentModelDraft.trimmedProviderName, color: ClaraDesign.memory, systemImage: "server.rack")
-                            ClaraStatusPill(title: currentModelDraft.trimmedModel.isEmpty ? "未选择模型" : currentModelDraft.trimmedModel, color: ClaraDesign.continuity, systemImage: "cpu")
-                        }
-                    }
-                }
-
-                ClaraSectionLabel(title: "模型配置")
-
-                ClaraCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("OpenAI-compatible")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundStyle(ClaraDesign.ink)
-                                Spacer()
-                                ClaraStatusPill(title: hasSavedModelKey ? "Key 已保存" : "需要 Key", color: hasSavedModelKey ? ClaraDesign.memory : ClaraDesign.reflection, systemImage: hasSavedModelKey ? "lock" : "key")
-                            }
-                            Text("填写兼容 Chat Completions 的地址和 Key，先查询模型，再选择默认整理模型。DeepSeek 只是默认预设之一。")
-                                .font(.system(size: 13))
-                                .foregroundStyle(ClaraDesign.inkMuted)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
 
                         VStack(alignment: .leading, spacing: 12) {
                             ClaraInlineField(
@@ -313,6 +309,7 @@ struct SettingsFeatureView: View {
                             .buttonStyle(ClaraSecondaryButtonStyle())
                         }
                     }
+                    }
                 }
 
                 ClaraSectionLabel(title: "支持与隐私")
@@ -323,7 +320,7 @@ struct SettingsFeatureView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(ClaraDesign.ink)
 
-                            Text("ClaraCore 默认用本机逻辑保存和整理导入材料；只有在你配置外部模型、确认说明并主动整理时，才会把必要内容发送到你选择的模型提供方。")
+                        Text("ClaraCore 默认用本机逻辑保存和整理导入材料；只有在你配置外部模型、确认说明并主动整理时，才会把必要内容发送到你选择的模型提供方。")
                             .font(.system(size: 13))
                             .foregroundStyle(ClaraDesign.inkMuted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -391,15 +388,9 @@ struct SettingsFeatureView: View {
             !userProfile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var currentModeTitle: String {
-        if isRemoteModelEnabled {
-            return currentModelDraft.trimmedProviderName
-        }
-        return ReflectionConfiguration.Mode.localPlaceholder.title
-    }
-
-    private var isRemoteModelEnabled: Bool {
-        hasSavedModelKey &&
+    private var isExternalModelReady: Bool {
+        organizationEngineMode == .externalModel &&
+            hasSavedModelKey &&
             currentModelDraft.baseURL != nil &&
             !currentModelDraft.trimmedModel.isEmpty
     }
@@ -467,6 +458,7 @@ struct SettingsFeatureView: View {
                 selectedContextCardID = contextCards.first?.id
             }
             resetContextCardDraft()
+            organizationEngineMode = OrganizationEngineModeStore.load()
             resetModelConfigurationDraft()
             hasSavedModelKey = try readSavedModelKey() != nil
             availableModels = []
@@ -524,6 +516,12 @@ struct SettingsFeatureView: View {
         modelAPIKey = ""
     }
 
+    private func saveOrganizationEngineMode(_ mode: OrganizationEngineMode) {
+        OrganizationEngineModeStore.save(mode)
+        statusMessage = mode == .localRules ? "已切换为本机规则整理。" : "已切换为外部模型整理。请确认配置可用。"
+        onConfigurationChanged()
+    }
+
     private func saveModelConfiguration() {
         do {
             let configuration = currentModelDraft
@@ -534,6 +532,8 @@ struct SettingsFeatureView: View {
                 throw SettingsModelError.missingThirdPartyAIConsent
             }
             try ModelProviderConfigurationStore.save(configuration)
+            OrganizationEngineModeStore.save(.externalModel)
+            organizationEngineMode = .externalModel
             let trimmedKey = modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmedKey.isEmpty {
                 try apiKeyStore.save(trimmedKey, service: .modelProvider)
@@ -592,6 +592,8 @@ struct SettingsFeatureView: View {
         do {
             try apiKeyStore.delete(service: .modelProvider)
             try apiKeyStore.delete(service: .deepSeek)
+            OrganizationEngineModeStore.save(.localRules)
+            organizationEngineMode = .localRules
             hasSavedModelKey = false
             statusMessage = "模型 Key 已删除，整理会回到本机规则模式。"
             onConfigurationChanged()
@@ -667,6 +669,62 @@ private enum SettingsModelError: LocalizedError {
             return "模型配置不完整。请确认 Base URL 和 Model 都有效。"
         case .missingThirdPartyAIConsent:
             return "请先确认外部模型处理说明，再保存模型配置。"
+        }
+    }
+}
+
+private struct EngineModeSummary: View {
+    var mode: OrganizationEngineMode
+    var isExternalModelReady: Bool
+    var providerTitle: String
+    var modelTitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: mode == .localRules ? "lock.laptopcomputer" : "server.rack")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(mode == .localRules ? ClaraDesign.reflection : ClaraDesign.memory)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(mode.title)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(ClaraDesign.ink)
+                    Text(mode.detail)
+                        .font(.system(size: 13))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+            }
+
+            if mode == .externalModel {
+                HStack(spacing: 8) {
+                    ClaraStatusPill(
+                        title: isExternalModelReady ? "配置可用" : "待配置",
+                        color: isExternalModelReady ? ClaraDesign.memory : ClaraDesign.reflection,
+                        systemImage: isExternalModelReady ? "checkmark.seal" : "exclamationmark.triangle"
+                    )
+                    ClaraStatusPill(
+                        title: providerTitle,
+                        color: ClaraDesign.memory,
+                        systemImage: "server.rack"
+                    )
+                    ClaraStatusPill(
+                        title: modelTitle.isEmpty ? "未选择模型" : modelTitle,
+                        color: ClaraDesign.continuity,
+                        systemImage: "cpu"
+                    )
+                }
+            } else {
+                ClaraStatusPill(
+                    title: "不发送导入内容",
+                    color: ClaraDesign.reflection,
+                    systemImage: "checkmark.shield"
+                )
+            }
         }
     }
 }
