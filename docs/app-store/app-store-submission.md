@@ -19,9 +19,9 @@ docs/app-store/privacy-policy.md
 
 The policy states:
 
-- Imported conversations, memories, Context Cards, Shared Lines, and import history are stored locally.
+- Imported conversations, raw source archives, memories, Context Cards, Shared Lines, and import history are stored locally.
 - API keys are stored in iOS Keychain.
-- Content is sent to a remote model only when the user configures a model provider and starts organization.
+- Content is sent to a remote model only when the user configures a model provider, accepts the third-party AI processing notice, and starts organization.
 - DeepSeek public share-link import is one import path, not the product identity or required default model.
 - No ads, no tracking, no ClaraCore account, and no developer-side cloud sync.
 
@@ -66,16 +66,18 @@ Testing with a remote model:
    API Key: [TEST_API_KEY_PROVIDED_IN_APP_STORE_CONNECT_NOTES_ONLY]
 2. Tap Query Models (`查询模型`).
 3. Select one returned model from the list. If the provider returns many models, use the model search field to narrow by model id. The default organization model field is read-only and cannot be manually typed.
-4. Tap Save Configuration (`保存配置`) and confirm the organization engine status updates immediately in Settings.
-5. Tap Test Connection (`测试连接`).
-6. Open Import.
-7. Paste a short transcript or a public conversation share link.
-8. Tap Import and Organize.
-9. Confirm the result screen shows committed Memory and Shared Line counts.
-10. Open Memory and delete one test memory.
-11. Open Shared Line, copy the recall package, and confirm the copied text includes role, user, continuity state, and related factual memories.
+4. Accept the third-party AI processing notice.
+5. Tap Save Configuration (`保存配置`) and confirm the organization engine status updates immediately in Settings.
+6. Tap Test Connection (`测试连接`).
+7. Open Import.
+8. Paste a short transcript or a public conversation share link.
+9. Tap Import and Organize.
+10. Confirm the result screen shows committed Memory and Shared Line counts.
+11. Open Original Text (`原文`) and confirm the source archive is visible.
+12. Open Memory and delete one test memory.
+13. Open Shared Line, copy the recall package, and confirm the copied text includes role, user, continuity state, and related factual memories.
 
-The app does not include ads, tracking, user accounts, or a developer-operated cloud sync service. User content is stored locally unless the user configures a remote model provider and starts organization. API keys are stored in the iOS Keychain.
+The app does not include ads, tracking, user accounts, or a developer-operated cloud sync service. User content is stored locally unless the user configures a remote model provider, accepts the third-party AI processing notice, and starts organization. API keys are stored in the iOS Keychain.
 
 DeepSeek is supported as one public share-link import source. The default model provider is configurable and can be any OpenAI-compatible endpoint.
 
@@ -123,7 +125,7 @@ User Content
 - Tracking: No
 - Used for advertising: No
 - Developer-side collection: No developer-operated server collection
-- Notes: Imported conversation text may be sent to a user-configured OpenAI-compatible model provider only when the user saves a model API key and starts organization.
+- Notes: Imported conversation text may be sent to a user-configured OpenAI-compatible model provider only when the user saves a model API key, accepts the third-party AI processing notice, and starts organization.
 ```
 
 Also disclose if requested:
@@ -144,11 +146,13 @@ Do not disclose analytics, purchases, location, contacts, browsing history, heal
 Prepare screenshots that show actual app behavior:
 
 1. Import screen with role card selector and "paste link/text/file" entry.
-2. Model configuration in Settings with provider/base URL/API key fields, queried model results, and the selected read-only default model, with the API key hidden.
+2. Model configuration in Settings with provider/base URL/API key fields, third-party AI processing consent, queried model results, and the selected read-only default model, with the API key hidden.
 3. Import result screen showing Memory and Shared Line counts.
-4. Memory list showing user-editable, deletable factual memories.
-5. Shared Line screen showing current station, milestones, next step, and continuity state.
-6. Recall package sheet showing copyable context for an external AI app.
+4. Original Text (`原文`) Archive list and detail screen showing a source trace.
+5. Memory list showing user-editable, deletable factual memories.
+6. Shared Line screen showing current station, milestones, next step, and continuity state.
+7. Recall package sheet showing copyable context for an external AI app.
+8. Built-in Privacy Policy and Support pages in Settings.
 
 Avoid screenshots that imply silent background memory capture. The app should look like a user-directed capture and organization tool.
 
@@ -185,6 +189,7 @@ ClaraCore Mobile 是一个本地优先的 AI 对话记忆整理工具。
 
 核心能力：
 - 导入 AI 对话、公开分享链接、粘贴文本和 .txt 文件
+- 保存原始导入，形成可回看的原文 Archive
 - 使用角色卡描述当前 Agent 和用户关系
 - 将导入内容整理成少量事实记忆和一条共同线
 - 查看、编辑和删除本地记忆
@@ -196,6 +201,7 @@ ClaraCore Mobile 是一个本地优先的 AI 对话记忆整理工具。
 - 导入内容、记忆、角色卡和共同线默认存储在本机
 - API Key 存储在 iOS Keychain
 - 未配置模型 Key 时，应用不会把对话发送给远程模型
+- 配置远程模型前，应用会要求你明确同意第三方 AI 处理说明
 - 配置远程模型后，只有在你主动导入并整理时，相关内容才会发送到你选择的模型提供方
 - 无广告，无跟踪，无 ClaraCore 账号
 
@@ -236,16 +242,18 @@ Run this before public App Store submission:
 3. Confirm Settings opens and model configuration fields are visible.
 4. Confirm Import explains that a default model key is required for real organization.
 5. Enter Provider, Base URL, and a non-production API key.
-6. Query available models and select one returned model, using model search when the provider returns many results.
-7. Save the configuration and confirm the Settings organization engine status updates immediately.
-8. Tap Test Connection and confirm visible success or clear failure.
-9. Import a short pasted transcript.
-10. Confirm result card shows Memory and Shared Line counts.
-11. Delete one memory and confirm feedback.
-12. Open Shared Line and confirm current station, milestones, next step, and continuity state.
-13. Copy recall package and paste it into Notes to verify clipboard output.
-14. Delete the saved model key and confirm the app returns to local placeholder mode.
-15. Reopen the app and confirm it does not crash when no key exists.
+6. Accept the third-party AI processing notice.
+7. Query available models and select one returned model, using model search when the provider returns many results.
+8. Save the configuration and confirm the Settings organization engine status updates immediately.
+9. Tap Test Connection and confirm visible success or clear failure.
+10. Import a short pasted transcript.
+11. Confirm result card shows Memory and Shared Line counts.
+12. Open Original Text (`原文`) and confirm the archive entry exists.
+13. Delete one memory and confirm feedback.
+14. Open Shared Line and confirm current station, milestones, next step, and continuity state.
+15. Copy recall package and paste it into Notes to verify clipboard output.
+16. Delete the saved model key and confirm the app returns to local placeholder mode.
+17. Reopen the app and confirm it does not crash when no key exists.
 
 Record:
 
@@ -281,11 +289,12 @@ Before submitting to App Review:
 1. Enable GitHub Pages or another public static host for the Privacy Policy and Support pages.
 2. Open both URLs in a logged-out browser window.
 3. Fill App Privacy labels from this document.
-4. Add App Review Notes and, if needed, a temporary test model key only inside App Store Connect.
-5. Upload screenshots that show user-directed import, deletion, and recall copy.
-6. Confirm no source, docs, fixtures, screenshots, logs, or review notes committed to git contain a real API key.
-7. Run the TestFlight external testing checklist once.
-8. Decide App Store territory availability, especially mainland China.
+4. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
+5. Add App Review Notes and, if needed, a temporary test model key only inside App Store Connect.
+6. Upload screenshots that show user-directed import, third-party AI consent, source archive, deletion, and recall copy.
+7. Confirm no source, docs, fixtures, screenshots, logs, or review notes committed to git contain a real API key.
+8. Run the TestFlight external testing checklist once.
+9. Decide App Store territory availability, especially mainland China.
 
 ## Source Notes
 

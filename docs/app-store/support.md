@@ -1,5 +1,6 @@
 ---
 title: ClaraCore Mobile Support
+permalink: /app-store/support/
 ---
 
 # ClaraCore Mobile Support

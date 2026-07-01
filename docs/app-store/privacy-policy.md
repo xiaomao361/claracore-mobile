@@ -1,5 +1,6 @@
 ---
 title: ClaraCore Mobile Privacy Policy
+permalink: /app-store/privacy-policy/
 ---
 
 # ClaraCore Mobile Privacy Policy
@@ -14,14 +15,14 @@ ClaraCore Mobile is an iOS app for importing user-selected AI conversation mater
 - The app does not include advertising or third-party tracking.
 - The app does not create a ClaraCore account.
 - API keys are stored in the iOS Keychain on the user's device.
-- Imported conversations, memories, Context Cards, Shared Lines, and import history are stored locally on the user's device.
+- Imported conversations, raw source archives, memories, Context Cards, Shared Lines, and import history are stored locally on the user's device.
 - Conversation content is sent to a remote model provider only when the user configures a model API key and starts an import or organization action that requires remote reflection.
 
 ## Data Stored On Device
 
 ClaraCore Mobile stores the following data locally:
 
-- Imported conversation text, public share-link transcripts, pasted text, and imported `.txt` files.
+- Imported conversation text, raw source archives, public share-link transcripts, pasted text, and imported `.txt` files.
 - Context Cards, including the user-provided agent and user profile text.
 - Shared Lines, including current position, next step, interpretation, boundary notes, and related continuity state.
 - Memories, including facts, decisions, tags, source information, confidence, importance, and local linkage to a Shared Line or Context Card.

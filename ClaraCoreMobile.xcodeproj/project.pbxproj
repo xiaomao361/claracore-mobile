@@ -66,6 +66,7 @@
 		A10000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift */; };
 		A1000000000000000000003A /* ConversationImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003A /* ConversationImporter.swift */; };
 		A1000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */; };
+		A1000000000000000000003C /* ArchiveFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003C /* ArchiveFeatureView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -138,6 +139,7 @@
 		A20000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ContextCard/ContextCardStoreTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000003A /* ConversationImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationImporter.swift; sourceTree = "<group>"; };
 		A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ConversationImporterRegistryTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000003C /* ArchiveFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveFeatureView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -261,6 +263,7 @@
 			isa = PBXGroup;
 			children = (
 				A5000000000000000000000F /* Importer */,
+				A5000000000000000000001B /* Archive */,
 				A50000000000000000000010 /* Inbox */,
 				A5000000000000000000000A /* Memoria */,
 				A50000000000000000000014 /* Continuity */,
@@ -425,6 +428,14 @@
 			path = ContextCard;
 			sourceTree = "<group>";
 		};
+		A5000000000000000000001B /* Archive */ = {
+			isa = PBXGroup;
+			children = (
+				A2000000000000000000003C /* ArchiveFeatureView.swift */,
+			);
+			path = Archive;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -567,6 +578,7 @@
 				A10000000000000000000021 /* ImportSessionPreparer.swift in Sources */,
 				A10000000000000000000023 /* ReflectionRunner.swift in Sources */,
 				A1000000000000000000001F /* ImporterFeatureView.swift in Sources */,
+				A1000000000000000000003C /* ArchiveFeatureView.swift in Sources */,
 				A10000000000000000000020 /* InboxFeatureView.swift in Sources */,
 				A10000000000000000000029 /* ContinuityFeatureView.swift in Sources */,
 				A10000000000000000000025 /* ReviewDigestView.swift in Sources */,

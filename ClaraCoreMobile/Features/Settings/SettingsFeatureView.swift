@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct SettingsFeatureView: View {
+    @AppStorage("thirdPartyAIProcessingConsentAccepted") private var hasAcceptedThirdPartyAIProcessing = false
+
     let contextCardStore: ContextCardStore
     let apiKeyStore: APIKeyStore
     let reflectionConfiguration: ReflectionConfiguration
@@ -181,6 +183,8 @@ struct SettingsFeatureView: View {
                             }
                         }
 
+                        ThirdPartyAIConsentBox(isAccepted: $hasAcceptedThirdPartyAIProcessing)
+
                         HStack(spacing: 10) {
                             Button {
                                 loadAvailableModels()
@@ -311,6 +315,51 @@ struct SettingsFeatureView: View {
                     }
                 }
 
+                ClaraSectionLabel(title: "支持与隐私")
+
+                ClaraCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("隐私政策和支持入口")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(ClaraDesign.ink)
+
+                        Text("ClaraCore 默认把导入原文、记忆、角色卡和共同线保存在本机；只有在你配置模型并主动整理时，才会把内容发送到你选择的模型提供方。")
+                            .font(.system(size: 13))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        NavigationLink {
+                            PrivacyPolicyDetailView()
+                        } label: {
+                            Label("隐私政策", systemImage: "hand.raised")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(ClaraSecondaryButtonStyle())
+
+                        NavigationLink {
+                            SupportDetailView()
+                        } label: {
+                            Label("支持页面", systemImage: "questionmark.circle")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(ClaraSecondaryButtonStyle())
+
+                        HStack(spacing: 10) {
+                            Link(destination: URL(string: "https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/")!) {
+                                Label("网页隐私政策", systemImage: "safari")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
+
+                            Link(destination: URL(string: "https://xiaomao361.github.io/claracore-mobile/app-store/support/")!) {
+                                Label("网页支持", systemImage: "safari")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
+                        }
+                    }
+                }
+
                 if let statusMessage {
                     ClaraActionStatus(message: statusMessage, tone: .success)
                 }
@@ -358,6 +407,7 @@ struct SettingsFeatureView: View {
     private var canSaveModelConfiguration: Bool {
         currentModelDraft.baseURL != nil &&
             !currentModelDraft.trimmedModel.isEmpty &&
+            hasAcceptedThirdPartyAIProcessing &&
             (hasSavedModelKey || !modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
@@ -479,6 +529,9 @@ struct SettingsFeatureView: View {
             let configuration = currentModelDraft
             guard configuration.baseURL != nil, !configuration.trimmedModel.isEmpty else {
                 throw SettingsModelError.invalidConfiguration
+            }
+            guard hasAcceptedThirdPartyAIProcessing else {
+                throw SettingsModelError.missingThirdPartyAIConsent
             }
             try ModelProviderConfigurationStore.save(configuration)
             let trimmedKey = modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -606,11 +659,139 @@ struct SettingsFeatureView: View {
 
 private enum SettingsModelError: LocalizedError {
     case invalidConfiguration
+    case missingThirdPartyAIConsent
 
     var errorDescription: String? {
         switch self {
         case .invalidConfiguration:
             return "模型配置不完整。请确认 Base URL 和 Model 都有效。"
+        case .missingThirdPartyAIConsent:
+            return "请先确认第三方 AI 处理说明，再保存模型配置。"
+        }
+    }
+}
+
+private struct ThirdPartyAIConsentBox: View {
+    @Binding var isAccepted: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: $isAccepted) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("我同意把导入内容发送到我配置的模型提供方")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(ClaraDesign.ink)
+                    Text("仅在你主动点击导入并整理时发送；目标是上方 Base URL 对应的第三方或自部署服务。提供方可能按自己的政策处理请求。")
+                        .font(.system(size: 12))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .toggleStyle(.switch)
+
+            if !isAccepted {
+                Label("保存远程模型配置前需要明确同意。", systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(ClaraDesign.reflection)
+            }
+        }
+        .padding(12)
+        .background(ClaraDesign.reflection.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
+    }
+}
+
+private struct PrivacyPolicyDetailView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                LegalSection(
+                    title: "摘要",
+                    text: "ClaraCore Mobile 是本地优先的 AI 对话记忆整理工具。应用不包含广告、第三方追踪或 ClaraCore 账号。API Key 保存在 iOS Keychain。导入原文、原始对话 Archive、记忆、角色卡、共同线和导入历史默认保存在本机。"
+                )
+
+                LegalSection(
+                    title: "本机保存的数据",
+                    text: "应用会在设备本地保存用户主动导入的对话文本、公开分享链接转成的文本、粘贴文本、.txt 文件、角色卡、共同线、记忆、原文 Archive、重复检测信息、模型配置和 Keychain 中的 API Key。卸载应用会按 iOS 的正常机制移除应用容器数据。"
+                )
+
+                LegalSection(
+                    title: "远程模型处理",
+                    text: "如果用户配置 OpenAI-compatible Base URL 和 API Key，应用可以查询该提供方的 /models endpoint，并在用户主动导入并整理时，把导入内容片段和必要上下文发送到该提供方以生成记忆和共同线。未配置 Key 或未明确同意第三方 AI 处理时，应用不会进行远程整理。"
+                )
+
+                LegalSection(
+                    title: "DeepSeek 分享链接",
+                    text: "DeepSeek 公开分享链接只是支持的导入来源之一。用户主动粘贴或分享公开链接时，应用会请求公开分享内容并转成本地导入材料。DeepSeek 不是 ClaraCore 的必需默认模型提供方。"
+                )
+
+                LegalSection(
+                    title: "数据共享",
+                    text: "ClaraCore 不出售用户数据，也不使用用户数据做广告或跟踪。数据只会在用户主动选择公开分享链接、查询模型、测试连接、导入并整理、或复制回召包到剪贴板时按操作发生传输。"
+                )
+
+                LegalSection(
+                    title: "删除与控制",
+                    text: "用户可以在应用内删除记忆和共同线，可以删除保存的模型 API Key，也可以停止使用远程模型配置。用户应避免导入自己不愿意保存在本机或发送给所选模型提供方的敏感内容。"
+                )
+            }
+            .padding(20)
+        }
+        .claraScreenBackground()
+        .navigationTitle("隐私政策")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct SupportDetailView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                LegalSection(
+                    title: "支持联系",
+                    text: "如果遇到导入失败、模型配置失败、数据异常或 App Store 审核相关问题，请通过项目仓库的 Issues 联系维护者。"
+                )
+
+                Link(destination: URL(string: "https://github.com/xiaomao361/claracore-mobile/issues")!) {
+                    Label("打开 GitHub Issues", systemImage: "link")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(ClaraSecondaryButtonStyle())
+
+                LegalSection(
+                    title: "常见问题",
+                    text: "ClaraCore 不会自动读取其他 AI 应用的聊天记录。用户需要主动粘贴文本、选择文件或提供公开分享链接。没有保存模型 Key 时，应用不会把对话发送到远程模型。"
+                )
+
+                LegalSection(
+                    title: "删除数据",
+                    text: "记忆和共同线可以在应用内删除。API Key 可以在设置里删除。原始导入保存在本机 Archive 中，卸载应用会按 iOS 正常机制移除应用容器数据。"
+                )
+            }
+            .padding(20)
+        }
+        .claraScreenBackground()
+        .navigationTitle("支持")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct LegalSection: View {
+    var title: String
+    var text: String
+
+    var body: some View {
+        ClaraCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(ClaraDesign.ink)
+                Text(text)
+                    .font(.system(size: 14))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
         }
     }
 }

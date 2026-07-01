@@ -63,6 +63,17 @@ struct AppRootView: View {
             .tag(AppTab.importer)
 
             NavigationStack {
+                ArchiveFeatureView(
+                    store: dependencies.importSessionStore,
+                    contextCardId: selectedContextCardID,
+                    contextCardTitle: currentContextCardTitle(dependencies: dependencies)
+                )
+                    .navigationTitle(AppTab.archive.title)
+            }
+            .tabItem { AppTab.archive.label }
+            .tag(AppTab.archive)
+
+            NavigationStack {
                 MemoriaFeatureView(
                     store: dependencies.memoriaStore,
                     contextCardId: selectedContextCardID,

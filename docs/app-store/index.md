@@ -1,5 +1,6 @@
 ---
 title: ClaraCore Mobile App Store Materials
+permalink: /app-store/
 ---
 
 # ClaraCore Mobile App Store Materials

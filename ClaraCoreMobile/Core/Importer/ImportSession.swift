@@ -42,3 +42,23 @@ struct ImportSession: Identifiable, Equatable {
         self.updatedAt = updatedAt
     }
 }
+
+struct ArchivedImportSession: Identifiable, Equatable {
+    var session: ImportSession
+    var rawContent: String
+    var contentHash: String?
+    var segmentCount: Int
+    var committedMemoryIds: [String]
+    var committedLineIds: [String]
+
+    var id: String {
+        session.id
+    }
+
+    var preview: String {
+        rawContent
+            .split(whereSeparator: \.isNewline)
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty }) ?? "暂无原文预览"
+    }
+}

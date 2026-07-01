@@ -3,6 +3,8 @@ import UIKit
 import UniformTypeIdentifiers
 
 struct ImporterFeatureView: View {
+    @AppStorage("thirdPartyAIProcessingConsentAccepted") private var hasAcceptedThirdPartyAIProcessing = false
+
     let inboxStore: InboxStore
     let preparer: ImportSessionPreparer
     let reflectionRunner: ReflectionRunner
@@ -315,6 +317,10 @@ struct ImporterFeatureView: View {
         let targetLineId = selectedTargetLineID == ImportTargetLine.newLineID ? nil : selectedTargetLineID
         guard reflectionConfiguration.mode == .remoteModel else {
             statusMessage = "请先到设置里保存并测试默认整理模型 Key。"
+            return
+        }
+        guard hasAcceptedThirdPartyAIProcessing else {
+            statusMessage = "请先到设置里确认第三方 AI 处理说明，再导入并整理。"
             return
         }
 

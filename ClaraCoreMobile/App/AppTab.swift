@@ -2,6 +2,7 @@ import SwiftUI
 
 enum AppTab: Hashable {
     case importer
+    case archive
     case memoria
     case continuity
     case settings
@@ -10,6 +11,8 @@ enum AppTab: Hashable {
         switch self {
         case .importer:
             "导入"
+        case .archive:
+            "原文"
         case .memoria:
             "记忆"
         case .continuity:
@@ -24,6 +27,8 @@ enum AppTab: Hashable {
         switch self {
         case .importer:
             Label(title, systemImage: "square.and.arrow.down")
+        case .archive:
+            Label(title, systemImage: "archivebox")
         case .memoria:
             Label(title, systemImage: "square.stack")
         case .continuity:
