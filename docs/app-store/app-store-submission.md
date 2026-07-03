@@ -5,7 +5,13 @@ Status: Draft for App Store Connect and TestFlight setup
 
 ## 1. Privacy Policy URL
 
-Recommended public URL after enabling GitHub Pages with the repository workflow:
+Current public fallback URL:
+
+```text
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/privacy-policy.md
+```
+
+Cleaner URL after enabling GitHub Pages with source set to GitHub Actions:
 
 ```text
 https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/
@@ -27,7 +33,13 @@ The policy states:
 
 ## 2. Support URL
 
-Recommended public URL after enabling GitHub Pages with the repository workflow:
+Current public fallback URL:
+
+```text
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/support.md
+```
+
+Cleaner URL after enabling GitHub Pages with source set to GitHub Actions:
 
 ```text
 https://xiaomao361.github.io/claracore-mobile/app-store/support/
@@ -82,10 +94,10 @@ The app does not include ads, tracking, user accounts, or a developer-operated c
 DeepSeek is supported as one public share-link import source. The default model provider is configurable and can be any OpenAI-compatible endpoint.
 
 Support URL:
-https://xiaomao361.github.io/claracore-mobile/app-store/support/
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/support.md
 
 Privacy Policy URL:
-https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/privacy-policy.md
 ```
 
 Do not commit a real test API key to this repository. Add it only in App Store Connect Review Notes if needed.
@@ -288,8 +300,8 @@ If there is no confirmed ICP filing and no mainland-China compliance review, do 
 
 Before submitting to App Review:
 
-1. In the GitHub repository, enable Pages and set its source to GitHub Actions before running `.github/workflows/pages.yml`.
-2. Wait for the Pages deployment to finish, then open both URLs in a logged-out browser window.
+1. Open the fallback GitHub Privacy Policy and Support URLs in a logged-out browser window and confirm both return HTTP 200.
+2. Optional: enable GitHub Pages, set its source to GitHub Actions, rerun `.github/workflows/pages.yml`, then replace the fallback URLs with the cleaner Pages URLs only after both Pages URLs return HTTP 200.
 3. Fill App Privacy labels from this document.
 4. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
 5. Add App Review Notes and, if needed, a temporary test model key only inside App Store Connect.

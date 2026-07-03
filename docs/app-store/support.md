@@ -39,4 +39,4 @@ Content leaves the device only when the user fetches a public share link, config
 
 ## Privacy Policy
 
-https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/privacy-policy.md

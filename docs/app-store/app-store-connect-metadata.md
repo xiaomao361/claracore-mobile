@@ -64,16 +64,22 @@ ClaraCore is currently a personal local-first productivity app with user-configu
 Privacy Policy URL:
 
 ```text
-https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/privacy-policy.md
 ```
 
 Support URL:
 
 ```text
-https://xiaomao361.github.io/claracore-mobile/app-store/support/
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/support.md
 ```
 
-These URLs require GitHub Pages to use the repository GitHub Actions workflow before App Review.
+These GitHub document URLs are the current public fallback and return HTTP 200 without requiring GitHub Pages.
+After GitHub Pages is enabled with source set to GitHub Actions, the cleaner Pages URLs can replace them:
+
+```text
+https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/
+https://xiaomao361.github.io/claracore-mobile/app-store/support/
+```
 
 ## Promotional Text
 

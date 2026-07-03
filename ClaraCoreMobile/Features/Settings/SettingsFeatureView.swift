@@ -1,6 +1,11 @@
 import SwiftUI
 import UIKit
 
+private enum AppStorePublicURL {
+    static let privacyPolicy = URL(string: "https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/privacy-policy.md")!
+    static let support = URL(string: "https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/support.md")!
+}
+
 struct SettingsFeatureView: View {
     @AppStorage(ExternalModelProcessingConsentStore.userDefaultsKey) private var hasAcceptedThirdPartyAIProcessing = false
 
@@ -339,13 +344,13 @@ struct SettingsFeatureView: View {
                         .buttonStyle(ClaraSecondaryButtonStyle())
 
                         HStack(spacing: 10) {
-                            Link(destination: URL(string: "https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/")!) {
+                            Link(destination: AppStorePublicURL.privacyPolicy) {
                                 Label("网页隐私政策", systemImage: "safari")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
 
-                            Link(destination: URL(string: "https://xiaomao361.github.io/claracore-mobile/app-store/support/")!) {
+                            Link(destination: AppStorePublicURL.support) {
                                 Label("网页支持", systemImage: "safari")
                                     .frame(maxWidth: .infinity)
                             }

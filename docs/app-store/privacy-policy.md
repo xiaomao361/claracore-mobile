@@ -93,7 +93,7 @@ ClaraCore Mobile is not designed for children and does not knowingly collect chi
 
 For support or privacy questions, use the Support page:
 
-https://xiaomao361.github.io/claracore-mobile/app-store/support/
+https://github.com/xiaomao361/claracore-mobile/blob/main/docs/app-store/support.md
 
 ## Changes
 
