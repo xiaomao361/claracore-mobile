@@ -193,12 +193,13 @@ ClaraCore Mobile 是一个本地优先的 AI 对话记忆整理工具。
 - 使用角色卡描述当前 Agent 和用户关系
 - 将导入内容整理成少量事实记忆和一条共同线
 - 查看、编辑和删除本地记忆
+- 删除已保存的原文 Archive
 - 查看共同线的当前状态、里程碑和下一步
 - 复制回召包到外部 AI 应用继续对话
 - 查询并选择任意 OpenAI-compatible 默认整理模型
 
 隐私与控制：
-- 导入内容、记忆、角色卡和共同线默认存储在本机
+- 导入内容、记忆、角色卡和共同线默认存储在本机，并可在应用内删除
 - API Key 存储在 iOS Keychain
 - 未配置模型 Key 时，应用不会把对话发送给远程模型
 - 配置远程模型前，应用会要求你明确同意第三方 AI 处理说明
@@ -249,11 +250,12 @@ Run this before public App Store submission:
 10. Import a short pasted transcript.
 11. Confirm result card shows Memory and Shared Line counts.
 12. Open Original Text (`原文`) and confirm the archive entry exists.
-13. Delete one memory and confirm feedback.
-14. Open Shared Line and confirm current station, milestones, next step, and continuity state.
-15. Copy recall package and paste it into Notes to verify clipboard output.
-16. Delete the saved model key and confirm the app returns to local-rule organization.
-17. Reopen the app and confirm it does not crash when no key exists.
+13. Delete one Original Text Archive entry and confirm it is removed from the archive list.
+14. Delete one memory and confirm feedback.
+15. Open Shared Line and confirm current station, milestones, next step, and continuity state.
+16. Copy recall package and paste it into Notes to verify clipboard output.
+17. Delete the saved model key and confirm the app returns to local-rule organization.
+18. Reopen the app and confirm it does not crash when no key exists.
 
 Record:
 

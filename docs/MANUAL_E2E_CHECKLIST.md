@@ -53,21 +53,23 @@ https://chat.deepseek.com/share/suy08uspxl9wzja7uc
 14. Return to `导入`, then tap `查看记忆`.
 15. Confirm committed memories appear in `记忆` and can be filtered by type/source/共同线.
 16. Delete one test memory and confirm visible feedback appears.
-17. Re-import the same URL.
-18. Confirm the duplicate result card appears instead of a blocking error.
-19. Tap `查看共同线` on the duplicate result and confirm it opens the same committed Shared Line when the old record has line IDs.
-20. Tap `重新整理一次` only if intentionally testing duplicate bypass.
-21. Open `共同线`.
-22. Confirm one new or updated Shared Line appears with a visible current station, completed milestones, and next action.
-23. Confirm the Shared Line card exposes rich continuity state when available:
+17. Open `原文`, delete one test Archive entry, and confirm it disappears from the list.
+18. Confirm deleting an Archive entry does not automatically delete already written memories or Shared Lines.
+19. Re-import the same URL.
+20. Confirm the duplicate result card appears instead of a blocking error.
+21. Tap `查看共同线` on the duplicate result and confirm it opens the same committed Shared Line when the old record has line IDs.
+22. Tap `重新整理一次` only if intentionally testing duplicate bypass.
+23. Open `共同线`.
+24. Confirm one new or updated Shared Line appears with a visible current station, completed milestones, and next action.
+25. Confirm the Shared Line card exposes rich continuity state when available:
     - current state summary
     - current interpretation and interpretation status
     - position arc
     - emotional arc / affective trace
     - confirmed ground, boundary notes, and misread risks
-24. Delete one test Shared Line and confirm visible feedback appears.
-25. Tap `复制回召包`.
-26. Confirm the recall package includes:
+26. Delete one test Shared Line and confirm visible feedback appears.
+27. Tap `复制回召包`.
+28. Confirm the recall package includes:
     - `请接着这段关系和这条共同线继续`
     - `你现在的角色：`
     - `你正在面对的用户：`

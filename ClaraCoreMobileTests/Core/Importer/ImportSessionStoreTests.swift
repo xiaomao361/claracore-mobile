@@ -122,4 +122,39 @@ final class ImportSessionStoreTests: XCTestCase {
         XCTAssertEqual(archived.first?.rawContent, "Part one. Part two.")
         XCTAssertEqual(archived.first?.segmentCount, 2)
     }
+
+    func testDeleteArchivedSessionRemovesSourceArchiveAndSegments() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let database = try AppDatabase(path: databaseURL.path)
+        let inboxStore = InboxStore(database: database)
+        let store = ImportSessionStore(database: database)
+        let capture = RawCapture(
+            source: .manual,
+            rawContent: "Sensitive source text that should be removable.",
+            sourceApp: "Manual",
+            contextCardId: "role-delete"
+        )
+
+        let item = try inboxStore.enqueue(capture)
+        let session = try store.create(from: item.rawCapture(), title: "Delete Fixture")
+        let segments = FixedSizeCaptureSegmenter(maxCharacters: 12, overlapCharacters: 0)
+            .segment(capture: capture, sessionId: session.id)
+        try store.addSegments(segments)
+        try inboxStore.updateStatus(id: item.id, status: .committed)
+
+        XCTAssertEqual(try store.archive(contextCardId: "role-delete").count, 1)
+
+        try store.deleteArchivedSession(id: session.id)
+
+        XCTAssertNil(try store.archivedSession(id: session.id))
+        XCTAssertEqual(try store.archive(contextCardId: "role-delete").count, 0)
+        XCTAssertEqual(try store.segments(sessionId: session.id).count, 0)
+
+        let inboxCount = try database.dbQueue.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM inbox WHERE id = ?", arguments: [session.id]) ?? 0
+        }
+        XCTAssertEqual(inboxCount, 0)
+    }
 }

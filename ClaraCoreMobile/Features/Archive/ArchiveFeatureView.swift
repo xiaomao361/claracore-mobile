@@ -9,6 +9,7 @@ struct ArchiveFeatureView: View {
     @State private var query = ""
     @State private var sessions: [ArchivedImportSession] = []
     @State private var errorMessage: String?
+    @State private var statusMessage: String?
     @State private var isLoading = false
     @State private var hasMore = true
 
@@ -78,7 +79,11 @@ struct ArchiveFeatureView: View {
                     LazyVStack(spacing: 12) {
                         ForEach(sessions) { item in
                             NavigationLink {
-                                ArchiveDetailView(item: item)
+                                ArchiveDetailView(
+                                    store: store,
+                                    item: item,
+                                    onDeleted: handleDeletedArchive
+                                )
                             } label: {
                                 ArchiveSessionCard(item: item)
                             }
@@ -99,6 +104,10 @@ struct ArchiveFeatureView: View {
 
                 if let errorMessage {
                     ClaraActionStatus(message: errorMessage, tone: .error)
+                }
+
+                if let statusMessage {
+                    ClaraActionStatus(message: statusMessage, tone: .success)
                 }
             }
             .padding(20)
@@ -125,6 +134,9 @@ struct ArchiveFeatureView: View {
             }
             hasMore = page.count == pageSize
             errorMessage = nil
+            if reset {
+                statusMessage = nil
+            }
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }
@@ -146,6 +158,7 @@ struct ArchiveFeatureView: View {
             sessions = try store.searchArchive(query: trimmed, limit: pageSize, contextCardId: contextCardId)
             hasMore = false
             errorMessage = nil
+            statusMessage = nil
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }
@@ -154,6 +167,12 @@ struct ArchiveFeatureView: View {
     private func appendUnique(_ page: [ArchivedImportSession]) {
         let existingIDs = Set(sessions.map(\.id))
         sessions.append(contentsOf: page.filter { !existingIDs.contains($0.id) })
+    }
+
+    private func handleDeletedArchive(id: String) {
+        sessions.removeAll { $0.id == id }
+        statusMessage = "原文 Archive 已删除。已写入的记忆和共同线不会被同时删除。"
+        errorMessage = nil
     }
 }
 
@@ -191,8 +210,14 @@ private struct ArchiveSessionCard: View {
 }
 
 private struct ArchiveDetailView: View {
+    let store: ImportSessionStore
     var item: ArchivedImportSession
+    var onDeleted: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
     @State private var statusMessage: String?
+    @State private var errorMessage: String?
+    @State private var isDeleteConfirmationPresented = false
 
     var body: some View {
         ScrollView {
@@ -262,6 +287,17 @@ private struct ArchiveDetailView: View {
                         }
                         .disabled(item.rawContent.isEmpty)
 
+                        Divider()
+                            .background(ClaraDesign.hairline)
+
+                        Button(role: .destructive) {
+                            isDeleteConfirmationPresented = true
+                        } label: {
+                            Label("删除原文 Archive", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.danger))
+
                         Text(item.rawContent.isEmpty ? "没有保存到原文；可从分段记录追溯处理内容。" : item.rawContent)
                             .font(.system(size: 14, design: .monospaced))
                             .foregroundStyle(item.rawContent.isEmpty ? ClaraDesign.inkMuted : ClaraDesign.ink)
@@ -273,12 +309,34 @@ private struct ArchiveDetailView: View {
                 if let statusMessage {
                     ClaraActionStatus(message: statusMessage, tone: .success)
                 }
+
+                if let errorMessage {
+                    ClaraActionStatus(message: errorMessage, tone: .error)
+                }
             }
             .padding(20)
         }
         .claraScreenBackground()
         .navigationTitle("原文详情")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("删除原文 Archive？", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
+            Button("删除原文 Archive", role: .destructive) {
+                deleteArchive()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这会删除本次导入保存的原文、分段和导入记录。已经写入的记忆和共同线不会被同时删除。")
+        }
+    }
+
+    private func deleteArchive() {
+        do {
+            try store.deleteArchivedSession(id: item.id)
+            onDeleted(item.id)
+            dismiss()
+        } catch {
+            errorMessage = ClaraErrorPresenter.message(for: error)
+        }
     }
 }
 

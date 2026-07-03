@@ -208,6 +208,14 @@ final class ImportSessionStore {
         }
     }
 
+    func deleteArchivedSession(id: String) throws {
+        try database.dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM capture_segments WHERE session_id = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM import_sessions WHERE id = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM inbox WHERE id = ?", arguments: [id])
+        }
+    }
+
     func updateStatus(sessionId: String, status: ImportSession.Status) throws {
         try database.dbQueue.write { db in
             try db.execute(

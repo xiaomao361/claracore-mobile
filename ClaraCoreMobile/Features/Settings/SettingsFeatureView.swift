@@ -826,7 +826,7 @@ private struct PrivacyPolicyDetailView: View {
 
                 LegalSection(
                     title: "删除与控制",
-                    text: "用户可以在应用内删除记忆和共同线，可以删除保存的模型 API Key，也可以停止使用外部模型配置。用户应避免导入自己不愿意保存在本机或发送给所选模型提供方的敏感内容。"
+                    text: "用户可以在应用内删除原文 Archive、记忆和共同线，可以删除保存的模型 API Key，也可以停止使用外部模型配置。删除原文 Archive 不会同时删除已经写入的记忆和共同线。用户应避免导入自己不愿意保存在本机或发送给所选模型提供方的敏感内容。"
                 )
             }
             .padding(20)
@@ -859,7 +859,7 @@ private struct SupportDetailView: View {
 
                 LegalSection(
                     title: "删除数据",
-                    text: "记忆和共同线可以在应用内删除。API Key 可以在设置里删除。原始导入保存在本机 Archive 中，卸载应用会按 iOS 正常机制移除应用容器数据。"
+                    text: "原文 Archive、记忆和共同线可以在应用内删除。API Key 可以在设置里删除。卸载应用会按 iOS 正常机制移除应用容器数据。"
                 )
             }
             .padding(20)

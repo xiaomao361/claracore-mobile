@@ -73,7 +73,7 @@ The app may transmit data only in these user-directed cases:
 
 ## Deletion And Control
 
-Users can delete memories and Shared Lines inside the app.
+Users can delete original source Archive entries, memories, and Shared Lines inside the app. Deleting an original source Archive entry removes the saved source text, segmentation records, and import record for that import. It does not automatically delete memories or Shared Lines already created from the import.
 
 Users can delete the saved model API key from Settings. Removing the key returns the app to local-rule organization.
 
