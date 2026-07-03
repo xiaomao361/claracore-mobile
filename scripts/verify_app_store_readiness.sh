@@ -42,6 +42,16 @@ assert_plist_value() {
   pass "$plist $key_path = $expected"
 }
 
+assert_sips_property() {
+  local image="$1"
+  local property="$2"
+  local expected="$3"
+  local actual
+  actual="$(sips -g "$property" "$image" 2>/dev/null | awk -F': ' -v key="$property" '$1 ~ key { print $2; exit }')"
+  [[ "$actual" == "$expected" ]] || fail "$image $property expected '$expected' but got '${actual:-<missing>}'"
+  pass "$image $property = $expected"
+}
+
 cd "$ROOT_DIR"
 
 log "Checking public support and privacy URLs"
@@ -58,6 +68,13 @@ log "Checking privacy manifest declarations"
 assert_plist_value "$ROOT_DIR/ClaraCoreMobile/PrivacyInfo.xcprivacy" "NSPrivacyTracking" "false"
 assert_plist_value "$ROOT_DIR/ClaraCoreMobile/PrivacyInfo.xcprivacy" "NSPrivacyAccessedAPITypes:0:NSPrivacyAccessedAPIType" "NSPrivacyAccessedAPICategoryUserDefaults"
 assert_plist_value "$ROOT_DIR/ClaraCoreMobile/PrivacyInfo.xcprivacy" "NSPrivacyAccessedAPITypes:0:NSPrivacyAccessedAPITypeReasons:0" "CA92.1"
+
+log "Checking App Store icon asset"
+APP_ICON="$ROOT_DIR/ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+[[ -f "$APP_ICON" ]] || fail "App Store icon not found at $APP_ICON"
+assert_sips_property "$APP_ICON" "pixelWidth" "1024"
+assert_sips_property "$APP_ICON" "pixelHeight" "1024"
+assert_sips_property "$APP_ICON" "hasAlpha" "no"
 
 log "Scanning committed source for common real API key patterns"
 if rg -n --hidden \

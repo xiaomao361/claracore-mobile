@@ -306,7 +306,7 @@ Before submitting to App Review:
    scripts/verify_app_store_readiness.sh
    ```
 
-   This verifies the public fallback Privacy Policy and Support URLs, plist/project syntax, the PrivacyInfo manifest, common secret patterns, Release simulator build, bundled privacy manifest, bundle identifier/version, and `ITSAppUsesNonExemptEncryption = false`.
+   This verifies the public fallback Privacy Policy and Support URLs, plist/project syntax, the PrivacyInfo manifest, App Store icon size/alpha, common secret patterns, Release simulator build, bundled privacy manifest, bundle identifier/version, and `ITSAppUsesNonExemptEncryption = false`.
 2. Optional: enable GitHub Pages, set its source to GitHub Actions, rerun `.github/workflows/pages.yml`, then replace the fallback URLs with the cleaner Pages URLs only after both Pages URLs return HTTP 200.
 3. Fill App Privacy labels from this document.
 4. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
