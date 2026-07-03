@@ -14,7 +14,7 @@ Internal submission draft:
 
 - [App Store Submission Checklist](app-store-submission.md)
 
-Recommended public URLs after enabling GitHub Pages from the repository `docs/` folder:
+Recommended public URLs after enabling GitHub Pages with the repository workflow:
 
 - Privacy Policy: `https://xiaomao361.github.io/claracore-mobile/app-store/privacy-policy/`
 - Support: `https://xiaomao361.github.io/claracore-mobile/app-store/support/`

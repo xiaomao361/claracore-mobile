@@ -73,7 +73,7 @@ Support URL:
 https://xiaomao361.github.io/claracore-mobile/app-store/support/
 ```
 
-These URLs require GitHub Pages or another static host to be enabled before App Review.
+These URLs require GitHub Pages to use the repository GitHub Actions workflow before App Review.
 
 ## Promotional Text
 
