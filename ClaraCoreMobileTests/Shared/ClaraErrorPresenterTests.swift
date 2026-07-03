@@ -77,7 +77,11 @@ final class ClaraErrorPresenterTests: XCTestCase {
 
         XCTAssertFalse(status.isExternalModelEnabled)
         XCTAssertEqual(status.statusPillTitle, "正在使用本机规则")
+        XCTAssertEqual(status.effectiveTitle, "当前生效：本机规则")
+        XCTAssertEqual(status.activationProgressTitle, "启用条件：3/4 已完成")
+        XCTAssertEqual(status.unmetRequirementTitles, ["已确认外部处理说明"])
         XCTAssertEqual(status.importSummary, "外部模型还没有启用，本次导入仍会使用本机规则。")
+        XCTAssertEqual(status.activationRuleSummary, "你只是选择了外部模型；还差 已确认外部处理说明。未全部完成前，本次整理仍走本机规则。")
     }
 
     func testExternalModelStatusShowsEnabledWhenEveryConditionIsMet() {
@@ -95,6 +99,8 @@ final class ClaraErrorPresenterTests: XCTestCase {
 
         XCTAssertTrue(status.isExternalModelEnabled)
         XCTAssertEqual(status.statusPillTitle, "已启用外部模型")
+        XCTAssertEqual(status.effectiveTitle, "当前生效：外部模型")
+        XCTAssertEqual(status.activationProgressTitle, "启用条件：4/4 已完成")
         XCTAssertEqual(status.importSummary, "本次导入会使用 DeepSeek 的 deepseek-v4-pro 整理。")
     }
 }

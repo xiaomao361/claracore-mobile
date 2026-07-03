@@ -141,6 +141,14 @@ struct OrganizationEngineStatus: Equatable {
             hasAcceptedExternalProcessing
     }
 
+    var metRequirementCount: Int {
+        requirements.filter(\.isMet).count
+    }
+
+    var unmetRequirementTitles: [String] {
+        requirements.filter { !$0.isMet }.map(\.title)
+    }
+
     var statusPillTitle: String {
         isExternalModelEnabled ? "已启用外部模型" : "正在使用本机规则"
     }
@@ -151,6 +159,25 @@ struct OrganizationEngineStatus: Equatable {
 
     var selectedTitle: String {
         "已选择：\(preferredMode.title)"
+    }
+
+    var effectiveTitle: String {
+        "当前生效：\(isExternalModelEnabled ? "外部模型" : "本机规则")"
+    }
+
+    var activationProgressTitle: String {
+        "启用条件：\(metRequirementCount)/\(requirements.count) 已完成"
+    }
+
+    var activationRuleSummary: String {
+        if isExternalModelEnabled {
+            return "外部模型已满足全部条件。只有你主动点击导入并整理时，必要内容才会发送到已配置的模型提供方。"
+        }
+        if preferredMode == .externalModel {
+            let missing = unmetRequirementTitles.joined(separator: "、")
+            return "你只是选择了外部模型；还差 \(missing)。未全部完成前，本次整理仍走本机规则。"
+        }
+        return "本机规则已生效。导入内容不会发送给模型提供方。"
     }
 
     var importSummary: String {

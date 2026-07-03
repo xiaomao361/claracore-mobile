@@ -525,7 +525,9 @@ struct SettingsFeatureView: View {
 
     private func saveOrganizationEngineMode(_ mode: OrganizationEngineMode) {
         OrganizationEngineModeStore.save(mode)
-        statusMessage = mode == .localRules ? "已切换为本机规则整理。" : "已切换为外部模型整理。请确认配置可用。"
+        statusMessage = mode == .localRules
+            ? "已切换为本机规则整理。"
+            : "已选择外部模型；满足下方 4 项条件后才会启用。未满足前仍使用本机规则。"
         onConfigurationChanged()
     }
 
@@ -547,8 +549,10 @@ struct SettingsFeatureView: View {
                 modelAPIKey = ""
                 hasSavedModelKey = true
             }
-            statusMessage = "默认整理模型已保存。之后导入会使用 \(configuration.trimmedProviderName) 的 \(configuration.trimmedModel)。"
             onConfigurationChanged()
+            statusMessage = organizationEngineStatus.isExternalModelEnabled
+                ? "外部模型已启用。之后导入会使用 \(configuration.trimmedProviderName) 的 \(configuration.trimmedModel)。"
+                : "默认整理模型已保存；还需要完成启用条件后才会使用外部模型。"
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
         }
@@ -685,39 +689,39 @@ private struct EngineModeSummary: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                ClaraStatusPill(
-                    title: status.statusPillTitle,
-                    color: status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection,
-                    systemImage: status.statusPillIcon
-                )
-
-                if status.preferredMode == .externalModel, !status.isExternalModelEnabled {
-                    ClaraStatusPill(
-                        title: "外部模型未启用",
-                        color: ClaraDesign.reflection,
-                        systemImage: "exclamationmark.triangle"
-                    )
-                }
-            }
-
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: status.preferredMode == .localRules ? "lock.laptopcomputer" : "server.rack")
+                Image(systemName: status.statusPillIcon)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(status.preferredMode == .localRules ? ClaraDesign.reflection : ClaraDesign.memory)
+                    .foregroundStyle(status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(status.selectedTitle)
+                    Text(status.effectiveTitle)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(ClaraDesign.ink)
-                    Text(status.detail)
+                    Text(status.activationRuleSummary)
                         .font(.system(size: 13))
                         .foregroundStyle(ClaraDesign.inkMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()
+            }
+
+            HStack(spacing: 8) {
+                ClaraStatusPill(
+                    title: status.selectedTitle,
+                    color: status.preferredMode == .externalModel ? ClaraDesign.memory : ClaraDesign.reflection,
+                    systemImage: status.preferredMode == .externalModel ? "server.rack" : "lock.laptopcomputer"
+                )
+
+                if status.preferredMode == .externalModel {
+                    ClaraStatusPill(
+                        title: status.activationProgressTitle,
+                        color: status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection,
+                        systemImage: status.isExternalModelEnabled ? "checkmark.seal" : "list.bullet.clipboard"
+                    )
+                }
             }
 
             if status.preferredMode == .externalModel {
@@ -740,6 +744,9 @@ private struct EngineModeSummary: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
+                    Text("同时满足下面 4 项，才算真正启用外部模型。")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(ClaraDesign.ink)
                     ForEach(status.requirements) { requirement in
                         Label {
                             Text(requirement.title)
