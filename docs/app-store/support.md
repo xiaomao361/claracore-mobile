@@ -27,7 +27,7 @@ No. The default organization model is selected from the model list returned by t
 
 ### What happens without a model API key?
 
-The app stays in local placeholder mode. Users can still open the app and inspect the import flow, but real automatic memory and Shared Line candidate extraction requires a configured model provider.
+The app stays in local-rule mode. Users can import selected conversation material and create conservative local memories / Shared Lines without sending content to a model provider. A configured external model is optional and is shown as enabled only after the provider, model, API key, and external processing notice are all complete.
 
 ### Where is my data stored?
 

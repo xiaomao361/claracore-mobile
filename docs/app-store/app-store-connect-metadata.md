@@ -164,7 +164,7 @@ Testing without an API key:
 3. Review the default model configuration fields.
 4. Do not save an API key.
 5. Open Import and paste a short text transcript.
-6. The app remains in local placeholder mode and asks for a default model key before real organization.
+6. The Import screen shows `本次整理机制：本机规则`; importing creates conservative local memories / Shared Lines without sending content to a model provider.
 
 Testing with a remote model:
 1. In Settings, enter an OpenAI-compatible model configuration:

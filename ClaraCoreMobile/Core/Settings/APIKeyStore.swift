@@ -108,6 +108,81 @@ enum OrganizationEngineModeStore {
     }
 }
 
+enum ExternalModelProcessingConsentStore {
+    static let userDefaultsKey = "thirdPartyAIProcessingConsentAccepted"
+
+    static func isAccepted(userDefaults: UserDefaults = .standard) -> Bool {
+        userDefaults.bool(forKey: userDefaultsKey)
+    }
+}
+
+struct OrganizationEngineStatus: Equatable {
+    struct Requirement: Identifiable, Equatable {
+        var id: String
+        var title: String
+        var isMet: Bool
+    }
+
+    var preferredMode: OrganizationEngineMode
+    var effectiveMode: ReflectionConfiguration.Mode
+    var hasSavedModelKey: Bool
+    var hasAcceptedExternalProcessing: Bool
+    var modelProvider: ModelProviderConfiguration
+
+    var isModelConfigurationComplete: Bool {
+        modelProvider.baseURL != nil && !modelProvider.trimmedModel.isEmpty
+    }
+
+    var isExternalModelEnabled: Bool {
+        preferredMode == .externalModel &&
+            effectiveMode == .remoteModel &&
+            hasSavedModelKey &&
+            isModelConfigurationComplete &&
+            hasAcceptedExternalProcessing
+    }
+
+    var statusPillTitle: String {
+        isExternalModelEnabled ? "已启用外部模型" : "正在使用本机规则"
+    }
+
+    var statusPillIcon: String {
+        isExternalModelEnabled ? "checkmark.seal" : "checkmark.shield"
+    }
+
+    var selectedTitle: String {
+        "已选择：\(preferredMode.title)"
+    }
+
+    var importSummary: String {
+        if isExternalModelEnabled {
+            return "本次导入会使用 \(modelProvider.trimmedProviderName) 的 \(modelProvider.trimmedModel) 整理。"
+        }
+        if preferredMode == .externalModel {
+            return "外部模型还没有启用，本次导入仍会使用本机规则。"
+        }
+        return "本次导入会使用本机规则，内容不会发送给模型提供方。"
+    }
+
+    var detail: String {
+        if isExternalModelEnabled {
+            return "外部模型已启用。只有你主动点击导入并整理时，必要内容才会发送到已配置的模型提供方。"
+        }
+        if preferredMode == .externalModel {
+            return "外部模型需要同时满足：选择外部模型、保存可用 Base URL 和模型、保存 API Key、确认外部模型处理说明。未满足前会自动使用本机规则。"
+        }
+        return "下一次导入会直接使用本机规则。导入内容不会发送给模型提供方。"
+    }
+
+    var requirements: [Requirement] {
+        [
+            Requirement(id: "selected", title: "已选择外部模型", isMet: preferredMode == .externalModel),
+            Requirement(id: "configuration", title: "Base URL 和模型可用", isMet: isModelConfigurationComplete),
+            Requirement(id: "key", title: "API Key 已保存", isMet: hasSavedModelKey),
+            Requirement(id: "consent", title: "已确认外部处理说明", isMet: hasAcceptedExternalProcessing)
+        ]
+    }
+}
+
 struct ModelProviderClient {
     enum ClientError: LocalizedError, Equatable {
         case invalidBaseURL

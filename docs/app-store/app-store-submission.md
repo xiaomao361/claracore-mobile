@@ -57,7 +57,7 @@ Testing without an API key:
 2. Open Settings and review the default model configuration fields.
 3. Do not save an API key.
 4. Open Import and paste a short text transcript.
-5. The app remains in local placeholder mode and will ask for a default model key before real organization. This verifies launch, navigation, local storage, settings, and error handling without requiring third-party credentials.
+5. The Import screen shows `本次整理机制：本机规则`; importing creates conservative local memories / Shared Lines without sending content to a model provider. This verifies launch, navigation, local storage, settings, and local organization without requiring third-party credentials.
 
 Testing with a remote model:
 1. In Settings, enter an OpenAI-compatible model configuration:
@@ -240,7 +240,7 @@ Run this before public App Store submission:
 1. Install from TestFlight on a clean device.
 2. Launch for the first time without a model API key.
 3. Confirm Settings opens and model configuration fields are visible.
-4. Confirm Import explains that a default model key is required for real organization.
+4. Confirm Import shows `本次整理机制：本机规则` and explains that content will not be sent to a model provider.
 5. Enter Provider, Base URL, and a non-production API key.
 6. Accept the third-party AI processing notice.
 7. Query available models and select one returned model, using model search when the provider returns many results.
@@ -252,7 +252,7 @@ Run this before public App Store submission:
 13. Delete one memory and confirm feedback.
 14. Open Shared Line and confirm current station, milestones, next step, and continuity state.
 15. Copy recall package and paste it into Notes to verify clipboard output.
-16. Delete the saved model key and confirm the app returns to local placeholder mode.
+16. Delete the saved model key and confirm the app returns to local-rule organization.
 17. Reopen the app and confirm it does not crash when no key exists.
 
 Record:

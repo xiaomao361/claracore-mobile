@@ -46,7 +46,7 @@ This may include:
 
 The API key is sent only as an authorization credential to the user-configured model provider for model discovery, connection testing, and organization requests. The app does not send the API key to ClaraCore servers.
 
-If no model API key is configured, ClaraCore Mobile uses a local placeholder mode. In local placeholder mode, the app does not send conversation content to a remote model provider and does not create durable memory candidates automatically.
+If no model API key is configured, ClaraCore Mobile uses local rules. In local-rule mode, the app does not send conversation content to a remote model provider and creates only conservative local memories and Shared Lines from text the user intentionally imports.
 
 ## DeepSeek Share Links
 
@@ -75,7 +75,7 @@ The app may transmit data only in these user-directed cases:
 
 Users can delete memories and Shared Lines inside the app.
 
-Users can delete the saved model API key from Settings. Removing the key returns the app to local placeholder mode.
+Users can delete the saved model API key from Settings. Removing the key returns the app to local-rule organization.
 
 Uninstalling the app removes the app's local database from the device according to normal iOS app data behavior. Keychain behavior may depend on iOS and device backup/restore behavior.
 

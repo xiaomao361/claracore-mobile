@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 struct SettingsFeatureView: View {
-    @AppStorage("thirdPartyAIProcessingConsentAccepted") private var hasAcceptedThirdPartyAIProcessing = false
+    @AppStorage(ExternalModelProcessingConsentStore.userDefaultsKey) private var hasAcceptedThirdPartyAIProcessing = false
 
     let contextCardStore: ContextCardStore
     let apiKeyStore: APIKeyStore
@@ -121,11 +121,7 @@ struct SettingsFeatureView: View {
                         }
 
                         EngineModeSummary(
-                            mode: organizationEngineMode,
-                            effectiveMode: reflectionConfiguration.mode,
-                            isExternalModelReady: isExternalModelReady,
-                            providerTitle: currentModelDraft.trimmedProviderName,
-                            modelTitle: currentModelDraft.trimmedModel
+                            status: organizationEngineStatus
                         )
                     }
                 }
@@ -369,6 +365,9 @@ struct SettingsFeatureView: View {
         .task {
             loadState()
         }
+        .onChange(of: hasAcceptedThirdPartyAIProcessing) { _, _ in
+            onConfigurationChanged()
+        }
         .alert("设置错误", isPresented: errorBinding) {
             Button("好", role: .cancel) { errorMessage = nil }
         } message: {
@@ -390,10 +389,7 @@ struct SettingsFeatureView: View {
     }
 
     private var isExternalModelReady: Bool {
-        organizationEngineMode == .externalModel &&
-            hasSavedModelKey &&
-            currentModelDraft.baseURL != nil &&
-            !currentModelDraft.trimmedModel.isEmpty
+        organizationEngineStatus.isExternalModelEnabled
     }
 
     private var canSaveModelConfiguration: Bool {
@@ -420,6 +416,16 @@ struct SettingsFeatureView: View {
             baseURLString: modelBaseURL,
             model: modelName
         ).normalized
+    }
+
+    private var organizationEngineStatus: OrganizationEngineStatus {
+        OrganizationEngineStatus(
+            preferredMode: organizationEngineMode,
+            effectiveMode: reflectionConfiguration.mode,
+            hasSavedModelKey: hasSavedModelKey,
+            hasAcceptedExternalProcessing: hasAcceptedThirdPartyAIProcessing,
+            modelProvider: currentModelDraft
+        )
     }
 
     private var trimmedModelSearchQuery: String {
@@ -675,28 +681,20 @@ private enum SettingsModelError: LocalizedError {
 }
 
 private struct EngineModeSummary: View {
-    var mode: OrganizationEngineMode
-    var effectiveMode: ReflectionConfiguration.Mode
-    var isExternalModelReady: Bool
-    var providerTitle: String
-    var modelTitle: String
-
-    private var isEffectivelyExternal: Bool {
-        effectiveMode == .remoteModel
-    }
+    var status: OrganizationEngineStatus
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 ClaraStatusPill(
-                    title: isEffectivelyExternal ? "当前生效：外部模型" : "当前生效：本机规则",
-                    color: isEffectivelyExternal ? ClaraDesign.memory : ClaraDesign.reflection,
-                    systemImage: isEffectivelyExternal ? "checkmark.seal" : "checkmark.shield"
+                    title: status.statusPillTitle,
+                    color: status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection,
+                    systemImage: status.statusPillIcon
                 )
 
-                if mode == .externalModel, !isEffectivelyExternal {
+                if status.preferredMode == .externalModel, !status.isExternalModelEnabled {
                     ClaraStatusPill(
-                        title: "外部模型未就绪",
+                        title: "外部模型未启用",
                         color: ClaraDesign.reflection,
                         systemImage: "exclamationmark.triangle"
                     )
@@ -704,16 +702,16 @@ private struct EngineModeSummary: View {
             }
 
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: mode == .localRules ? "lock.laptopcomputer" : "server.rack")
+                Image(systemName: status.preferredMode == .localRules ? "lock.laptopcomputer" : "server.rack")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(mode == .localRules ? ClaraDesign.reflection : ClaraDesign.memory)
+                    .foregroundStyle(status.preferredMode == .localRules ? ClaraDesign.reflection : ClaraDesign.memory)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("已选择：\(mode.title)")
+                    Text(status.selectedTitle)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(ClaraDesign.ink)
-                    Text(statusDetail)
+                    Text(status.detail)
                         .font(.system(size: 13))
                         .foregroundStyle(ClaraDesign.inkMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -722,24 +720,40 @@ private struct EngineModeSummary: View {
                 Spacer()
             }
 
-            if mode == .externalModel {
+            if status.preferredMode == .externalModel {
                 HStack(spacing: 8) {
                     ClaraStatusPill(
-                        title: isExternalModelReady ? "配置可用" : "待配置",
-                        color: isExternalModelReady ? ClaraDesign.memory : ClaraDesign.reflection,
-                        systemImage: isExternalModelReady ? "checkmark.seal" : "exclamationmark.triangle"
+                        title: status.isModelConfigurationComplete ? "配置可用" : "待配置",
+                        color: status.isModelConfigurationComplete ? ClaraDesign.memory : ClaraDesign.reflection,
+                        systemImage: status.isModelConfigurationComplete ? "checkmark.seal" : "exclamationmark.triangle"
                     )
                     ClaraStatusPill(
-                        title: providerTitle,
+                        title: status.modelProvider.trimmedProviderName,
                         color: ClaraDesign.memory,
                         systemImage: "server.rack"
                     )
                     ClaraStatusPill(
-                        title: modelTitle.isEmpty ? "未选择模型" : modelTitle,
+                        title: status.modelProvider.trimmedModel.isEmpty ? "未选择模型" : status.modelProvider.trimmedModel,
                         color: ClaraDesign.continuity,
                         systemImage: "cpu"
                     )
                 }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(status.requirements) { requirement in
+                        Label {
+                            Text(requirement.title)
+                                .font(.system(size: 13))
+                                .foregroundStyle(requirement.isMet ? ClaraDesign.ink : ClaraDesign.inkMuted)
+                        } icon: {
+                            Image(systemName: requirement.isMet ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(requirement.isMet ? ClaraDesign.memory : ClaraDesign.inkMuted)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(ClaraDesign.surfaceMuted.opacity(0.45))
+                .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
             } else {
                 ClaraStatusPill(
                     title: "不发送导入内容",
@@ -748,16 +762,6 @@ private struct EngineModeSummary: View {
                 )
             }
         }
-    }
-
-    private var statusDetail: String {
-        if mode == .localRules {
-            return "下一次导入会直接使用本机规则。导入内容不会发送给模型提供方。"
-        }
-        if isEffectivelyExternal {
-            return "下一次导入会使用 \(providerTitle) 的 \(modelTitle) 整理。内容只会在你主动导入并整理时发送。"
-        }
-        return "你已选择外部模型，但配置还没有生效。请保存可用的 Base URL、API Key 和模型；在此之前，下一次导入仍会使用本机规则。"
     }
 }
 

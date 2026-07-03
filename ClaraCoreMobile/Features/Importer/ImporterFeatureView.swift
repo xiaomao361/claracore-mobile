@@ -3,7 +3,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 struct ImporterFeatureView: View {
-    @AppStorage("thirdPartyAIProcessingConsentAccepted") private var hasAcceptedThirdPartyAIProcessing = false
+    @AppStorage(ExternalModelProcessingConsentStore.userDefaultsKey) private var hasAcceptedThirdPartyAIProcessing = false
 
     let inboxStore: InboxStore
     let preparer: ImportSessionPreparer
@@ -98,6 +98,8 @@ struct ImporterFeatureView: View {
                                 .padding(8)
                                 .background(ClaraDesign.surfaceMuted.opacity(0.55))
                                 .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
+
+                            ImportEngineStatusRow(status: organizationEngineStatus)
 
                             VStack(spacing: 10) {
                                 Button {
@@ -250,6 +252,16 @@ struct ImporterFeatureView: View {
         case let .file(url):
             "\(url.lastPathComponent) 将作为文本文件导入"
         }
+    }
+
+    private var organizationEngineStatus: OrganizationEngineStatus {
+        OrganizationEngineStatus(
+            preferredMode: reflectionConfiguration.preferredEngineMode,
+            effectiveMode: reflectionConfiguration.mode,
+            hasSavedModelKey: reflectionConfiguration.mode == .remoteModel,
+            hasAcceptedExternalProcessing: hasAcceptedThirdPartyAIProcessing,
+            modelProvider: reflectionConfiguration.modelProvider ?? .deepSeekDefault
+        )
     }
 
     private func pasteFromClipboard() {
@@ -464,6 +476,42 @@ struct ImporterFeatureView: View {
 
 private enum ImportTargetLine {
     static let newLineID = "__new_line__"
+}
+
+private struct ImportEngineStatusRow: View {
+    var status: OrganizationEngineStatus
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: status.statusPillIcon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    Text("本次整理机制")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(ClaraDesign.ink)
+                    ClaraStatusPill(
+                        title: status.isExternalModelEnabled ? "外部模型" : "本机规则",
+                        color: status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection,
+                        systemImage: nil
+                    )
+                }
+
+                Text(status.importSummary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(ClaraDesign.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+        }
+        .padding(12)
+        .background(ClaraDesign.surfaceMuted.opacity(0.45))
+        .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
+    }
 }
 
 private struct ImportDestinationSelector: View {

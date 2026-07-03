@@ -61,4 +61,40 @@ final class ClaraErrorPresenterTests: XCTestCase {
 
         XCTAssertEqual(OrganizationEngineModeStore.load(userDefaults: defaults), .externalModel)
     }
+
+    func testExternalModelStatusRequiresEveryActivationCondition() {
+        let status = OrganizationEngineStatus(
+            preferredMode: .externalModel,
+            effectiveMode: .localPlaceholder,
+            hasSavedModelKey: true,
+            hasAcceptedExternalProcessing: false,
+            modelProvider: ModelProviderConfiguration(
+                providerName: "DeepSeek",
+                baseURLString: "https://api.deepseek.com",
+                model: "deepseek-v4-pro"
+            )
+        )
+
+        XCTAssertFalse(status.isExternalModelEnabled)
+        XCTAssertEqual(status.statusPillTitle, "正在使用本机规则")
+        XCTAssertEqual(status.importSummary, "外部模型还没有启用，本次导入仍会使用本机规则。")
+    }
+
+    func testExternalModelStatusShowsEnabledWhenEveryConditionIsMet() {
+        let status = OrganizationEngineStatus(
+            preferredMode: .externalModel,
+            effectiveMode: .remoteModel,
+            hasSavedModelKey: true,
+            hasAcceptedExternalProcessing: true,
+            modelProvider: ModelProviderConfiguration(
+                providerName: "DeepSeek",
+                baseURLString: "https://api.deepseek.com",
+                model: "deepseek-v4-pro"
+            )
+        )
+
+        XCTAssertTrue(status.isExternalModelEnabled)
+        XCTAssertEqual(status.statusPillTitle, "已启用外部模型")
+        XCTAssertEqual(status.importSummary, "本次导入会使用 DeepSeek 的 deepseek-v4-pro 整理。")
+    }
 }

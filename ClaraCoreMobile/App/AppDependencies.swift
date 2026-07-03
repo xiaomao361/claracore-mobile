@@ -29,9 +29,11 @@ struct AppDependencies {
         let organizationEngineMode = OrganizationEngineModeStore.load()
         let modelProviderConfiguration = ModelProviderConfigurationStore.load()
         let modelProviderAPIKey = (try? apiKeyStore.read(service: .modelProvider)) ?? (try? apiKeyStore.read(service: .deepSeek))
+        let hasAcceptedExternalModelProcessing = ExternalModelProcessingConsentStore.isAccepted()
         let reflectionService: ReflectionService
         let reflectionConfiguration: ReflectionConfiguration
         if organizationEngineMode == .externalModel,
+           hasAcceptedExternalModelProcessing,
            let modelProviderAPIKey,
            !modelProviderAPIKey.isEmpty,
            let baseURL = modelProviderConfiguration.baseURL,
