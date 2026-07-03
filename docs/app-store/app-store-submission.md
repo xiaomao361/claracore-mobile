@@ -288,7 +288,7 @@ If there is no confirmed ICP filing and no mainland-China compliance review, do 
 
 Before submitting to App Review:
 
-1. In the GitHub repository, set Pages source to GitHub Actions and run `.github/workflows/pages.yml`.
+1. In the GitHub repository, enable Pages and set its source to GitHub Actions before running `.github/workflows/pages.yml`.
 2. Wait for the Pages deployment to finish, then open both URLs in a logged-out browser window.
 3. Fill App Privacy labels from this document.
 4. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
