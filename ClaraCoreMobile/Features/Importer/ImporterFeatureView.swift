@@ -258,8 +258,8 @@ struct ImporterFeatureView: View {
         OrganizationEngineStatus(
             preferredMode: reflectionConfiguration.preferredEngineMode,
             effectiveMode: reflectionConfiguration.mode,
-            hasSavedModelKey: reflectionConfiguration.mode == .remoteModel,
-            hasAcceptedExternalProcessing: hasAcceptedThirdPartyAIProcessing,
+            hasSavedModelKey: reflectionConfiguration.hasSavedModelKey,
+            hasAcceptedExternalProcessing: reflectionConfiguration.hasAcceptedExternalProcessing || hasAcceptedThirdPartyAIProcessing,
             modelProvider: reflectionConfiguration.modelProvider ?? .deepSeekDefault
         )
     }
@@ -504,6 +504,19 @@ private struct ImportEngineStatusRow: View {
                     .font(.system(size: 12))
                     .foregroundStyle(ClaraDesign.inkMuted)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if status.preferredMode == .externalModel, !status.isExternalModelEnabled {
+                    Text(status.activationDecisionSummary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let unmetRequirementsSummary = status.unmetRequirementsSummary {
+                        Text(unmetRequirementsSummary)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(ClaraDesign.reflection)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
 
             Spacer()

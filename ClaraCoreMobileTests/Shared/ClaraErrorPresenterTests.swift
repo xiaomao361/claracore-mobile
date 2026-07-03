@@ -79,7 +79,10 @@ final class ClaraErrorPresenterTests: XCTestCase {
         XCTAssertEqual(status.statusPillTitle, "正在使用本机规则")
         XCTAssertEqual(status.effectiveTitle, "当前生效：本机规则")
         XCTAssertEqual(status.activationProgressTitle, "启用条件：3/4 已完成")
+        XCTAssertEqual(status.activationDecisionTitle, "未启用：仍走本机规则")
+        XCTAssertEqual(status.activationDecisionSummary, "选择外部模型不等于启用；只有下面 4 项全部完成，才会把整理切到外部模型。")
         XCTAssertEqual(status.unmetRequirementTitles, ["已确认外部处理说明"])
+        XCTAssertEqual(status.unmetRequirementsSummary, "还差：已确认外部处理说明")
         XCTAssertEqual(status.importSummary, "外部模型还没有启用，本次导入仍会使用本机规则。")
         XCTAssertEqual(status.activationRuleSummary, "你只是选择了外部模型；还差 已确认外部处理说明。未全部完成前，本次整理仍走本机规则。")
     }
@@ -101,6 +104,9 @@ final class ClaraErrorPresenterTests: XCTestCase {
         XCTAssertEqual(status.statusPillTitle, "已启用外部模型")
         XCTAssertEqual(status.effectiveTitle, "当前生效：外部模型")
         XCTAssertEqual(status.activationProgressTitle, "启用条件：4/4 已完成")
+        XCTAssertEqual(status.activationDecisionTitle, "已启用：外部模型")
+        XCTAssertEqual(status.activationDecisionSummary, "4 项启用条件都已完成。下一次导入整理会使用外部模型。")
+        XCTAssertNil(status.unmetRequirementsSummary)
         XCTAssertEqual(status.importSummary, "本次导入会使用 DeepSeek 的 deepseek-v4-pro 整理。")
     }
 }

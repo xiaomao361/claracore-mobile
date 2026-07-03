@@ -46,14 +46,18 @@ struct AppDependencies {
             reflectionConfiguration = ReflectionConfiguration(
                 mode: .remoteModel,
                 preferredEngineMode: organizationEngineMode,
-                modelProvider: modelProviderConfiguration.normalized
+                modelProvider: modelProviderConfiguration.normalized,
+                hasSavedModelKey: true,
+                hasAcceptedExternalProcessing: hasAcceptedExternalModelProcessing
             )
         } else {
             reflectionService = RuleBasedReflectionService()
             reflectionConfiguration = ReflectionConfiguration(
                 mode: .localPlaceholder,
                 preferredEngineMode: organizationEngineMode,
-                modelProvider: modelProviderConfiguration.normalized
+                modelProvider: modelProviderConfiguration.normalized,
+                hasSavedModelKey: modelProviderAPIKey?.isEmpty == false,
+                hasAcceptedExternalProcessing: hasAcceptedExternalModelProcessing
             )
         }
         let deepSeekShareImporter = DeepSeekShareImporter()

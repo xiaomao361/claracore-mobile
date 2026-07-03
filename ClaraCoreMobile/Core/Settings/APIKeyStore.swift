@@ -169,6 +169,34 @@ struct OrganizationEngineStatus: Equatable {
         "启用条件：\(metRequirementCount)/\(requirements.count) 已完成"
     }
 
+    var activationDecisionTitle: String {
+        if isExternalModelEnabled {
+            return "已启用：外部模型"
+        }
+        if preferredMode == .externalModel {
+            return "未启用：仍走本机规则"
+        }
+        return "已启用：本机规则"
+    }
+
+    var activationDecisionSummary: String {
+        if isExternalModelEnabled {
+            return "4 项启用条件都已完成。下一次导入整理会使用外部模型。"
+        }
+        if preferredMode == .externalModel {
+            return "选择外部模型不等于启用；只有下面 4 项全部完成，才会把整理切到外部模型。"
+        }
+        return "当前没有启用外部模型，导入整理会直接使用本机规则。"
+    }
+
+    var unmetRequirementsSummary: String? {
+        guard !isExternalModelEnabled, preferredMode == .externalModel else {
+            return nil
+        }
+        let missing = unmetRequirementTitles.joined(separator: "、")
+        return missing.isEmpty ? nil : "还差：\(missing)"
+    }
+
     var activationRuleSummary: String {
         if isExternalModelEnabled {
             return "外部模型已满足全部条件。只有你主动点击导入并整理时，必要内容才会发送到已配置的模型提供方。"
@@ -368,4 +396,6 @@ struct ReflectionConfiguration: Equatable {
     var mode: Mode
     var preferredEngineMode: OrganizationEngineMode = .localRules
     var modelProvider: ModelProviderConfiguration?
+    var hasSavedModelKey: Bool = false
+    var hasAcceptedExternalProcessing: Bool = false
 }

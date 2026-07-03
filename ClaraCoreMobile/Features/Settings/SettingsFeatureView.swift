@@ -730,6 +730,29 @@ private struct EngineModeSummary: View {
             }
 
             if status.preferredMode == .externalModel {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: status.isExternalModelEnabled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection)
+                        Text(status.activationDecisionTitle)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(ClaraDesign.ink)
+                    }
+                    Text(status.activationDecisionSummary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let unmetRequirementsSummary = status.unmetRequirementsSummary {
+                        Text(unmetRequirementsSummary)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(ClaraDesign.reflection)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(12)
+                .background((status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection).opacity(0.10))
+                .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
+
                 HStack(spacing: 8) {
                     ClaraStatusPill(
                         title: status.isModelConfigurationComplete ? "配置可用" : "待配置",
