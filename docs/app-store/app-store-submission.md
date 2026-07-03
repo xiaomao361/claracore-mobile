@@ -302,13 +302,14 @@ Before submitting to App Review:
 
 1. Open the fallback GitHub Privacy Policy and Support URLs in a logged-out browser window and confirm both return HTTP 200.
 2. Optional: enable GitHub Pages, set its source to GitHub Actions, rerun `.github/workflows/pages.yml`, then replace the fallback URLs with the cleaner Pages URLs only after both Pages URLs return HTTP 200.
-3. Fill App Privacy labels from this document.
-4. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
-5. Add App Review Notes and, if needed, a temporary test model key only inside App Store Connect.
-6. Upload screenshots that show user-directed import, third-party AI consent, source archive, deletion, and recall copy.
-7. Confirm no source, docs, fixtures, screenshots, logs, or review notes committed to git contain a real API key.
-8. Run the TestFlight external testing checklist once.
-9. Decide App Store territory availability, especially mainland China.
+3. Confirm the Release app bundle includes `PrivacyInfo.xcprivacy` and that it declares `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1`.
+4. Fill App Privacy labels from this document.
+5. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
+6. Add App Review Notes and, if needed, a temporary test model key only inside App Store Connect.
+7. Upload screenshots that show user-directed import, third-party AI consent, source archive, deletion, and recall copy.
+8. Confirm no source, docs, fixtures, screenshots, logs, or review notes committed to git contain a real API key.
+9. Run the TestFlight external testing checklist once.
+10. Decide App Store territory availability, especially mainland China.
 
 ## Source Notes
 

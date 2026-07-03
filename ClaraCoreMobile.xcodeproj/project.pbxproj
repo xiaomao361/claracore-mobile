@@ -67,6 +67,7 @@
 		A1000000000000000000003A /* ConversationImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003A /* ConversationImporter.swift */; };
 		A1000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */; };
 		A1000000000000000000003C /* ArchiveFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003C /* ArchiveFeatureView.swift */; };
+		A1000000000000000000003D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003D /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +141,7 @@
 		A2000000000000000000003A /* ConversationImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationImporter.swift; sourceTree = "<group>"; };
 		A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ConversationImporterRegistryTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000003C /* ArchiveFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveFeatureView.swift; sourceTree = "<group>"; };
+		A2000000000000000000003D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +176,7 @@
 		A50000000000000000000002 /* ClaraCoreMobile */ = {
 			isa = PBXGroup;
 			children = (
+				A2000000000000000000003D /* PrivacyInfo.xcprivacy */,
 				A20000000000000000000036 /* Assets.xcassets */,
 				A50000000000000000000008 /* App */,
 				A50000000000000000000003 /* Core */,
@@ -527,6 +530,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000036 /* Assets.xcassets in Resources */,
+				A1000000000000000000003D /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
