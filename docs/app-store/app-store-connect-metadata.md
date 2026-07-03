@@ -174,22 +174,9 @@ Testing without an API key:
 6. The Import screen shows `本次整理机制：本机规则`; importing creates conservative local memories / Shared Lines without sending content to a model provider.
 
 Testing with a remote model:
-1. In Settings, enter an OpenAI-compatible model configuration:
-   Provider: [PROVIDER_NAME]
-   Base URL: [OPENAI_COMPATIBLE_BASE_URL]
-   API Key: [TEST_API_KEY_PROVIDED_IN_APP_STORE_CONNECT_NOTES_ONLY]
-2. Accept the third-party AI processing notice.
-3. Tap Query Models (`查询模型`).
-4. Select one returned model from the list.
-5. Tap Save Configuration (`保存配置`).
-6. Tap Test Connection (`测试连接`).
-7. Open Import.
-8. Paste a short transcript or a public conversation share link.
-9. Tap Import and Organize.
-10. Confirm the result screen shows committed Memory and Shared Line counts.
-11. Open Original Text (`原文`) and confirm the source archive is visible.
-12. Open Memory and delete one test memory.
-13. Open Shared Line, copy the recall package, and confirm the copied text includes role, user, continuity state, and related factual memories.
+Remote model configuration is optional. The app can be reviewed without third-party credentials by using the local-rule path above.
+
+If remote model testing is required, the developer can provide a temporary non-production OpenAI-compatible endpoint and API key directly in App Store Connect review notes, not in the app binary or public repository. With those credentials, the reviewer can open Settings, enter the provider/base URL/API key, accept the third-party AI processing notice, query models, select one returned model, save the configuration, test the connection, then import and organize a short transcript.
 
 The app does not include ads, tracking, user accounts, or developer-operated cloud sync. User content is stored locally unless the user configures a remote model provider, accepts the third-party AI processing notice, and starts organization. API keys are stored in iOS Keychain.
 

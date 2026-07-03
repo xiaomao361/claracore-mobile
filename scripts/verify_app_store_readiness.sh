@@ -52,6 +52,72 @@ assert_sips_property() {
   pass "$image $property = $expected"
 }
 
+assert_app_store_metadata() {
+  python3 - "$ROOT_DIR/docs/app-store/app-store-connect-metadata.md" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+
+
+def fail(message: str) -> None:
+    print(f"ERROR: {message}", file=sys.stderr)
+    sys.exit(1)
+
+
+def extract_labeled_block(label: str) -> str:
+    pattern = rf"{re.escape(label)}:\n\n```text\n(.*?)\n```"
+    match = re.search(pattern, text, re.DOTALL)
+    if not match:
+        fail(f"Missing metadata field: {label}")
+    return match.group(1).strip()
+
+
+def extract_heading_block(heading: str) -> str:
+    pattern = rf"## {re.escape(heading)}\n\n```text\n(.*?)\n```"
+    match = re.search(pattern, text, re.DOTALL)
+    if not match:
+        fail(f"Missing metadata section: {heading}")
+    return match.group(1).strip()
+
+
+fields = {
+    "Name": (extract_labeled_block("Name"), 30),
+    "Subtitle": (extract_labeled_block("Subtitle"), 30),
+    "Promotional Text": (extract_heading_block("Promotional Text"), 170),
+    "Description": (extract_heading_block("Description"), 4000),
+    "Keywords": (extract_heading_block("Keywords"), 100),
+}
+
+review_notes = extract_heading_block("App Review Notes")
+if len(review_notes) > 4000:
+    fail(f"App Review Notes is {len(review_notes)} characters; limit is 4000")
+
+placeholder_pattern = re.compile(r"\[[A-Z0-9_ -]{3,}\]")
+for label, value in {**{key: item[0] for key, item in fields.items()}, "App Review Notes": review_notes}.items():
+    if placeholder_pattern.search(value):
+        fail(f"{label} still contains bracketed placeholder text")
+
+for label, (value, limit) in fields.items():
+    length = len(value)
+    if length == 0:
+        fail(f"{label} is empty")
+    if length > limit:
+        fail(f"{label} is {length} characters; limit is {limit}")
+    if label == "Keywords":
+        keywords = [item.strip() for item in value.split(",")]
+        if any(not item for item in keywords):
+            fail("Keywords contains an empty keyword")
+        if len(set(keywords)) != len(keywords):
+            fail("Keywords contains duplicates")
+    print(f"OK: {label} length {length}/{limit}")
+
+print(f"OK: App Review Notes length {len(review_notes)}/4000")
+PY
+}
+
 cd "$ROOT_DIR"
 
 log "Checking public support and privacy URLs"
@@ -75,6 +141,9 @@ APP_ICON="$ROOT_DIR/ClaraCoreMobile/Assets.xcassets/AppIcon.appiconset/AppIcon-1
 assert_sips_property "$APP_ICON" "pixelWidth" "1024"
 assert_sips_property "$APP_ICON" "pixelHeight" "1024"
 assert_sips_property "$APP_ICON" "hasAlpha" "no"
+
+log "Checking App Store Connect metadata"
+assert_app_store_metadata
 
 log "Scanning committed source for common real API key patterns"
 if rg -n --hidden \
