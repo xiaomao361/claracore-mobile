@@ -300,17 +300,21 @@ If there is no confirmed ICP filing and no mainland-China compliance review, do 
 
 Before submitting to App Review:
 
-1. Open the fallback GitHub Privacy Policy and Support URLs in a logged-out browser window and confirm both return HTTP 200.
+1. Run the local automated readiness gate:
+
+   ```bash
+   scripts/verify_app_store_readiness.sh
+   ```
+
+   This verifies the public fallback Privacy Policy and Support URLs, plist/project syntax, the PrivacyInfo manifest, common secret patterns, Release simulator build, bundled privacy manifest, bundle identifier/version, and `ITSAppUsesNonExemptEncryption = false`.
 2. Optional: enable GitHub Pages, set its source to GitHub Actions, rerun `.github/workflows/pages.yml`, then replace the fallback URLs with the cleaner Pages URLs only after both Pages URLs return HTTP 200.
-3. Confirm the Release app bundle includes `PrivacyInfo.xcprivacy` and that it declares `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1`.
-4. Confirm the built app Info.plist includes `ITSAppUsesNonExemptEncryption = false`. This assumes the app only uses exempt platform networking/keychain behavior and SHA-256 hashing; revisit this before submission if a future feature adds custom encryption, encrypted messaging, VPN, DRM, or cryptographic product functionality.
-5. Fill App Privacy labels from this document.
-6. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
-7. Add App Review Notes and, if needed, a temporary test model key only inside App Store Connect.
-8. Upload screenshots that show user-directed import, third-party AI consent, source archive, deletion, and recall copy.
-9. Confirm no source, docs, fixtures, screenshots, logs, or review notes committed to git contain a real API key.
-10. Run the TestFlight external testing checklist once.
-11. Decide App Store territory availability, especially mainland China.
+3. Fill App Privacy labels from this document.
+4. Copy final metadata from `docs/app-store/app-store-connect-metadata.md`.
+5. Add App Review Notes and, if needed, a temporary test model key only inside App Store Connect.
+6. Upload screenshots that show user-directed import, third-party AI consent, source archive, deletion, and recall copy.
+7. Confirm no screenshots, local logs, or App Store Connect review notes contain a real API key.
+8. Run the TestFlight external testing checklist once.
+9. Decide App Store territory availability, especially mainland China.
 
 ## Source Notes
 
