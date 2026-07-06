@@ -23,6 +23,7 @@ final class ImportSessionPreparer {
     @discardableResult
     func prepare(item: InboxItem) throws -> PreparedImportSession {
         let capture = item.rawCapture()
+        try capture.validateForImport()
         let session = try sessionStore.create(from: capture, title: title(for: item))
         let segments = segmenter.segment(capture: capture, sessionId: session.id)
         try sessionStore.addSegments(segments)

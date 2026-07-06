@@ -21,6 +21,15 @@ final class RuleBasedReflectionServiceTests: XCTestCase {
         XCTAssertEqual(draft.candidateSharedLineUpdates.first?.boundaryNotes, "本机规则只做保守摘录，不推断未明确出现的信息。")
     }
 
+    func testLocalRulebookDefinesUserVisibleLocalProcessingBoundary() {
+        let rulebook = LocalOrganizationRulebook.current
+
+        XCTAssertEqual(rulebook.displayName, "本机规则 local-v1")
+        XCTAssertTrue(rulebook.settingsSummary.contains("事实、偏好、决定和待办"))
+        XCTAssertTrue(rulebook.settingsSummary.contains("最多保留 4 条候选记忆"))
+        XCTAssertTrue(rulebook.privacySummary.contains("不会把导入内容发送给模型提供方"))
+    }
+
     func testLocalReflectionCanCommitWithoutRemoteModel() async throws {
         let databaseURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

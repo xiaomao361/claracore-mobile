@@ -25,3 +25,33 @@ enum ClaraErrorPresenter {
         return error.localizedDescription
     }
 }
+
+enum UserVisibleErrorDetailSanitizer {
+    static func providerResponseDetail(from body: String, maxCharacters: Int = 160) -> String? {
+        let compacted = body
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        guard !compacted.isEmpty else {
+            return nil
+        }
+
+        let redacted = [
+            #"(Bearer\s+)[A-Za-z0-9._~+/=-]{8,}"#,
+            #"(sk-)[A-Za-z0-9_-]{8,}"#,
+            #"([Aa][Pp][Ii][_ -]?[Kk][Ee][Yy]["']?\s*[:=]\s*["']?)[A-Za-z0-9._~+/=-]{8,}"#
+        ].reduce(compacted) { current, pattern in
+            current.replacingOccurrences(
+                of: pattern,
+                with: "$1[redacted]",
+                options: .regularExpression
+            )
+        }
+
+        guard redacted.count > maxCharacters else {
+            return redacted
+        }
+        return "\(redacted.prefix(maxCharacters))..."
+    }
+}

@@ -85,6 +85,10 @@ final class ContextCardStore {
         }
     }
 
+    func deleteAllLocalUserData() throws {
+        try database.deleteAllLocalUserData()
+    }
+
     private func create(id: String, title: String, agentProfile: String, userProfile: String) throws -> ContextCard {
         let now = Date()
         let card = ContextCard(

@@ -3,6 +3,8 @@ import Foundation
 typealias DeepSeekReflectionService = OpenAICompatibleReflectionService
 
 final class OpenAICompatibleReflectionService: ReflectionService {
+    static let requestTimeout: TimeInterval = 30
+
     enum ServiceError: LocalizedError, Equatable {
         case missingAPIKey
         case emptyResponse
@@ -28,8 +30,10 @@ final class OpenAICompatibleReflectionService: ReflectionService {
                 if (500..<600).contains(statusCode) {
                     return "默认整理模型服务暂时不可用。请稍后重试。"
                 }
-                let detail = body.trimmingCharacters(in: .whitespacesAndNewlines)
-                return detail.isEmpty ? "默认整理模型请求失败：HTTP \(statusCode)。" : "默认整理模型请求失败：HTTP \(statusCode)，\(detail)"
+                guard let detail = UserVisibleErrorDetailSanitizer.providerResponseDetail(from: body) else {
+                    return "默认整理模型请求失败：HTTP \(statusCode)。"
+                }
+                return "默认整理模型请求失败：HTTP \(statusCode)，\(detail)"
             case let .invalidJSON(detail):
                 return "默认整理模型返回的 JSON 无法解析。\(detail)"
             }
@@ -187,7 +191,7 @@ final class OpenAICompatibleReflectionService: ReflectionService {
     }
 
     private func completeJSON<T: Decodable>(system: String, user: String, maxTokens: Int) async throws -> T {
-        var request = URLRequest(url: baseURL.appendingPathComponent("chat/completions"))
+        var request = URLRequest(url: baseURL.appendingPathComponent("chat/completions"), timeoutInterval: Self.requestTimeout)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

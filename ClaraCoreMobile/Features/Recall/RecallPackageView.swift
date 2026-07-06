@@ -104,6 +104,10 @@ struct RecallPackageView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(contextCard == nil)
 
+                Text("只复制本页展示的角色卡、共同线、已勾选记忆和续写请求；不会复制 API Key、Base URL、模型配置或完整原文 Archive。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 if let copiedMessage {
                     Text(copiedMessage)
                         .font(.caption)
@@ -154,7 +158,7 @@ struct RecallPackageView: View {
         } catch {
             candidateMemories = []
             selectedMemoryIDs = []
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 
@@ -170,7 +174,7 @@ struct RecallPackageView: View {
             contextCard = nil
             candidateMemories = []
             selectedMemoryIDs = []
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 

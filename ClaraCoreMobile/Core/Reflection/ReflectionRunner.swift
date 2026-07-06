@@ -19,6 +19,17 @@ enum ReflectionProgress: Equatable {
 }
 
 final class ReflectionRunner {
+    enum RunnerError: LocalizedError, Equatable {
+        case noSegments
+
+        var errorDescription: String? {
+            switch self {
+            case .noSegments:
+                "没有可整理的内容片段。请重新导入包含文字的对话、公开分享链接或 .txt 文件。"
+            }
+        }
+    }
+
     private let sessionStore: ImportSessionStore
     private let reflectionService: ReflectionService
 
@@ -34,6 +45,10 @@ final class ReflectionRunner {
         prepared: PreparedImportSession,
         onProgress: ((ReflectionProgress) -> Void)? = nil
     ) async throws -> ReflectionRunResult {
+        guard !prepared.segments.isEmpty else {
+            throw RunnerError.noSegments
+        }
+
         try sessionStore.updateStatus(sessionId: prepared.session.id, status: .reflecting)
 
         var drafts: [SegmentReflectionDraft] = []

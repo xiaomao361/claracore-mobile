@@ -1,0 +1,12 @@
+# ClaraCore Mobile App Store screenshot manifest
+MARKETING_VERSION=0.1.0
+CURRENT_PROJECT_VERSION=1
+CONFIGURATION=Release
+BUNDLE_ID=com.claracore.mobile
+GENERATED_AT_UTC=2026-07-03T19:53:29Z
+IPHONE_SIMULATOR_ID=6B553A90-88B0-4924-9592-2E42200CD2B0
+IPAD_SIMULATOR_ID=59C1F5E1-1F31-4931-80E6-A7F7763F2AB8
+SCREENSHOT_SEQUENCE=01-import,02-settings-model,03-import-result,04-archive,05-memory,06-shared-line,07-recall-package,08-settings-support
+AUTO_CAPTURED_SCREENSHOTS=01-import,02-settings-model,03-import-result,04-archive,05-memory,06-shared-line,07-recall-package,08-settings-support
+IPHONE_SCREENSHOT=iphone-6.9/01-import.png
+IPAD_SCREENSHOT=ipad-13/01-import.png

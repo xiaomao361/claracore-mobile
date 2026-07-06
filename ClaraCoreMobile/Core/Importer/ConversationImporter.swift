@@ -51,6 +51,7 @@ final class ConversationImporterRegistry {
     enum RegistryError: LocalizedError, Equatable {
         case unsupportedURL(String)
         case emptyInput
+        case insecureURL(String)
 
         var errorDescription: String? {
             switch self {
@@ -58,6 +59,8 @@ final class ConversationImporterRegistry {
                 "暂时还不能直接解析 \(host) 的分享链接。后续会进入通用链接和 LLM 兜底导入。"
             case .emptyInput:
                 "导入内容为空。"
+            case let .insecureURL(host):
+                "链接导入只支持 https:// 公开链接。请重新生成 \(host) 的 HTTPS 分享链接，或改用复制文本导入。"
             }
         }
     }
@@ -96,7 +99,14 @@ final class ConversationImporterRegistry {
         guard !input.displayValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw RegistryError.emptyInput
         }
+        if case let .url(url) = input,
+           url.scheme?.lowercased() != "https" {
+            throw RegistryError.insecureURL(url.host ?? "这个网站")
+        }
         guard let match = match(for: input) else {
+            if case .file = input {
+                throw FileConversationImporter.ImportError.unsupportedFile
+            }
             throw RegistryError.emptyInput
         }
         return try await match.importer.importCapture(from: input)
@@ -402,13 +412,15 @@ struct GenericURLConversationImporter: ConversationImporter {
 }
 
 enum GenericURLCaptureBuilder {
+    static let requestTimeout: TimeInterval = 30
+
     static func capture(
         from url: URL,
         urlLoader: any URLDataLoading,
         sourceApp: String?,
         metadata: [String: String]
     ) async throws -> RawCapture {
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: url, timeoutInterval: Self.requestTimeout)
         request.setValue("text/html, text/plain, application/xhtml+xml", forHTTPHeaderField: "Accept")
         request.setValue("ClaraCoreMobile/1.0", forHTTPHeaderField: "User-Agent")
 

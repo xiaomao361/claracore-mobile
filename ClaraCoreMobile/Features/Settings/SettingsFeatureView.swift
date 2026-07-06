@@ -7,7 +7,7 @@ private enum AppStorePublicURL {
 }
 
 struct SettingsFeatureView: View {
-    @AppStorage(ExternalModelProcessingConsentStore.userDefaultsKey) private var hasAcceptedThirdPartyAIProcessing = false
+    @AppStorage(ExternalModelProcessingConsentStore.userDefaultsKey) private var hasAcceptedExternalModelProcessing = false
 
     let contextCardStore: ContextCardStore
     let apiKeyStore: APIKeyStore
@@ -22,6 +22,7 @@ struct SettingsFeatureView: View {
     @State private var modelProviderName = ""
     @State private var modelBaseURL = ""
     @State private var modelName = ""
+    @State private var savedModelConfiguration: ModelProviderConfiguration = .deepSeekDefault
     @State private var modelAPIKey = ""
     @State private var availableModels: [ModelProviderClient.Model] = []
     @State private var modelSearchQuery = ""
@@ -29,126 +30,57 @@ struct SettingsFeatureView: View {
     @State private var hasSavedModelKey = false
     @State private var isTestingModel = false
     @State private var isLoadingModels = false
+    @State private var isDeleteKeyConfirmationPresented = false
+    @State private var isDeleteAllDataConfirmationPresented = false
     @State private var statusMessage: String?
     @State private var errorMessage: String?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                ClaraSectionLabel(title: "角色卡")
-
-                ClaraCard(accent: ClaraDesign.continuity) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack {
-                            Picker("当前角色卡", selection: selectedContextCardBinding) {
-                                ForEach(contextCards) { card in
-                                    Text(card.title).tag(card.id)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .onChange(of: selectedContextCardID) { _, _ in
-                                resetContextCardDraft()
-                            }
-
-                            Spacer()
-
-                            Button {
-                                createContextCard()
-                            } label: {
-                                Label("新建", systemImage: "plus")
-                            }
-                            .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
-                        }
-
-                        TextField("角色卡标题", text: $cardTitle)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .textFieldStyle(.roundedBorder)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Agent 是谁")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(ClaraDesign.inkMuted)
-                            TextEditor(text: $agentProfile)
-                                .frame(minHeight: 96)
-                                .scrollContentBackground(.hidden)
-                                .padding(8)
-                                .background(ClaraDesign.surfaceMuted.opacity(0.55))
-                                .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
-                        }
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("用户是谁")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(ClaraDesign.inkMuted)
-                            TextEditor(text: $userProfile)
-                                .frame(minHeight: 112)
-                                .scrollContentBackground(.hidden)
-                                .padding(8)
-                                .background(ClaraDesign.surfaceMuted.opacity(0.55))
-                                .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
-                        }
-
-                        HStack {
-                            Button {
-                                saveContextCard()
-                            } label: {
-                                Label("保存角色卡", systemImage: "person.text.rectangle")
-                            }
-                            .disabled(!canSaveContextCard)
-                            .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.continuity))
-
-                            Spacer()
-
-                            Button {
-                                resetContextCardDraft()
-                            } label: {
-                                Label("还原", systemImage: "arrow.uturn.backward")
-                            }
-                            .disabled(currentContextCard == nil)
-                            .buttonStyle(ClaraSecondaryButtonStyle())
-                        }
-                    }
+                if !isAppStoreScreenshotMode {
+                    contextCardSettingsSection
                 }
 
-                ClaraSectionLabel(title: "整理引擎")
+                if screenshotTarget != .settingsSupport {
+                    ClaraSectionLabel(title: "整理引擎")
 
-                ClaraCard(accent: organizationEngineMode == .externalModel ? ClaraDesign.memory : ClaraDesign.reflection) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Picker("偏好整理方式", selection: $organizationEngineMode) {
-                            ForEach(OrganizationEngineMode.allCases) { mode in
-                                Text(mode.title).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .onChange(of: organizationEngineMode) { _, newValue in
-                            saveOrganizationEngineMode(newValue)
-                        }
-
-                        EngineModeSummary(
-                            status: organizationEngineStatus
-                        )
-                    }
-                }
-
-                if organizationEngineMode == .externalModel {
-                    ClaraSectionLabel(title: "外部模型配置")
-
-                    ClaraCard {
-                        VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack {
-                                    Text("OpenAI-compatible")
-                                        .font(.system(size: 17, weight: .semibold))
-                                        .foregroundStyle(ClaraDesign.ink)
-                                    Spacer()
-                                    ClaraStatusPill(title: hasSavedModelKey ? "Key 已保存" : "需要 Key", color: hasSavedModelKey ? ClaraDesign.memory : ClaraDesign.reflection, systemImage: hasSavedModelKey ? "lock" : "key")
+                    ClaraCard(accent: organizationEngineMode == .externalModel ? ClaraDesign.memory : ClaraDesign.reflection) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Picker("偏好整理方式", selection: $organizationEngineMode) {
+                                ForEach(OrganizationEngineMode.allCases) { mode in
+                                    Text(mode.title).tag(mode)
                                 }
-                                Text("填写兼容 Chat Completions 的地址和 Key，先查询模型，再选择默认整理模型。DeepSeek 只是默认预设之一。")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(ClaraDesign.inkMuted)
-                                    .fixedSize(horizontal: false, vertical: true)
                             }
+                            .pickerStyle(.segmented)
+                            .onChange(of: organizationEngineMode) { _, newValue in
+                                saveOrganizationEngineMode(newValue)
+                            }
+
+                            EngineModeSummary(
+                                status: organizationEngineStatus
+                            )
+                        }
+                    }
+
+                    if organizationEngineMode == .externalModel {
+                        ClaraSectionLabel(title: "外部模型配置")
+
+                        ClaraCard {
+                            VStack(alignment: .leading, spacing: 16) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        Text("OpenAI-compatible")
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundStyle(ClaraDesign.ink)
+                                        Spacer()
+                                        ClaraStatusPill(title: hasSavedModelKey ? "Key 已保存" : "需要 Key", color: hasSavedModelKey ? ClaraDesign.memory : ClaraDesign.reflection, systemImage: hasSavedModelKey ? "lock" : "key")
+                                    }
+                                    Text("填写兼容 Chat Completions 的地址和 Key，先查询模型，再选择默认整理模型。DeepSeek 只是默认预设之一。")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(ClaraDesign.inkMuted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
 
                         VStack(alignment: .leading, spacing: 12) {
                             ClaraInlineField(
@@ -160,7 +92,7 @@ struct SettingsFeatureView: View {
 
                             ClaraInlineField(
                                 title: "Base URL",
-                                subtitle: "不需要写 /chat/completions。示例：https://api.openai.com/v1",
+                                subtitle: "必须使用完整 https:// 地址，不需要写 /chat/completions。示例：https://api.openai.com/v1",
                                 text: $modelBaseURL,
                                 placeholder: "https://api.deepseek.com",
                                 keyboardType: .URL
@@ -181,7 +113,7 @@ struct SettingsFeatureView: View {
                             }
                         }
 
-                        ThirdPartyAIConsentBox(isAccepted: $hasAcceptedThirdPartyAIProcessing)
+                        ExternalModelProcessingConsentBox(isAccepted: $hasAcceptedExternalModelProcessing)
 
                         HStack(spacing: 10) {
                             Button {
@@ -302,7 +234,7 @@ struct SettingsFeatureView: View {
                             .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.memory))
 
                             Button(role: .destructive) {
-                                deleteModelKey()
+                                isDeleteKeyConfirmationPresented = true
                             } label: {
                                 Label("删除 Key", systemImage: "trash")
                                     .frame(maxWidth: .infinity)
@@ -310,8 +242,9 @@ struct SettingsFeatureView: View {
                             .disabled(!hasSavedModelKey)
                             .buttonStyle(ClaraSecondaryButtonStyle())
                         }
+                        }
                     }
-                    }
+                }
                 }
 
                 ClaraSectionLabel(title: "支持与隐私")
@@ -336,7 +269,7 @@ struct SettingsFeatureView: View {
                         .buttonStyle(ClaraSecondaryButtonStyle())
 
                         NavigationLink {
-                            SupportDetailView()
+                            SupportDetailView(organizationEngineStatus: organizationEngineStatus)
                         } label: {
                             Label("支持页面", systemImage: "questionmark.circle")
                                 .frame(maxWidth: .infinity)
@@ -356,6 +289,26 @@ struct SettingsFeatureView: View {
                             }
                             .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
                         }
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("本机数据控制")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(ClaraDesign.ink)
+                            Text("清除会删除本机 Archive、Inbox、记忆、共同线、角色卡、模型配置和 Key；之后会恢复默认角色卡并回到本机规则。")
+                                .font(.system(size: 12))
+                                .foregroundStyle(ClaraDesign.inkMuted)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            Button(role: .destructive) {
+                                isDeleteAllDataConfirmationPresented = true
+                            } label: {
+                                Label("清除本机数据", systemImage: "trash.slash")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(ClaraSecondaryButtonStyle())
+                        }
                     }
                 }
 
@@ -370,13 +323,29 @@ struct SettingsFeatureView: View {
         .task {
             loadState()
         }
-        .onChange(of: hasAcceptedThirdPartyAIProcessing) { _, _ in
+        .onChange(of: hasAcceptedExternalModelProcessing) { _, _ in
             onConfigurationChanged()
         }
         .alert("设置错误", isPresented: errorBinding) {
             Button("好", role: .cancel) { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "")
+        }
+        .confirmationDialog("删除模型 Key？", isPresented: $isDeleteKeyConfirmationPresented, titleVisibility: .visible) {
+            Button("删除模型 Key", role: .destructive) {
+                deleteModelKey()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这会删除保存在本机 Keychain 的模型 Key，并把整理切回本机规则。已导入的 Archive、记忆和共同线不会被删除。")
+        }
+        .confirmationDialog("清除本机数据？", isPresented: $isDeleteAllDataConfirmationPresented, titleVisibility: .visible) {
+            Button("清除本机数据", role: .destructive) {
+                deleteAllLocalData()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这会删除本机 Archive、Inbox、记忆、共同线、角色卡、模型配置和 Key，并恢复默认角色卡。此操作不能撤销。")
         }
     }
 
@@ -393,14 +362,22 @@ struct SettingsFeatureView: View {
             !userProfile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var isAppStoreScreenshotMode: Bool {
+        ProcessInfo.processInfo.environment[AppStoreScreenshotFixtureSeeder.environmentKey] == "1"
+    }
+
+    private var screenshotTarget: AppStoreScreenshotFixtureSeeder.Target {
+        AppStoreScreenshotFixtureSeeder.target()
+    }
+
     private var isExternalModelReady: Bool {
-        organizationEngineStatus.isExternalModelEnabled
+        organizationEngineStatus.areExternalModelActivationConditionsMet
     }
 
     private var canSaveModelConfiguration: Bool {
         currentModelDraft.baseURL != nil &&
             !currentModelDraft.trimmedModel.isEmpty &&
-            hasAcceptedThirdPartyAIProcessing &&
+            hasAcceptedExternalModelProcessing &&
             (hasSavedModelKey || !modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
@@ -428,9 +405,14 @@ struct SettingsFeatureView: View {
             preferredMode: organizationEngineMode,
             effectiveMode: reflectionConfiguration.mode,
             hasSavedModelKey: hasSavedModelKey,
-            hasAcceptedExternalProcessing: hasAcceptedThirdPartyAIProcessing,
-            modelProvider: currentModelDraft
+            hasAcceptedExternalProcessing: hasAcceptedExternalModelProcessing,
+            modelProvider: savedModelConfiguration,
+            hasUnsavedModelConfigurationChanges: hasUnsavedModelConfigurationChanges
         )
+    }
+
+    private var hasUnsavedModelConfigurationChanges: Bool {
+        currentModelDraft != savedModelConfiguration
     }
 
     private var trimmedModelSearchQuery: String {
@@ -455,6 +437,86 @@ struct SettingsFeatureView: View {
         return contextCards.first { $0.id == selectedContextCardID } ?? contextCards.first
     }
 
+    private var contextCardSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            ClaraSectionLabel(title: "角色卡")
+
+            ClaraCard(accent: ClaraDesign.continuity) {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Picker("当前角色卡", selection: selectedContextCardBinding) {
+                            ForEach(contextCards) { card in
+                                Text(card.title).tag(card.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .onChange(of: selectedContextCardID) { _, _ in
+                            resetContextCardDraft()
+                        }
+
+                        Spacer()
+
+                        Button {
+                            createContextCard()
+                        } label: {
+                            Label("新建", systemImage: "plus")
+                        }
+                        .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
+                    }
+
+                    TextField("角色卡标题", text: $cardTitle)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textFieldStyle(.roundedBorder)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Agent 是谁")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                        TextEditor(text: $agentProfile)
+                            .frame(minHeight: 96)
+                            .scrollContentBackground(.hidden)
+                            .padding(8)
+                            .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                            .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("用户是谁")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(ClaraDesign.inkMuted)
+                        TextEditor(text: $userProfile)
+                            .frame(minHeight: 112)
+                            .scrollContentBackground(.hidden)
+                            .padding(8)
+                            .background(ClaraDesign.surfaceMuted.opacity(0.55))
+                            .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
+                    }
+
+                    HStack {
+                        Button {
+                            saveContextCard()
+                        } label: {
+                            Label("保存角色卡", systemImage: "person.text.rectangle")
+                        }
+                        .disabled(!canSaveContextCard)
+                        .buttonStyle(ClaraPrimaryButtonStyle(color: ClaraDesign.continuity))
+
+                        Spacer()
+
+                        Button {
+                            resetContextCardDraft()
+                        } label: {
+                            Label("还原", systemImage: "arrow.uturn.backward")
+                        }
+                        .disabled(currentContextCard == nil)
+                        .buttonStyle(ClaraSecondaryButtonStyle())
+                    }
+                }
+            }
+        }
+    }
+
     private var selectedContextCardBinding: Binding<String> {
         Binding(
             get: { selectedContextCardID ?? contextCards.first?.id ?? ContextCardStore.defaultCardID },
@@ -464,6 +526,7 @@ struct SettingsFeatureView: View {
 
     private func loadState() {
         do {
+            hasAcceptedExternalModelProcessing = ExternalModelProcessingConsentStore.isAccepted()
             _ = try contextCardStore.defaultCard()
             contextCards = try contextCardStore.list()
             if selectedContextCardID == nil {
@@ -522,6 +585,7 @@ struct SettingsFeatureView: View {
 
     private func resetModelConfigurationDraft() {
         let configuration = ModelProviderConfigurationStore.load()
+        savedModelConfiguration = configuration
         modelProviderName = configuration.providerName
         modelBaseURL = configuration.baseURLString
         modelName = configuration.model
@@ -542,10 +606,11 @@ struct SettingsFeatureView: View {
             guard configuration.baseURL != nil, !configuration.trimmedModel.isEmpty else {
                 throw SettingsModelError.invalidConfiguration
             }
-            guard hasAcceptedThirdPartyAIProcessing else {
-                throw SettingsModelError.missingThirdPartyAIConsent
+            guard hasAcceptedExternalModelProcessing else {
+                throw SettingsModelError.missingExternalModelProcessingConsent
             }
             try ModelProviderConfigurationStore.save(configuration)
+            savedModelConfiguration = configuration
             OrganizationEngineModeStore.save(.externalModel)
             organizationEngineMode = .externalModel
             let trimmedKey = modelAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -555,7 +620,7 @@ struct SettingsFeatureView: View {
                 hasSavedModelKey = true
             }
             onConfigurationChanged()
-            statusMessage = organizationEngineStatus.isExternalModelEnabled
+            statusMessage = organizationEngineStatus.areExternalModelActivationConditionsMet
                 ? "外部模型已启用。之后导入会使用 \(configuration.trimmedProviderName) 的 \(configuration.trimmedModel)。"
                 : "默认整理模型已保存；还需要完成启用条件后才会使用外部模型。"
         } catch {
@@ -612,6 +677,33 @@ struct SettingsFeatureView: View {
             organizationEngineMode = .localRules
             hasSavedModelKey = false
             statusMessage = "模型 Key 已删除，整理会回到本机规则模式。"
+            onConfigurationChanged()
+        } catch {
+            errorMessage = ClaraErrorPresenter.message(for: error)
+        }
+    }
+
+    private func deleteAllLocalData() {
+        do {
+            try contextCardStore.deleteAllLocalUserData()
+            try apiKeyStore.delete(service: .modelProvider)
+            try apiKeyStore.delete(service: .deepSeek)
+            ModelProviderConfigurationStore.reset()
+            savedModelConfiguration = .deepSeekDefault
+            OrganizationEngineModeStore.save(.localRules)
+            ExternalModelProcessingConsentStore.reset()
+            hasAcceptedExternalModelProcessing = false
+            organizationEngineMode = .localRules
+            hasSavedModelKey = false
+            availableModels = []
+            modelSearchQuery = ""
+
+            let defaultCard = try contextCardStore.defaultCard()
+            contextCards = try contextCardStore.list()
+            selectedContextCardID = defaultCard.id
+            resetContextCardDraft()
+            resetModelConfigurationDraft()
+            statusMessage = "本机数据已清除。已恢复默认角色卡，整理会使用本机规则。"
             onConfigurationChanged()
         } catch {
             errorMessage = ClaraErrorPresenter.message(for: error)
@@ -677,13 +769,13 @@ struct SettingsFeatureView: View {
 
 private enum SettingsModelError: LocalizedError {
     case invalidConfiguration
-    case missingThirdPartyAIConsent
+    case missingExternalModelProcessingConsent
 
     var errorDescription: String? {
         switch self {
         case .invalidConfiguration:
-            return "模型配置不完整。请确认 Base URL 和 Model 都有效。"
-        case .missingThirdPartyAIConsent:
+            return "模型配置不完整。请确认 Base URL 是完整的 https:// 地址，并已填写 Model。"
+        case .missingExternalModelProcessingConsent:
             return "请先确认外部模型处理说明，再保存模型配置。"
         }
     }
@@ -748,6 +840,12 @@ private struct EngineModeSummary: View {
                             .foregroundStyle(ClaraDesign.reflection)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    if let unsavedConfigurationSummary = status.unsavedConfigurationSummary {
+                        Text(unsavedConfigurationSummary)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(ClaraDesign.reflection)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(12)
                 .background((status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection).opacity(0.10))
@@ -790,17 +888,24 @@ private struct EngineModeSummary: View {
                 .background(ClaraDesign.surfaceMuted.opacity(0.45))
                 .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.buttonRadius, style: .continuous))
             } else {
-                ClaraStatusPill(
-                    title: "不发送导入内容",
-                    color: ClaraDesign.reflection,
-                    systemImage: "checkmark.shield"
-                )
+                VStack(alignment: .leading, spacing: 8) {
+                    ClaraStatusPill(
+                        title: "不发送导入内容",
+                        color: ClaraDesign.reflection,
+                        systemImage: "checkmark.shield"
+                    )
+
+                    Text(LocalOrganizationRulebook.current.settingsSummary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(ClaraDesign.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
 }
 
-private struct ThirdPartyAIConsentBox: View {
+private struct ExternalModelProcessingConsentBox: View {
     @Binding var isAccepted: Bool
 
     var body: some View {
@@ -835,13 +940,18 @@ private struct PrivacyPolicyDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 LegalSection(
+                    title: "生效日期",
+                    text: "2026 年 7 月 3 日"
+                )
+
+                LegalSection(
                     title: "摘要",
-                    text: "ClaraCore Mobile 是本地优先的对话记忆整理工具。应用不包含广告、第三方追踪或 ClaraCore 账号。API Key 保存在 iOS Keychain。导入原文、原始对话 Archive、记忆、角色卡、共同线和导入历史默认保存在本机。"
+                    text: "ClaraCore Mobile 是本地优先的对话记忆整理工具。应用不包含广告、第三方追踪或 ClaraCore 账号。API Key 保存在 iOS Keychain 的 ThisDeviceOnly 项中。导入原文、原始对话 Archive、记忆、角色卡、共同线和导入历史默认保存在本机。"
                 )
 
                 LegalSection(
                     title: "本机保存的数据",
-                    text: "应用会在设备本地保存用户主动导入的对话文本、公开分享链接转成的文本、粘贴文本、.txt 文件、角色卡、共同线、记忆、原文 Archive、重复检测信息、模型配置和 Keychain 中的 API Key。卸载应用会按 iOS 的正常机制移除应用容器数据。"
+                    text: "应用会在设备本地的 Application Support 容器中保存用户主动导入的对话文本、公开分享链接转成的文本、粘贴文本、.txt 文件、角色卡、共同线、记忆、原文 Archive、重复检测信息和模型配置。这个本地数据库目录会标记为不进入 iCloud 或 iTunes 备份。API Key 保存在 Keychain 的 ThisDeviceOnly 项中。卸载应用会按 iOS 的正常机制移除应用容器数据。"
                 )
 
                 LegalSection(
@@ -856,12 +966,12 @@ private struct PrivacyPolicyDetailView: View {
 
                 LegalSection(
                     title: "数据共享",
-                    text: "ClaraCore 不出售用户数据，也不使用用户数据做广告或跟踪。数据只会在用户主动选择公开分享链接、查询模型、测试连接、导入并整理、或复制回召包到剪贴板时按操作发生传输。"
+                    text: "ClaraCore 不出售用户数据，也不使用用户数据做广告或跟踪。数据只会在用户主动选择公开分享链接、查询模型、测试连接、导入并整理、复制回召包到剪贴板、或复制/分享完整原文 Archive 时按操作发生传输。"
                 )
 
                 LegalSection(
                     title: "删除与控制",
-                    text: "用户可以在应用内删除原文 Archive、记忆和共同线，可以删除保存的模型 API Key，也可以停止使用外部模型配置。删除原文 Archive 不会同时删除已经写入的记忆和共同线。用户应避免导入自己不愿意保存在本机或发送给所选模型提供方的敏感内容。"
+                    text: "用户可以在应用内删除原文 Archive、记忆和共同线，也可以在设置中清除本机 Archive、Inbox、记忆、共同线、角色卡、模型配置和 Key，并恢复默认角色卡。删除单条原文 Archive 不会同时删除已经写入的记忆和共同线。用户应避免导入自己不愿意保存在本机或发送给所选模型提供方的敏感内容。"
                 )
             }
             .padding(20)
@@ -873,12 +983,31 @@ private struct PrivacyPolicyDetailView: View {
 }
 
 private struct SupportDetailView: View {
+    var organizationEngineStatus: OrganizationEngineStatus
+    @State private var statusMessage: String?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 LegalSection(
+                    title: "版本信息",
+                    text: AppVersionInfo.displayText
+                )
+
+                Button {
+                    UIPasteboard.general.string = AppVersionInfo.supportDiagnosticText(
+                        organizationEngineStatus: organizationEngineStatus
+                    )
+                    statusMessage = "诊断信息已复制。"
+                } label: {
+                    Label("复制诊断信息", systemImage: "doc.on.clipboard")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(ClaraSecondaryButtonStyle())
+
+                LegalSection(
                     title: "支持联系",
-                    text: "如果遇到导入失败、模型配置失败、数据异常或 App Store 审核相关问题，请通过项目仓库的 Issues 联系维护者。"
+                    text: "如果遇到导入失败、模型配置失败、数据异常或 App Store 审核相关问题，请通过项目仓库的 Issues 联系维护者。反馈时请附上诊断信息和问题发生前的操作。诊断信息不包含 API Key、导入原文、记忆、共同线、Provider 名称、Base URL、模型名称或模型配置。"
                 )
 
                 Link(destination: URL(string: "https://github.com/xiaomao361/claracore-mobile/issues")!) {
@@ -894,14 +1023,90 @@ private struct SupportDetailView: View {
 
                 LegalSection(
                     title: "删除数据",
-                    text: "原文 Archive、记忆和共同线可以在应用内删除。API Key 可以在设置里删除。卸载应用会按 iOS 正常机制移除应用容器数据。"
+                    text: "原文 Archive、记忆和共同线可以在应用内分别删除。也可以在设置中使用清除本机数据，一次删除本机 Archive、Inbox、记忆、共同线、角色卡、模型配置和 Key，并恢复默认角色卡。"
                 )
+
+                if let statusMessage {
+                    ClaraActionStatus(message: statusMessage, tone: .success)
+                }
             }
             .padding(20)
         }
         .claraScreenBackground()
         .navigationTitle("支持")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+enum AppVersionInfo {
+    static var displayText: String {
+        displayText(info: Bundle.main.infoDictionary)
+    }
+
+    static var supportDiagnosticText: String {
+        supportDiagnosticText(
+            info: Bundle.main.infoDictionary,
+            deviceName: UIDevice.current.model,
+            systemName: UIDevice.current.systemName,
+            systemVersion: UIDevice.current.systemVersion,
+            organizationEngineStatus: nil
+        )
+    }
+
+    static func supportDiagnosticText(organizationEngineStatus: OrganizationEngineStatus) -> String {
+        supportDiagnosticText(
+            info: Bundle.main.infoDictionary,
+            deviceName: UIDevice.current.model,
+            systemName: UIDevice.current.systemName,
+            systemVersion: UIDevice.current.systemVersion,
+            organizationEngineStatus: organizationEngineStatus
+        )
+    }
+
+    static func displayText(info: [String: Any]?) -> String {
+        let version = info?["CFBundleShortVersionString"] as? String
+        let build = info?["CFBundleVersion"] as? String
+        return "ClaraCore \(version?.isEmpty == false ? version! : "未知版本") (\(build?.isEmpty == false ? build! : "未知 Build"))"
+    }
+
+    static func supportDiagnosticText(
+        info: [String: Any]?,
+        deviceName: String,
+        systemName: String,
+        systemVersion: String,
+        organizationEngineStatus: OrganizationEngineStatus?
+    ) -> String {
+        let bundleIdentifier = info?["CFBundleIdentifier"] as? String
+        let organizationEngineLines = organizationEngineDiagnosticLines(
+            organizationEngineStatus: organizationEngineStatus
+        )
+        return """
+        App: \(displayText(info: info))
+        Bundle ID: \(bundleIdentifier?.isEmpty == false ? bundleIdentifier! : "未知 Bundle")
+        Device: \(deviceName)
+        OS: \(systemName) \(systemVersion)
+        \(organizationEngineLines)
+        Support note: This diagnostic block does not include API keys, imported conversation text, memories, Shared Lines, provider names, Base URLs, model names, or model provider configuration.
+        """
+    }
+
+    private static func organizationEngineDiagnosticLines(
+        organizationEngineStatus status: OrganizationEngineStatus?
+    ) -> String {
+        guard let status else {
+            return "Organization engine: unavailable in this context"
+        }
+
+        let unmetRequirements = status.requirements
+            .filter { !$0.isMet }
+            .map(\.title)
+            .joined(separator: ", ")
+        return """
+        Organization engine preferred mode: \(status.preferredMode.title)
+        Organization engine effective mode: \(status.isExternalModelEnabled ? "external model" : "local rules")
+        External model activation complete: \(status.areExternalModelActivationConditionsMet ? "yes" : "no")
+        External model missing requirements: \(unmetRequirements.isEmpty ? "none" : unmetRequirements)
+        """
     }
 }
 

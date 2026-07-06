@@ -7,6 +7,7 @@ struct RecallContextPackage: Equatable {
     var request: String
 
     var formattedText: String {
+        let continuationRequest = request.normalizedRecallRequest
         let memoryLines: String
         if memories.isEmpty {
             memoryLines = "- 暂时没有额外事实记忆。"
@@ -51,7 +52,7 @@ struct RecallContextPackage: Equatable {
         \(memoryLines)
 
         这次请这样继续：
-        \(request)
+        \(continuationRequest)
         """
     }
 }
@@ -73,6 +74,13 @@ struct RecallContextBuilder {
         request: String = Self.defaultRequest
     ) -> RecallContextPackage {
         RecallContextPackage(contextCard: contextCard, line: line, memories: memories, request: request)
+    }
+}
+
+private extension String {
+    var normalizedRecallRequest: String {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? RecallContextBuilder.defaultRequest : trimmed
     }
 }
 

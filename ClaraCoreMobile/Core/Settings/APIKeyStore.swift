@@ -30,7 +30,12 @@ struct ModelProviderConfiguration: Codable, Equatable {
     )
 
     var baseURL: URL? {
-        URL(string: baseURLString.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard let url = URL(string: baseURLString.trimmingCharacters(in: .whitespacesAndNewlines)),
+              url.scheme?.lowercased() == "https",
+              url.host?.isEmpty == false else {
+            return nil
+        }
+        return url
     }
 
     var trimmedProviderName: String {
@@ -62,6 +67,10 @@ enum ModelProviderConfigurationStore {
     static func save(_ configuration: ModelProviderConfiguration, userDefaults: UserDefaults = .standard) throws {
         let data = try JSONEncoder().encode(configuration.normalized)
         userDefaults.set(data, forKey: ModelProviderConfiguration.userDefaultsKey)
+    }
+
+    static func reset(userDefaults: UserDefaults = .standard) {
+        userDefaults.removeObject(forKey: ModelProviderConfiguration.userDefaultsKey)
     }
 }
 
@@ -109,10 +118,23 @@ enum OrganizationEngineModeStore {
 }
 
 enum ExternalModelProcessingConsentStore {
-    static let userDefaultsKey = "thirdPartyAIProcessingConsentAccepted"
+    static let userDefaultsKey = "externalModelProcessingConsentAccepted"
+    private static let legacyUserDefaultsKey = "thirdPartyAIProcessingConsentAccepted"
 
     static func isAccepted(userDefaults: UserDefaults = .standard) -> Bool {
-        userDefaults.bool(forKey: userDefaultsKey)
+        if userDefaults.object(forKey: userDefaultsKey) != nil {
+            return userDefaults.bool(forKey: userDefaultsKey)
+        }
+        let legacyValue = userDefaults.bool(forKey: legacyUserDefaultsKey)
+        if legacyValue {
+            userDefaults.set(true, forKey: userDefaultsKey)
+        }
+        return legacyValue
+    }
+
+    static func reset(userDefaults: UserDefaults = .standard) {
+        userDefaults.removeObject(forKey: userDefaultsKey)
+        userDefaults.removeObject(forKey: legacyUserDefaultsKey)
     }
 }
 
@@ -128,17 +150,21 @@ struct OrganizationEngineStatus: Equatable {
     var hasSavedModelKey: Bool
     var hasAcceptedExternalProcessing: Bool
     var modelProvider: ModelProviderConfiguration
+    var hasUnsavedModelConfigurationChanges: Bool = false
 
     var isModelConfigurationComplete: Bool {
         modelProvider.baseURL != nil && !modelProvider.trimmedModel.isEmpty
     }
 
-    var isExternalModelEnabled: Bool {
+    var areExternalModelActivationConditionsMet: Bool {
         preferredMode == .externalModel &&
-            effectiveMode == .remoteModel &&
             hasSavedModelKey &&
             isModelConfigurationComplete &&
             hasAcceptedExternalProcessing
+    }
+
+    var isExternalModelEnabled: Bool {
+        areExternalModelActivationConditionsMet && effectiveMode == .remoteModel
     }
 
     var metRequirementCount: Int {
@@ -173,6 +199,9 @@ struct OrganizationEngineStatus: Equatable {
         if isExternalModelEnabled {
             return "已启用：外部模型"
         }
+        if areExternalModelActivationConditionsMet {
+            return "配置完成：等待生效"
+        }
         if preferredMode == .externalModel {
             return "未启用：仍走本机规则"
         }
@@ -180,8 +209,14 @@ struct OrganizationEngineStatus: Equatable {
     }
 
     var activationDecisionSummary: String {
+        if hasUnsavedModelConfigurationChanges {
+            return "有未保存的模型配置改动。当前启用状态仍按上次保存的配置计算。"
+        }
         if isExternalModelEnabled {
             return "4 项启用条件都已完成。下一次导入整理会使用外部模型。"
+        }
+        if areExternalModelActivationConditionsMet {
+            return "4 项启用条件都已完成。设置保存后会刷新整理引擎，导入页会显示本次实际使用机制。"
         }
         if preferredMode == .externalModel {
             return "选择外部模型不等于启用；只有下面 4 项全部完成，才会把整理切到外部模型。"
@@ -197,15 +232,25 @@ struct OrganizationEngineStatus: Equatable {
         return missing.isEmpty ? nil : "还差：\(missing)"
     }
 
+    var unsavedConfigurationSummary: String? {
+        guard preferredMode == .externalModel, hasUnsavedModelConfigurationChanges else {
+            return nil
+        }
+        return "有未保存的模型配置改动。先点“保存配置”，启用条件才会按新 Base URL 和模型重新计算。"
+    }
+
     var activationRuleSummary: String {
         if isExternalModelEnabled {
             return "外部模型已满足全部条件。只有你主动点击导入并整理时，必要内容才会发送到已配置的模型提供方。"
+        }
+        if areExternalModelActivationConditionsMet {
+            return "外部模型 4 项启用条件已完成。设置保存后会刷新整理引擎，导入页会显示本次实际使用机制。"
         }
         if preferredMode == .externalModel {
             let missing = unmetRequirementTitles.joined(separator: "、")
             return "你只是选择了外部模型；还差 \(missing)。未全部完成前，本次整理仍走本机规则。"
         }
-        return "本机规则已生效。导入内容不会发送给模型提供方。"
+        return "\(LocalOrganizationRulebook.current.displayName) 已生效。导入内容不会发送给模型提供方。"
     }
 
     var importSummary: String {
@@ -215,23 +260,37 @@ struct OrganizationEngineStatus: Equatable {
         if preferredMode == .externalModel {
             return "外部模型还没有启用，本次导入仍会使用本机规则。"
         }
-        return "本次导入会使用本机规则，内容不会发送给模型提供方。"
+        return "本次导入会使用 \(LocalOrganizationRulebook.current.displayName)，内容不会发送给模型提供方。"
+    }
+
+    var shouldShowImportSettingsAction: Bool {
+        !isExternalModelEnabled
+    }
+
+    var importSettingsActionTitle: String {
+        if preferredMode == .externalModel {
+            return "补全启用条件"
+        }
+        return "切换整理方式"
     }
 
     var detail: String {
         if isExternalModelEnabled {
             return "外部模型已启用。只有你主动点击导入并整理时，必要内容才会发送到已配置的模型提供方。"
         }
+        if areExternalModelActivationConditionsMet {
+            return "外部模型启用条件已完成。请以导入页显示的本次整理机制为准。"
+        }
         if preferredMode == .externalModel {
             return "外部模型需要同时满足：选择外部模型、保存可用 Base URL 和模型、保存 API Key、确认外部模型处理说明。未满足前会自动使用本机规则。"
         }
-        return "下一次导入会直接使用本机规则。导入内容不会发送给模型提供方。"
+        return "下一次导入会直接使用 \(LocalOrganizationRulebook.current.displayName)。导入内容不会发送给模型提供方。"
     }
 
     var requirements: [Requirement] {
         [
             Requirement(id: "selected", title: "已选择外部模型", isMet: preferredMode == .externalModel),
-            Requirement(id: "configuration", title: "Base URL 和模型可用", isMet: isModelConfigurationComplete),
+            Requirement(id: "configuration", title: "已保存 Base URL 和模型", isMet: isModelConfigurationComplete),
             Requirement(id: "key", title: "API Key 已保存", isMet: hasSavedModelKey),
             Requirement(id: "consent", title: "已确认外部处理说明", isMet: hasAcceptedExternalProcessing)
         ]
@@ -239,6 +298,8 @@ struct OrganizationEngineStatus: Equatable {
 }
 
 struct ModelProviderClient {
+    static let requestTimeout: TimeInterval = 30
+
     enum ClientError: LocalizedError, Equatable {
         case invalidBaseURL
         case emptyModels
@@ -248,7 +309,7 @@ struct ModelProviderClient {
         var errorDescription: String? {
             switch self {
             case .invalidBaseURL:
-                return "模型 Base URL 无效。"
+                return "模型 Base URL 无效。请使用完整的 https:// 地址。"
             case .emptyModels:
                 return "这个地址没有返回可用模型。请检查 Base URL 或 Key。"
             case .invalidResponse:
@@ -257,8 +318,10 @@ struct ModelProviderClient {
                 if statusCode == 401 || statusCode == 403 {
                     return "模型 Key 无效或没有权限读取模型列表。"
                 }
-                let detail = body.trimmingCharacters(in: .whitespacesAndNewlines)
-                return detail.isEmpty ? "模型列表请求失败：HTTP \(statusCode)。" : "模型列表请求失败：HTTP \(statusCode)，\(detail)"
+                guard let detail = UserVisibleErrorDetailSanitizer.providerResponseDetail(from: body) else {
+                    return "模型列表请求失败：HTTP \(statusCode)。"
+                }
+                return "模型列表请求失败：HTTP \(statusCode)，\(detail)"
             }
         }
     }
@@ -276,7 +339,7 @@ struct ModelProviderClient {
     var urlSession: URLSession = .shared
 
     func listModels() async throws -> [Model] {
-        var request = URLRequest(url: baseURL.appendingPathComponent("models"))
+        var request = URLRequest(url: baseURL.appendingPathComponent("models"), timeoutInterval: Self.requestTimeout)
         request.httpMethod = "GET"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -305,9 +368,18 @@ struct ModelProviderClient {
 }
 
 final class KeychainAPIKeyStore: APIKeyStore {
-    enum StoreError: Error {
+    enum StoreError: LocalizedError, Equatable {
         case unexpectedStatus(OSStatus)
         case invalidData
+
+        var errorDescription: String? {
+            switch self {
+            case .unexpectedStatus:
+                return "无法访问本机 Keychain。请确认设备未受限制，稍后重试；如果问题持续，可以删除模型 Key 后重新保存。"
+            case .invalidData:
+                return "本机 Keychain 中的模型 Key 数据无法读取。请删除模型 Key 后重新保存。"
+            }
+        }
     }
 
     private let serviceName: String
@@ -386,9 +458,26 @@ struct ReflectionConfiguration: Equatable {
         var title: String {
             switch self {
             case .localPlaceholder:
-                "本机整理"
+                "本机规则"
             case .remoteModel:
                 "外部模型"
+            }
+        }
+
+        var organizingTitle: String {
+            "\(title)整理"
+        }
+
+        var organizingStatusTitle: String {
+            "\(organizingTitle)中"
+        }
+
+        var segmentProgressPrivacyDetail: String {
+            switch self {
+            case .localPlaceholder:
+                "内容保留在本机"
+            case .remoteModel:
+                "内容会发送到已配置的模型提供方"
             }
         }
     }

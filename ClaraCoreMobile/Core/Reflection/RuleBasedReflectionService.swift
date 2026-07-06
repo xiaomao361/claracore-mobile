@@ -1,6 +1,12 @@
 import Foundation
 
 struct RuleBasedReflectionService: ReflectionService {
+    private let rulebook: LocalOrganizationRulebook
+
+    init(rulebook: LocalOrganizationRulebook = .current) {
+        self.rulebook = rulebook
+    }
+
     func reflect(segment: CaptureSegment) async throws -> SegmentReflectionDraft {
         let sentences = informativeSentences(from: segment.content)
         let summary = sentences.first ?? ""
@@ -34,20 +40,20 @@ struct RuleBasedReflectionService: ReflectionService {
                     !isSpeakerOnly(sentence) &&
                     !isWeakSentence(sentence)
             }
-            .prefix(8)
+            .prefix(rulebook.maximumSentences)
             .map(ensureTerminalPunctuation)
     }
 
     private func memoryCandidates(from sentences: [String], provenance: ReflectionProvenance) -> [CandidateMemory] {
         sentences
-            .prefix(4)
+            .prefix(rulebook.maximumMemoryCandidates)
             .enumerated()
             .map { index, sentence in
                 CandidateMemory(
                     kind: memoryKind(for: sentence),
                     content: sentence,
                     confidence: max(0.78, 0.86 - Double(index) * 0.02),
-                    tags: ["local", "conversation"],
+                    tags: rulebook.memoryTags,
                     provenance: provenance
                 )
             }
@@ -99,22 +105,21 @@ struct RuleBasedReflectionService: ReflectionService {
     }
 
     private func isSpeakerOnly(_ sentence: String) -> Bool {
-        ["用户", "助手", "User", "Assistant"].contains(sentence)
+        rulebook.speakerOnlySentences.contains(sentence)
     }
 
     private func isWeakSentence(_ sentence: String) -> Bool {
-        let weakValues = ["好的", "嗯", "是的", "谢谢", "继续", "OK", "ok"]
-        return weakValues.contains(sentence)
+        rulebook.weakSentences.contains(sentence)
     }
 
     private func memoryKind(for sentence: String) -> CandidateMemory.Kind {
-        if containsAny(sentence, ["偏好", "希望", "想要", "倾向", "更喜欢"]) {
+        if containsAny(sentence, rulebook.preferenceKeywords) {
             return .preference
         }
-        if containsAny(sentence, ["决定", "采用", "确认", "选定", "先做", "不做"]) {
+        if containsAny(sentence, rulebook.decisionKeywords) {
             return .decision
         }
-        if containsAny(sentence, ["待办", "下一步", "需要", "计划"]) {
+        if containsAny(sentence, rulebook.taskKeywords) {
             return .task
         }
         return .fact

@@ -14,6 +14,7 @@ struct InboxFeatureView: View {
     @State private var organizingItemID: String?
     @State private var organizingProgress: ReflectionProgress?
     @State private var selectedResult: InboxReviewResult?
+    @State private var pendingDiscardItem: InboxItem?
 
     var body: some View {
         ScrollView {
@@ -22,7 +23,7 @@ struct InboxFeatureView: View {
                     ClaraStatusPill(title: "\(items.count) 条待处理", color: items.isEmpty ? ClaraDesign.inkMuted : ClaraDesign.review, systemImage: "tray")
                     Spacer()
                     if isOrganizing {
-                        ClaraStatusPill(title: "整理中", color: ClaraDesign.reflection, systemImage: "sparkles")
+                        ClaraStatusPill(title: reflectionConfiguration.mode.organizingStatusTitle, color: ClaraDesign.reflection, systemImage: "sparkles")
                     } else {
                         Button {
                             reload()
@@ -95,7 +96,7 @@ struct InboxFeatureView: View {
                                 }
 
                                 Button(role: .destructive) {
-                                    discard(item)
+                                    pendingDiscardItem = item
                                 } label: {
                                     Label("丢弃", systemImage: "trash")
                                 }
@@ -144,12 +145,31 @@ struct InboxFeatureView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .confirmationDialog("丢弃待处理导入？", isPresented: pendingDiscardBinding, titleVisibility: .visible) {
+            Button("丢弃待处理导入", role: .destructive) {
+                guard let pendingDiscardItem else { return }
+                discard(pendingDiscardItem)
+                self.pendingDiscardItem = nil
+            }
+            Button("取消", role: .cancel) {
+                pendingDiscardItem = nil
+            }
+        } message: {
+            Text("这会把这条导入从待处理列表移除。已经提交的记忆、共同线和原文 Archive 不会被删除。")
+        }
     }
 
     private var errorBinding: Binding<Bool> {
         Binding(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
+        )
+    }
+
+    private var pendingDiscardBinding: Binding<Bool> {
+        Binding(
+            get: { pendingDiscardItem != nil },
+            set: { if !$0 { pendingDiscardItem = nil } }
         )
     }
 
@@ -298,7 +318,7 @@ struct InboxFeatureView: View {
         case .segmenting:
             "切分内容"
         case .reflectingSegment:
-            "模型整理"
+            reflectionConfiguration.mode.organizingTitle
         case .reconciling:
             "合并结果"
         case .ready:
@@ -315,7 +335,7 @@ struct InboxFeatureView: View {
         case let .segmenting(total):
             "已生成 \(total) 个内容片段"
         case let .reflectingSegment(current, total):
-            "正在处理第 \(current) / \(total) 段"
+            "正在处理第 \(current) / \(total) 段，\(reflectionConfiguration.mode.segmentProgressPrivacyDetail)"
         case let .reconciling(total):
             "正在把 \(total) 段结果合成一份摘要"
         case .ready:

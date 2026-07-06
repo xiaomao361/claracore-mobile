@@ -272,7 +272,7 @@ private struct ArchiveDetailView: View {
                         HStack(spacing: 10) {
                             Button {
                                 UIPasteboard.general.string = item.rawContent
-                                statusMessage = "原文已复制。"
+                                statusMessage = "完整原文已复制到系统剪贴板。"
                             } label: {
                                 Label("复制原文", systemImage: "doc.on.doc")
                                     .frame(maxWidth: .infinity)
@@ -286,6 +286,10 @@ private struct ArchiveDetailView: View {
                             .buttonStyle(ClaraSecondaryButtonStyle())
                         }
                         .disabled(item.rawContent.isEmpty)
+
+                        Text("复制或分享会把这条 Archive 的完整原文交给系统剪贴板或分享面板；请只粘贴或发送到你信任的应用。")
+                            .font(.caption)
+                            .foregroundStyle(ClaraDesign.inkMuted)
 
                         Divider()
                             .background(ClaraDesign.hairline)

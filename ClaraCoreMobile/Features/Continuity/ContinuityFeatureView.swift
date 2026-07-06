@@ -12,6 +12,7 @@ struct ContinuityFeatureView: View {
     @State private var contextCards: [String: ContextCard] = [:]
     @State private var selectedLine: ContinuityLine?
     @State private var editingLine: ContinuityLine?
+    @State private var pendingDeleteLine: ContinuityLine?
     @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var isLoadingLines = false
@@ -104,7 +105,7 @@ struct ContinuityFeatureView: View {
                                         .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
 
                                         Button(role: .destructive) {
-                                            delete(line)
+                                            pendingDeleteLine = line
                                         } label: {
                                             Label("删除", systemImage: "trash")
                                         }
@@ -169,12 +170,31 @@ struct ContinuityFeatureView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .confirmationDialog("删除共同线？", isPresented: pendingDeleteBinding, titleVisibility: .visible) {
+            Button("删除共同线", role: .destructive) {
+                guard let pendingDeleteLine else { return }
+                delete(pendingDeleteLine)
+                self.pendingDeleteLine = nil
+            }
+            Button("取消", role: .cancel) {
+                pendingDeleteLine = nil
+            }
+        } message: {
+            Text("这会删除这条共同线，并解除相关记忆的共同线绑定；记忆本身不会被同时删除。")
+        }
     }
 
     private var errorBinding: Binding<Bool> {
         Binding(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
+        )
+    }
+
+    private var pendingDeleteBinding: Binding<Bool> {
+        Binding(
+            get: { pendingDeleteLine != nil },
+            set: { if !$0 { pendingDeleteLine = nil } }
         )
     }
 
@@ -194,7 +214,7 @@ struct ContinuityFeatureView: View {
             focusPendingLineIfNeeded()
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
         isLoadingLines = false
     }
@@ -226,7 +246,7 @@ struct ContinuityFeatureView: View {
             self.focusedLineID = nil
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 
@@ -243,7 +263,7 @@ struct ContinuityFeatureView: View {
             statusMessage = "共同线已删除。"
             reload(reset: true)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 
@@ -254,7 +274,7 @@ struct ContinuityFeatureView: View {
             statusMessage = "共同线已更新。"
             reload(reset: true)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 }

@@ -12,7 +12,11 @@ Public pages:
 
 Internal submission draft:
 
+- [App Store Connect Metadata](app-store-connect-metadata.md)
 - [App Store Submission Checklist](app-store-submission.md)
+- [App Privacy Labels](app-privacy-labels.md)
+- [Screenshot Plan](screenshot-plan.md)
+- [App Store Connect Export Options](export-options-app-store-connect.plist)
 
 Current public fallback URLs:
 

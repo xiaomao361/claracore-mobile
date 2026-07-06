@@ -68,6 +68,45 @@ final class DeepSeekShareImporterTests: XCTestCase {
         }
     }
 
+    func testImportConversationUsesBoundedShareAPIRequest() async throws {
+        DeepSeekShareURLProtocol.requestHandler = { request in
+            let response = try XCTUnwrap(
+                HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )
+            )
+            return (response, Data(Self.fixture.utf8))
+        }
+        defer {
+            DeepSeekShareURLProtocol.requestHandler = nil
+            DeepSeekShareURLProtocol.lastRequest = nil
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [DeepSeekShareURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let importer = DeepSeekShareImporter(urlSession: session)
+        let sourceURL = try XCTUnwrap(URL(string: "https://chat.deepseek.com/share/suy08uspxl9wzja7uc"))
+
+        let conversation = try await importer.importConversation(from: sourceURL)
+        let request = try XCTUnwrap(DeepSeekShareURLProtocol.lastRequest)
+
+        XCTAssertEqual(conversation.title, "Shared Conversation")
+        XCTAssertEqual(request.timeoutInterval, DeepSeekShareImporter.requestTimeout)
+        XCTAssertEqual(request.url?.scheme, "https")
+        XCTAssertEqual(request.url?.host, "chat.deepseek.com")
+        XCTAssertEqual(request.url?.path, "/api/v0/share/content")
+        XCTAssertEqual(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?.queryItems, [
+            URLQueryItem(name: "share_id", value: "suy08uspxl9wzja7uc")
+        ])
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Referer"), sourceURL.absoluteString)
+        XCTAssertNotNil(request.value(forHTTPHeaderField: "User-Agent"))
+    }
+
     private static let fixture = """
     {
       "code": 0,
@@ -231,4 +270,32 @@ final class DeepSeekShareImporterTests: XCTestCase {
             """
         )
     ]
+}
+
+private final class DeepSeekShareURLProtocol: URLProtocol {
+    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    static var lastRequest: URLRequest?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        Self.lastRequest = request
+        do {
+            let handler = try XCTUnwrap(Self.requestHandler)
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
 }

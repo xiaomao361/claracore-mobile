@@ -1,6 +1,8 @@
 import Foundation
 
 final class DeepSeekShareImporter {
+    static let requestTimeout: TimeInterval = 30
+
     enum ImportError: LocalizedError, Equatable {
         case invalidURL
         case unsupportedURL
@@ -44,7 +46,7 @@ final class DeepSeekShareImporter {
             throw ImportError.invalidURL
         }
 
-        var request = URLRequest(url: requestURL)
+        var request = URLRequest(url: requestURL, timeoutInterval: Self.requestTimeout)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("https://chat.deepseek.com/share/\(shareId)", forHTTPHeaderField: "Referer")
         request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")

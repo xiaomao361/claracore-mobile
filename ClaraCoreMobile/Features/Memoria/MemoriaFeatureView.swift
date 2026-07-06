@@ -11,6 +11,7 @@ struct MemoriaFeatureView: View {
     @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var editingMemory: Memory?
+    @State private var pendingDeleteMemory: Memory?
     @State private var kindFilter: MemoryKindFilter = .all
     @State private var sourceFilter: String = MemorySourceFilter.all
     @State private var onlyLinkedToLine = false
@@ -52,7 +53,7 @@ struct MemoriaFeatureView: View {
                             MemoryCard(
                                 memory: memory,
                                 onEdit: { editingMemory = memory },
-                                onDelete: { deleteMemory(memory) }
+                                onDelete: { pendingDeleteMemory = memory }
                             )
                         }
                     }
@@ -91,7 +92,7 @@ struct MemoriaFeatureView: View {
                                 MemoryCard(
                                     memory: memory,
                                     onEdit: { editingMemory = memory },
-                                    onDelete: { deleteMemory(memory) }
+                                    onDelete: { pendingDeleteMemory = memory }
                                 )
                             }
                         }
@@ -128,6 +129,25 @@ struct MemoriaFeatureView: View {
                 }
             }
         }
+        .confirmationDialog("删除记忆？", isPresented: pendingDeleteBinding, titleVisibility: .visible) {
+            Button("删除记忆", role: .destructive) {
+                guard let pendingDeleteMemory else { return }
+                deleteMemory(pendingDeleteMemory)
+                self.pendingDeleteMemory = nil
+            }
+            Button("取消", role: .cancel) {
+                pendingDeleteMemory = nil
+            }
+        } message: {
+            Text("这会删除这条本地记忆。原始对话 Archive 和共同线不会被同时删除。")
+        }
+    }
+
+    private var pendingDeleteBinding: Binding<Bool> {
+        Binding(
+            get: { pendingDeleteMemory != nil },
+            set: { if !$0 { pendingDeleteMemory = nil } }
+        )
     }
 
     private var filteredRecent: [Memory] {
@@ -145,7 +165,7 @@ struct MemoriaFeatureView: View {
             statusMessage = results.isEmpty ? "没有找到匹配记忆。" : "找到 \(results.count) 条记忆。"
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 
@@ -163,7 +183,7 @@ struct MemoriaFeatureView: View {
             hasMoreRecent = page.count == pageSize
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
         isLoadingRecent = false
     }
@@ -188,7 +208,7 @@ struct MemoriaFeatureView: View {
                 recall()
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 
@@ -200,7 +220,7 @@ struct MemoriaFeatureView: View {
             statusMessage = "记忆已删除。"
             errorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 }

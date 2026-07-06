@@ -15,10 +15,15 @@ struct AppDependencies {
     let reflectionRunner: ReflectionRunner
     let digestCommitter: DigestCommitter
     let apiKeyStore: APIKeyStore
+    let userDefaults: UserDefaults
     let reflectionConfiguration: ReflectionConfiguration
 
-    static func live(apiKeyStore: APIKeyStore = KeychainAPIKeyStore()) throws -> AppDependencies {
-        let database = try AppDatabase()
+    static func live(
+        apiKeyStore: APIKeyStore = KeychainAPIKeyStore(),
+        userDefaults: UserDefaults = .standard,
+        databasePath: String? = nil
+    ) throws -> AppDependencies {
+        let database = try AppDatabase(path: databasePath)
         let contextCardStore = ContextCardStore(database: database)
         _ = try contextCardStore.defaultCard()
         let memoriaStore = MemoriaStore(database: database)
@@ -26,10 +31,10 @@ struct AppDependencies {
         let inboxStore = InboxStore(database: database)
         let importSessionStore = ImportSessionStore(database: database)
         let segmenter = FixedSizeCaptureSegmenter()
-        let organizationEngineMode = OrganizationEngineModeStore.load()
-        let modelProviderConfiguration = ModelProviderConfigurationStore.load()
+        let organizationEngineMode = OrganizationEngineModeStore.load(userDefaults: userDefaults)
+        let modelProviderConfiguration = ModelProviderConfigurationStore.load(userDefaults: userDefaults)
         let modelProviderAPIKey = (try? apiKeyStore.read(service: .modelProvider)) ?? (try? apiKeyStore.read(service: .deepSeek))
-        let hasAcceptedExternalModelProcessing = ExternalModelProcessingConsentStore.isAccepted()
+        let hasAcceptedExternalModelProcessing = ExternalModelProcessingConsentStore.isAccepted(userDefaults: userDefaults)
         let reflectionService: ReflectionService
         let reflectionConfiguration: ReflectionConfiguration
         if organizationEngineMode == .externalModel,
@@ -86,6 +91,7 @@ struct AppDependencies {
                 continuityStore: continuityStore
             ),
             apiKeyStore: apiKeyStore,
+            userDefaults: userDefaults,
             reflectionConfiguration: reflectionConfiguration
         )
     }

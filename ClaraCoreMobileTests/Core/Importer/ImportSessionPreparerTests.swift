@@ -38,4 +38,60 @@ final class ImportSessionPreparerTests: XCTestCase {
         XCTAssertEqual(storedSegments.map(\.contentHash), prepared.segments.map(\.contentHash))
         XCTAssertEqual(try inboxStore.pending().map(\.id), [item.id])
     }
+
+    func testPrepareRejectsOversizedImportBeforeCreatingSession() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let database = try AppDatabase(path: databaseURL.path)
+        let inboxStore = InboxStore(database: database)
+        let sessionStore = ImportSessionStore(database: database)
+        let preparer = ImportSessionPreparer(
+            inboxStore: inboxStore,
+            sessionStore: sessionStore,
+            segmenter: FixedSizeCaptureSegmenter(maxCharacters: 24, overlapCharacters: 4)
+        )
+        let item = try inboxStore.enqueue(
+            RawCapture(
+                source: .manual,
+                rawContent: String(repeating: "a", count: RawCapture.maxImportCharacters + 1)
+            )
+        )
+
+        XCTAssertThrowsError(try preparer.prepare(item: item)) { error in
+            XCTAssertEqual(
+                error as? RawCapture.ValidationError,
+                .oversizedImport(
+                    currentCharacters: RawCapture.maxImportCharacters + 1,
+                    maxCharacters: RawCapture.maxImportCharacters
+                )
+            )
+        }
+        XCTAssertTrue(try sessionStore.archive().isEmpty)
+    }
+
+    func testPrepareRejectsBlankImportBeforeCreatingSession() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let database = try AppDatabase(path: databaseURL.path)
+        let inboxStore = InboxStore(database: database)
+        let sessionStore = ImportSessionStore(database: database)
+        let preparer = ImportSessionPreparer(
+            inboxStore: inboxStore,
+            sessionStore: sessionStore,
+            segmenter: FixedSizeCaptureSegmenter(maxCharacters: 24, overlapCharacters: 4)
+        )
+        let item = try inboxStore.enqueue(
+            RawCapture(
+                source: .manual,
+                rawContent: " \n\t "
+            )
+        )
+
+        XCTAssertThrowsError(try preparer.prepare(item: item)) { error in
+            XCTAssertEqual(error as? RawCapture.ValidationError, .emptyImport)
+        }
+        XCTAssertTrue(try sessionStore.archive().isEmpty)
+    }
 }

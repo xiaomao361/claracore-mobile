@@ -157,4 +157,70 @@ final class ImportSessionStoreTests: XCTestCase {
         }
         XCTAssertEqual(inboxCount, 0)
     }
+
+    func testDeleteArchivedSessionPreservesCommittedMemoriesAndContinuityLines() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let database = try AppDatabase(path: databaseURL.path)
+        let inboxStore = InboxStore(database: database)
+        let sessionStore = ImportSessionStore(database: database)
+        let memoriaStore = MemoriaStore(database: database)
+        let continuityStore = ContinuityStore(database: database)
+        let committer = DigestCommitter(memoriaStore: memoriaStore, continuityStore: continuityStore)
+        let capture = RawCapture(
+            source: .manual,
+            rawContent: "用户决定保留原文删除和整理结果删除的边界。",
+            sourceApp: "Manual",
+            contextCardId: "role-preserve"
+        )
+        let item = try inboxStore.enqueue(capture)
+        let session = try sessionStore.create(from: item.rawCapture(), title: "Preserve Fixture")
+        let provenance = ReflectionProvenance(
+            sessionId: session.id,
+            segmentId: "segment-1",
+            characterRange: 0..<capture.rawContent.count
+        )
+        let digest = DigestResult(
+            sessionId: session.id,
+            summary: "原文删除边界",
+            candidateMemories: [
+                CandidateMemory(
+                    kind: .decision,
+                    content: "用户决定删除原文 Archive 不应删除已提交记忆。",
+                    confidence: 0.93,
+                    tags: ["archive"],
+                    provenance: provenance
+                )
+            ],
+            candidateSharedLineUpdates: [
+                CandidateSharedLineUpdate(
+                    title: "原文删除边界",
+                    lastPosition: "已确认删除原文 Archive 只移除源材料。",
+                    nextStep: "继续保留已提交整理结果。",
+                    stateSummary: "Archive 删除和整理结果删除是两个独立动作。",
+                    confidence: 0.9,
+                    provenance: provenance
+                )
+            ],
+            conflicts: []
+        )
+        let committed = try committer.commit(digest, contextCardId: "role-preserve")
+        try inboxStore.updateCommitResult(
+            id: item.id,
+            memoryIds: committed.memories.map(\.id),
+            lineIds: committed.continuityLines.map(\.id)
+        )
+        try inboxStore.updateStatus(id: item.id, status: .committed)
+
+        try sessionStore.deleteArchivedSession(id: session.id)
+
+        XCTAssertNil(try sessionStore.archivedSession(id: session.id))
+        let memories = try memoriaStore.recall(query: "Archive", limit: 10, contextCardId: "role-preserve")
+        let lines = try continuityStore.active(contextCardId: "role-preserve")
+        XCTAssertEqual(memories.map(\.content), ["用户决定删除原文 Archive 不应删除已提交记忆。"])
+        XCTAssertEqual(memories.first?.lineId, committed.continuityLines.first?.id)
+        XCTAssertEqual(lines.map(\.id), committed.continuityLines.map(\.id))
+        XCTAssertEqual(lines.first?.lastPosition, "已确认删除原文 Archive 只移除源材料。")
+    }
 }

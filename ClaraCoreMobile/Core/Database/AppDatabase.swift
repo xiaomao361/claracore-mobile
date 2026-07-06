@@ -7,10 +7,19 @@ struct AppDatabase {
     init(path: String? = nil) throws {
         let databasePath = try path ?? Self.defaultDatabasePath()
         dbQueue = try DatabaseQueue(path: databasePath)
+        if path == nil {
+            try Self.excludeFromBackup(URL(fileURLWithPath: databasePath))
+        }
         try Self.migrator.migrate(dbQueue)
     }
 
     private static func defaultDatabasePath() throws -> String {
+        let directory = try defaultDatabaseDirectory()
+        try prepareDatabaseDirectory(directory)
+        return directory.appendingPathComponent("claracore.sqlite").path
+    }
+
+    private static func defaultDatabaseDirectory() throws -> URL {
         let directory = try FileManager.default.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,
@@ -19,8 +28,39 @@ struct AppDatabase {
         )
         .appendingPathComponent("ClaraCoreMobile", isDirectory: true)
 
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return directory.appendingPathComponent("claracore.sqlite").path
+        return directory
+    }
+
+    static func prepareDatabaseDirectory(_ directory: URL, fileManager: FileManager = .default) throws {
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        try excludeFromBackup(directory)
+    }
+
+    static func deleteDatabaseDirectory(_ directory: URL, fileManager: FileManager = .default) throws {
+        guard fileManager.fileExists(atPath: directory.path) else { return }
+        try fileManager.removeItem(at: directory)
+    }
+
+    static func deleteDefaultDatabaseDirectory() throws {
+        try deleteDatabaseDirectory(try defaultDatabaseDirectory())
+    }
+
+    static func excludeFromBackup(_ url: URL) throws {
+        var resourceURL = url
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = true
+        try resourceURL.setResourceValues(resourceValues)
+    }
+
+    func deleteAllLocalUserData() throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "DELETE FROM capture_segments")
+            try db.execute(sql: "DELETE FROM import_sessions")
+            try db.execute(sql: "DELETE FROM inbox")
+            try db.execute(sql: "DELETE FROM memories")
+            try db.execute(sql: "DELETE FROM continuity_lines")
+            try db.execute(sql: "DELETE FROM context_cards")
+        }
     }
 
     private static var migrator: DatabaseMigrator {

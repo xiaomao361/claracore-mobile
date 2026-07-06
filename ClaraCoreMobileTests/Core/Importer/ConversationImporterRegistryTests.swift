@@ -43,6 +43,24 @@ final class ConversationImporterRegistryTests: XCTestCase {
         XCTAssertNil(importer.preview(for: .file(fileURL)))
     }
 
+    func testRegistryReportsUnsupportedFileInsteadOfEmptyInput() async throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("json")
+        let registry = ConversationImporterRegistry(importers: [FileConversationImporter()])
+
+        do {
+            _ = try await registry.importCapture(from: .file(fileURL))
+            XCTFail("Expected unsupported file error")
+        } catch let error as FileConversationImporter.ImportError {
+            XCTAssertEqual(error, .unsupportedFile)
+            XCTAssertEqual(
+                ClaraErrorPresenter.message(for: error),
+                "暂时只支持导入 .txt 文本文件。"
+            )
+        }
+    }
+
     func testRegistryMatchesDeepSeekShareURL() throws {
         let registry = ConversationImporterRegistry.live()
         let url = try XCTUnwrap(URL(string: "https://chat.deepseek.com/share/suy08uspxl9wzja7uc"))
@@ -125,6 +143,59 @@ final class ConversationImporterRegistryTests: XCTestCase {
         XCTAssertEqual(capture.metadata["title"], "ChatGPT Shared Conversation")
         XCTAssertEqual(capture.metadata["url"], url.absoluteString)
         XCTAssertTrue(capture.rawContent.contains("User: 帮我整理这段对话。"))
+    }
+
+    func testRegistryRejectsInsecureURLBeforeNetworkImport() async throws {
+        let loader = StubURLLoader(
+            data: Data("should not load".utf8),
+            contentType: "text/plain"
+        )
+        let registry = ConversationImporterRegistry.live(urlLoader: loader)
+        let url = try XCTUnwrap(URL(string: "http://chatgpt.com/share/abc"))
+
+        do {
+            _ = try await registry.importCapture(from: .url(url))
+            XCTFail("Expected insecure URL error")
+        } catch let error as ConversationImporterRegistry.RegistryError {
+            XCTAssertEqual(error, .insecureURL("chatgpt.com"))
+            XCTAssertEqual(
+                ClaraErrorPresenter.message(for: error),
+                "链接导入只支持 https:// 公开链接。请重新生成 chatgpt.com 的 HTTPS 分享链接，或改用复制文本导入。"
+            )
+        }
+        XCTAssertNil(loader.lastRequest)
+    }
+
+    func testGenericURLFallbackUsesBoundedRequest() async throws {
+        let loader = StubURLLoader(
+            data: Data("User: hello\nAssistant: hi".utf8),
+            contentType: "text/plain"
+        )
+        let importer = GenericURLConversationImporter(urlLoader: loader)
+        let url = try XCTUnwrap(URL(string: "https://example.com/share/abc"))
+
+        _ = try await importer.importCapture(from: .url(url))
+        let request = try XCTUnwrap(loader.lastRequest)
+
+        XCTAssertEqual(request.url, url)
+        XCTAssertEqual(request.timeoutInterval, GenericURLCaptureBuilder.requestTimeout)
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "text/html, text/plain, application/xhtml+xml")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "ClaraCoreMobile/1.0")
+    }
+
+    func testKnownProviderURLFallbackUsesBoundedRequest() async throws {
+        let loader = StubURLLoader(
+            data: Data("User: hello\nAssistant: hi".utf8),
+            contentType: "text/plain"
+        )
+        let importer = ProviderURLConversationImporter(urlLoader: loader)
+        let url = try XCTUnwrap(URL(string: "https://chatgpt.com/share/abc"))
+
+        _ = try await importer.importCapture(from: .url(url))
+        let request = try XCTUnwrap(loader.lastRequest)
+
+        XCTAssertEqual(request.url, url)
+        XCTAssertEqual(request.timeoutInterval, GenericURLCaptureBuilder.requestTimeout)
     }
 
     func testProviderProfileMatchesWWWHostVariant() throws {
@@ -217,12 +288,20 @@ final class ConversationImporterRegistryTests: XCTestCase {
     }
 }
 
-private struct StubURLLoader: URLDataLoading {
+private final class StubURLLoader: URLDataLoading {
     var data: Data
     var statusCode = 200
     var contentType: String
+    private(set) var lastRequest: URLRequest?
+
+    init(data: Data, statusCode: Int = 200, contentType: String) {
+        self.data = data
+        self.statusCode = statusCode
+        self.contentType = contentType
+    }
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        lastRequest = request
         let response = HTTPURLResponse(
             url: request.url!,
             statusCode: statusCode,

@@ -3,7 +3,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 struct ImporterFeatureView: View {
-    @AppStorage(ExternalModelProcessingConsentStore.userDefaultsKey) private var hasAcceptedThirdPartyAIProcessing = false
+    @AppStorage(ExternalModelProcessingConsentStore.userDefaultsKey) private var hasAcceptedExternalModelProcessing = false
 
     let inboxStore: InboxStore
     let preparer: ImportSessionPreparer
@@ -16,6 +16,7 @@ struct ImporterFeatureView: View {
     @Binding var selectedContextCardID: String?
     let onShowMemories: () -> Void
     let onShowContinuity: (String?) -> Void
+    let onShowSettings: () -> Void
 
     @State private var input = ""
     @State private var contextCards: [ContextCard] = []
@@ -99,7 +100,10 @@ struct ImporterFeatureView: View {
                                 .background(ClaraDesign.surfaceMuted.opacity(0.55))
                                 .clipShape(RoundedRectangle(cornerRadius: ClaraDesign.cardRadius, style: .continuous))
 
-                            ImportEngineStatusRow(status: organizationEngineStatus)
+                            ImportEngineStatusRow(
+                                status: organizationEngineStatus,
+                                onOpenSettings: onShowSettings
+                            )
 
                             VStack(spacing: 10) {
                                 Button {
@@ -194,8 +198,10 @@ struct ImporterFeatureView: View {
         .claraScreenBackground()
         .claraKeyboardDismissable()
         .task {
+            hasAcceptedExternalModelProcessing = ExternalModelProcessingConsentStore.isAccepted()
             loadContextCards()
             loadActiveLines()
+            loadScreenshotImportResultIfNeeded()
         }
         .onChange(of: selectedContextCardID) { _, _ in
             loadActiveLines()
@@ -259,7 +265,7 @@ struct ImporterFeatureView: View {
             preferredMode: reflectionConfiguration.preferredEngineMode,
             effectiveMode: reflectionConfiguration.mode,
             hasSavedModelKey: reflectionConfiguration.hasSavedModelKey,
-            hasAcceptedExternalProcessing: reflectionConfiguration.hasAcceptedExternalProcessing || hasAcceptedThirdPartyAIProcessing,
+            hasAcceptedExternalProcessing: reflectionConfiguration.hasAcceptedExternalProcessing || hasAcceptedExternalModelProcessing,
             modelProvider: reflectionConfiguration.modelProvider ?? .deepSeekDefault
         )
     }
@@ -308,6 +314,23 @@ struct ImporterFeatureView: View {
         }
     }
 
+    private func loadScreenshotImportResultIfNeeded() {
+        guard AppStoreScreenshotFixtureSeeder.target() == .importResult,
+              lastCommitResult == nil else {
+            return
+        }
+        do {
+            let contextCardId = selectedContextCardID ?? contextCards.first?.id
+            let lines = try continuityStore.active(limit: 1, contextCardId: contextCardId)
+            guard let line = lines.first else { return }
+            lastCommitResult = AppStoreScreenshotFixtureSeeder.sampleCommitResult(line: line)
+            isSourceExpanded = false
+            statusMessage = nil
+        } catch {
+            statusMessage = ClaraErrorPresenter.message(for: error)
+        }
+    }
+
     private func importInput() {
         let value = trimmedInput
         guard !value.isEmpty else { return }
@@ -320,14 +343,14 @@ struct ImporterFeatureView: View {
             guard let url = urls.first else { return }
             importCapture(from: .file(url))
         case let .failure(error):
-            statusMessage = error.localizedDescription
+            statusMessage = ClaraErrorPresenter.message(for: error)
         }
     }
 
     private func importCapture(from inputValue: ConversationImportInput, allowDuplicate: Bool = false) {
         let contextCardId = selectedContextCardID ?? contextCards.first?.id
         let targetLineId = selectedTargetLineID == ImportTargetLine.newLineID ? nil : selectedTargetLineID
-        if reflectionConfiguration.mode == .remoteModel, !hasAcceptedThirdPartyAIProcessing {
+        if reflectionConfiguration.mode == .remoteModel, !hasAcceptedExternalModelProcessing {
             statusMessage = "请先到设置里确认外部模型处理说明，再导入并整理。"
             return
         }
@@ -344,6 +367,7 @@ struct ImporterFeatureView: View {
             do {
                 var capture = try await importerRegistry.importCapture(from: inputValue)
                 capture.contextCardId = contextCardId
+                try capture.validateForImport()
                 if !allowDuplicate, let existing = try inboxStore.existing(
                     contentHash: capture.contentHash,
                     sourceApp: capture.sourceApp,
@@ -442,7 +466,7 @@ struct ImporterFeatureView: View {
         case .segmenting:
             "切分内容"
         case .reflectingSegment:
-            "模型整理"
+            reflectionConfiguration.mode == .remoteModel ? "外部模型整理" : "本机规则整理"
         case .reconciling:
             "合并结果"
         case .ready:
@@ -480,6 +504,7 @@ private enum ImportTargetLine {
 
 private struct ImportEngineStatusRow: View {
     var status: OrganizationEngineStatus
+    var onOpenSettings: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -498,6 +523,18 @@ private struct ImportEngineStatusRow: View {
                         color: status.isExternalModelEnabled ? ClaraDesign.memory : ClaraDesign.reflection,
                         systemImage: nil
                     )
+                    Spacer(minLength: 8)
+                    if status.shouldShowImportSettingsAction {
+                        Button {
+                            onOpenSettings()
+                        } label: {
+                            Label(status.importSettingsActionTitle, systemImage: "gearshape")
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .accessibilityIdentifier("import-engine-settings-action")
+                        .accessibilityHint("打开设置以切换整理方式或补全外部模型启用条件")
+                        .buttonStyle(ClaraCompactButtonStyle(color: ClaraDesign.continuity))
+                    }
                 }
 
                 Text(status.importSummary)
@@ -517,6 +554,7 @@ private struct ImportEngineStatusRow: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+
             }
 
             Spacer()
@@ -977,6 +1015,7 @@ private struct ImportProgressView: View {
         importerRegistry: ConversationImporterRegistry.live(),
         selectedContextCardID: .constant(ContextCardStore.defaultCardID),
         onShowMemories: {},
-        onShowContinuity: { _ in }
+        onShowContinuity: { _ in },
+        onShowSettings: {}
     )
 }

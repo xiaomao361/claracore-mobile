@@ -37,6 +37,65 @@ final class ReflectionRunnerTests: XCTestCase {
         XCTAssertFalse(result.digest.candidateMemories.isEmpty)
         XCTAssertFalse(result.digest.candidateSharedLineUpdates.isEmpty)
     }
+
+    func testRunRejectsEmptyPreparedSessionBeforeReflection() async throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        let database = try AppDatabase(path: databaseURL.path)
+        let sessionStore = ImportSessionStore(database: database)
+        let session = try sessionStore.create(
+            from: RawCapture(source: .manual, rawContent: "original text"),
+            title: "Empty prepared session"
+        )
+        let reflectionService = CountingReflectionService()
+        let runner = ReflectionRunner(
+            sessionStore: sessionStore,
+            reflectionService: reflectionService
+        )
+
+        do {
+            _ = try await runner.run(prepared: PreparedImportSession(session: session, segments: []))
+            XCTFail("Expected no-segments error")
+        } catch let error as ReflectionRunner.RunnerError {
+            XCTAssertEqual(error, .noSegments)
+            XCTAssertEqual(
+                ClaraErrorPresenter.message(for: error),
+                "没有可整理的内容片段。请重新导入包含文字的对话、公开分享链接或 .txt 文件。"
+            )
+        }
+
+        XCTAssertEqual(reflectionService.reflectCallCount, 0)
+        XCTAssertEqual(reflectionService.reconcileCallCount, 0)
+        XCTAssertEqual(try sessionStore.archive().first?.session.status, .importing)
+    }
+}
+
+private final class CountingReflectionService: ReflectionService {
+    private(set) var reflectCallCount = 0
+    private(set) var reconcileCallCount = 0
+
+    func reflect(segment: CaptureSegment) async throws -> SegmentReflectionDraft {
+        reflectCallCount += 1
+        return SegmentReflectionDraft(
+            segmentId: segment.id,
+            summary: "unused",
+            candidateMemories: [],
+            candidateSharedLineUpdates: [],
+            uncertainItems: []
+        )
+    }
+
+    func reconcile(session: ImportSession, drafts: [SegmentReflectionDraft]) async throws -> DigestResult {
+        reconcileCallCount += 1
+        return DigestResult(
+            sessionId: session.id,
+            summary: "unused",
+            candidateMemories: [],
+            candidateSharedLineUpdates: [],
+            conflicts: []
+        )
+    }
 }
 
 final class OpenAICompatibleReflectionServiceTests: XCTestCase {
@@ -53,6 +112,7 @@ final class OpenAICompatibleReflectionServiceTests: XCTestCase {
             let json = try JSONSerialization.jsonObject(with: body) as? [String: Any]
 
             XCTAssertEqual(request.url?.path, "/v1/chat/completions")
+            XCTAssertEqual(request.timeoutInterval, OpenAICompatibleReflectionService.requestTimeout)
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-key")
             XCTAssertEqual(json?["model"] as? String, "gpt-test")
             XCTAssertNotNil(json?["messages"])
@@ -152,6 +212,7 @@ final class OpenAICompatibleReflectionServiceTests: XCTestCase {
         CapturingURLProtocol.requestHandler = { request in
             XCTAssertEqual(request.httpMethod, "GET")
             XCTAssertEqual(request.url?.path, "/v1/models")
+            XCTAssertEqual(request.timeoutInterval, ModelProviderClient.requestTimeout)
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-key")
 
             let responseBody = #"{"data":[{"id":"z-model"},{"id":"a-model"}]}"#

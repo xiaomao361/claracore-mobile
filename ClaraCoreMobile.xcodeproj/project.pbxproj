@@ -68,6 +68,9 @@
 		A1000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */; };
 		A1000000000000000000003C /* ArchiveFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003C /* ArchiveFeatureView.swift */; };
 		A1000000000000000000003D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003D /* PrivacyInfo.xcprivacy */; };
+		A1000000000000000000003E /* LocalOrganizationRulebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003E /* LocalOrganizationRulebook.swift */; };
+		A1000000000000000000003F /* Core/Database/AppDatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000003F /* Core/Database/AppDatabaseTests.swift */; };
+		A10000000000000000000040 /* AppStoreScreenshotFixtureSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000040 /* AppStoreScreenshotFixtureSeeder.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -142,6 +145,9 @@
 		A2000000000000000000003B /* Core/Importer/ConversationImporterRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Importer/ConversationImporterRegistryTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000003C /* ArchiveFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveFeatureView.swift; sourceTree = "<group>"; };
 		A2000000000000000000003D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A2000000000000000000003E /* LocalOrganizationRulebook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalOrganizationRulebook.swift; sourceTree = "<group>"; };
+		A2000000000000000000003F /* Core/Database/AppDatabaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Database/AppDatabaseTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000040 /* AppStoreScreenshotFixtureSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotFixtureSeeder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -238,6 +244,7 @@
 				A20000000000000000000030 /* Core/Recall/RecallContextPackageTests.swift */,
 				A20000000000000000000035 /* Shared/ClaraErrorPresenterTests.swift */,
 				A20000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift */,
+				A2000000000000000000003F /* Core/Database/AppDatabaseTests.swift */,
 			);
 			path = ClaraCoreMobileTests;
 			sourceTree = "<group>";
@@ -257,6 +264,7 @@
 				A20000000000000000000001 /* ClaraCoreMobileApp.swift */,
 				A20000000000000000000002 /* AppRootView.swift */,
 				A20000000000000000000009 /* AppDependencies.swift */,
+				A20000000000000000000040 /* AppStoreScreenshotFixtureSeeder.swift */,
 				A2000000000000000000000A /* AppTab.swift */,
 			);
 			path = App;
@@ -325,6 +333,7 @@
 			children = (
 				A20000000000000000000015 /* ReflectionModels.swift */,
 				A20000000000000000000016 /* ReflectionService.swift */,
+				A2000000000000000000003E /* LocalOrganizationRulebook.swift */,
 				A20000000000000000000017 /* RuleBasedReflectionService.swift */,
 				A20000000000000000000018 /* DeepSeekReflectionService.swift */,
 				A20000000000000000000023 /* ReflectionRunner.swift */,
@@ -551,6 +560,7 @@
 				A10000000000000000000001 /* ClaraCoreMobileApp.swift in Sources */,
 				A10000000000000000000002 /* AppRootView.swift in Sources */,
 				A10000000000000000000009 /* AppDependencies.swift in Sources */,
+				A10000000000000000000040 /* AppStoreScreenshotFixtureSeeder.swift in Sources */,
 				A1000000000000000000000A /* AppTab.swift in Sources */,
 				A10000000000000000000003 /* AppDatabase.swift in Sources */,
 				A10000000000000000000037 /* ContextCard.swift in Sources */,
@@ -568,6 +578,7 @@
 				A10000000000000000000014 /* ImportSessionStore.swift in Sources */,
 				A10000000000000000000015 /* ReflectionModels.swift in Sources */,
 				A10000000000000000000016 /* ReflectionService.swift in Sources */,
+				A1000000000000000000003E /* LocalOrganizationRulebook.swift in Sources */,
 				A10000000000000000000017 /* RuleBasedReflectionService.swift in Sources */,
 				A10000000000000000000018 /* DeepSeekReflectionService.swift in Sources */,
 				A10000000000000000000032 /* DraftDigestReconciler.swift in Sources */,
@@ -612,6 +623,7 @@
 				A10000000000000000000030 /* Core/Recall/RecallContextPackageTests.swift in Sources */,
 				A10000000000000000000035 /* Shared/ClaraErrorPresenterTests.swift in Sources */,
 				A10000000000000000000039 /* Core/ContextCard/ContextCardStoreTests.swift in Sources */,
+				A1000000000000000000003F /* Core/Database/AppDatabaseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -753,7 +765,6 @@
 				INFOPLIST_KEY_CFBundleDisplayName = ClaraCore;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -782,7 +793,6 @@
 				INFOPLIST_KEY_CFBundleDisplayName = ClaraCore;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
